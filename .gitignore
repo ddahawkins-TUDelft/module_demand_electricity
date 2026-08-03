@@ -28,3 +28,6 @@ gurobi.log
 **/results/*
 **/temp/*
 **/tmp/*
+
+#ignore ENTSOE token
+resources/user/token_entsoe.txt
