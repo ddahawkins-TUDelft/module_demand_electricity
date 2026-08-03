@@ -3,3 +3,12 @@ integration_test:
     start: "2017-01-01"
     end: "2017-01-03"
   use_load: entsoe_api # entsoe_opsd or entsoe_api
+
+gap_filling:
+  enabled: true
+  rules:
+    - method: linear_interpolation
+      max_gap: 3h
+    - method: copy_period
+      max_gap: 168h
+      shift: 168h

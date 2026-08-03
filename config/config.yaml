@@ -3,3 +3,17 @@ temporal_scope:
   start: "2017-01-01"
   end: "2018-01-01"
 use_load: entsoe_api # entsoe_opsd or entsoe_api
+
+# Gap filling rules for creating synthetic demand data. Rule order is respected 
+# i.e. whichever is listed first, is applied first. Enabled by default therefore
+# "enable: false" may be used to deactivate these rules. Each rules requires at least 
+# "method" and "max_gap", additional parameters are optional under schema validation
+# but may be required by each rule respectively
+gap_filling:
+  enabled: true
+  rules:
+    - method: linear_interpolation
+      max_gap: 3h
+    - method: copy_period
+      max_gap: 168h
+      shift: 168h

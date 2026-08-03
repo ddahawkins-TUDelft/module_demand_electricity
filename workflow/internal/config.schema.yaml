@@ -8,8 +8,48 @@ $defs:
     pattern: '^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$'
     description: "Date in ISO 8601 format (YYYY-MM-DD)."
 
+  duration:
+    type: string
+    pattern: '^[1-9]\d*(h|d|w)$'
+    description: >
+      Positive duration expressed as an integer followed by h, d, or w,
+      for example 3h, 7d, or 1w.
+
+  linear_interpolation_rule:
+      type: object
+      additionalProperties: false
+      properties:
+        method:
+          const: linear_interpolation
+        max_gap:
+          $ref: "#/$defs/duration"
+      required:
+        - method
+        - max_gap
+
+  copy_period_rule:
+    type: object
+    additionalProperties: false
+    properties:
+      method:
+        const: copy_period
+      max_gap:
+        $ref: "#/$defs/duration"
+      shift:
+        $ref: "#/$defs/duration"
+    required:
+      - method
+      - max_gap
+      - shift
+
+  gap_filling_rule:
+    oneOf:
+      - $ref: "#/$defs/linear_interpolation_rule"
+      - $ref: "#/$defs/copy_period_rule"
+
 type: object
 additionalProperties: false
+
 properties:
   temporal_scope:
     type: object
@@ -24,9 +64,30 @@ properties:
     required:
       - start
       - end
+
   use_load:
     type: string
     description: "The source of load data to use in the simulation. Options are 'entsoe_api' or 'entsoe_opsd'."
     enum:
       - "entsoe_api"
       - "entsoe_opsd"
+
+  gap_filling:
+    type: object
+    additionalProperties: false
+    description: >
+      Ordered rules used to fill missing national electricity-demand values.
+    properties:
+      enabled:
+        type: boolean
+        default: true
+      rules:
+        type: array
+        description: >
+          Gap-filling rules applied in the order listed.
+        minItems: 1
+        items:
+          $ref: "#/$defs/gap_filling_rule"
+    required:
+      - enabled
+      - rules
