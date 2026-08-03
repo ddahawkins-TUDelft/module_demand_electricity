@@ -75,19 +75,28 @@ properties:
   gap_filling:
     type: object
     additionalProperties: false
-    description: >
-      Ordered rules used to fill missing national electricity-demand values.
     properties:
       enabled:
         type: boolean
-        default: true
+
       rules:
         type: array
-        description: >
-          Gap-filling rules applied in the order listed.
-        minItems: 1
+        description: Gap-filling rules applied in the order listed.
         items:
           $ref: "#/$defs/gap_filling_rule"
+
     required:
       - enabled
       - rules
+
+    allOf:
+      - if:
+          properties:
+            enabled:
+              const: true
+          required:
+            - enabled
+        then:
+          properties:
+            rules:
+              minItems: 1

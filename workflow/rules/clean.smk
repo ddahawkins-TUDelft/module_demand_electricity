@@ -3,6 +3,8 @@ rule clean_load_entsoe_opsd:
         load="<resources>/automatic/load_entsoe_opsd.csv",
     output:
         load="<resources>/automatic/load_entsoe_opsd.parquet",
+    params:
+        gap_filling=config["gap_filling"],
     log:
         "<logs>/clean_load_entsoe_opsd.log",
     conda:

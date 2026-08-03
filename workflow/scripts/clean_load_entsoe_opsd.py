@@ -7,6 +7,7 @@ from warnings import warn
 import pandas as pd
 import pycountry
 from _schemas import LoadENTSOE
+from gap_filling.pipeline import fill_gaps
 
 if TYPE_CHECKING:
     snakemake: Any
@@ -45,6 +46,12 @@ def main(path_raw_load, output_load):
         load, index=["utc_timestamp"], columns=["region"], values="data"
     )
     load_pivot.index = pd.to_datetime(load_pivot.index).tz_localize(None)
+
+    #Fill data gaps
+    load_pivot, value_source = fill_gaps(
+        load_pivot,
+        config=snakemake.params.gap_filling,
+    )
 
     # save data and plots
     load_pivot.to_parquet(output_load)
