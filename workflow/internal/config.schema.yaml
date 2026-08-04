@@ -14,6 +14,11 @@ $defs:
     description: >
       Positive duration expressed as an integer followed by h, d, or w,
       for example 3h, 7d, or 1w.
+  signed_duration:
+    type: string
+    pattern: '^-?[1-9]\d*(h|d|w)$'
+    description: >
+      Non-zero signed duration such as -168h, 168h, -7d, or 1w.
 
   linear_interpolation_rule:
       type: object
@@ -35,12 +40,15 @@ $defs:
         const: copy_period
       max_gap:
         $ref: "#/$defs/duration"
-      shift:
-        $ref: "#/$defs/duration"
+      source_offset:
+        $ref: "#/$defs/signed_duration"
+      require_complete_source:
+        type: boolean
+        default: true
     required:
       - method
       - max_gap
-      - shift
+      - source_offset
 
   gap_filling_rule:
     oneOf:

@@ -7,6 +7,8 @@ from typing import Any
 
 import pandas as pd
 
+from gap_filling.copy_period import METHOD_NAME as COPY_PERIOD
+from gap_filling.copy_period import apply_copy_period
 from gap_filling.linear_interpolation import METHOD_NAME as LINEAR_INTERPOLATION
 from gap_filling.linear_interpolation import apply_linear_interpolation
 
@@ -57,6 +59,19 @@ def fill_gaps(
                 max_gap=rule["max_gap"],
                 original_gap_duration=original_gap_duration,
             )
+
+        elif method == COPY_PERIOD:
+            filled, newly_filled = apply_copy_period(
+                filled,
+                max_gap=rule["max_gap"],
+                source_offset=rule["source_offset"],
+                require_complete_source=rule.get(
+                    "require_complete_source",
+                    True,
+                ),
+                original_gap_duration=original_gap_duration,
+            )
+
         else:
             raise ValueError(
                 f"Unsupported gap-filling method: {method!r}"

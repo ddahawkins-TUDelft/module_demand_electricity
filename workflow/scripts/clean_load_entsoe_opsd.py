@@ -1,5 +1,6 @@
 """Clean load data from ENTSO-E."""
 
+import logging
 import sys
 from typing import TYPE_CHECKING, Any
 from warnings import warn
@@ -8,6 +9,13 @@ import pandas as pd
 import pycountry
 from _schemas import LoadENTSOE
 from gap_filling.pipeline import fill_gaps
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s: %(message)s",
+)
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     snakemake: Any

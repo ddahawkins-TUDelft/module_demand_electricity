@@ -9,3 +9,6 @@ integration_test:
       rules:
         - method: linear_interpolation
           max_gap: 3h
+        - method: copy_period
+          max_gap: 168h
+          source_offset: -168h
