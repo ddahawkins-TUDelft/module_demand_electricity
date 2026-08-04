@@ -59,6 +59,38 @@ def main(start, end, country_codes, token, output_load):
 
     df = df.resample("1h").mean()
 
+    # reindexing to add some security to the entsoe download
+    target_index = pd.date_range(
+        start=start,
+        end=end,
+        freq="h",
+        inclusive="left",
+    )
+
+    df = df.reindex(
+        index=target_index,
+        columns=country_codes,
+    )
+
+    non_numeric_columns = df.select_dtypes(
+        exclude="number"
+    ).columns
+
+    invalid = {
+        column: df[column].dropna().head().tolist()
+        for column in non_numeric_columns
+        if not df[column].dropna().empty
+    }
+
+    if invalid:
+        raise TypeError(
+            "ENTSO-E load contains non-numeric values: "
+            f"{invalid}"
+        )
+
+    #Pre-cleaning. Replaces empty object columns with NaN columns to allow for data-source combining
+    df = df.astype(float)
+
     df.to_parquet(output_load)
 
 
@@ -67,7 +99,7 @@ if __name__ == "__main__":
     main(
         start=snakemake.config["temporal_scope"]["start"],
         end=snakemake.config["temporal_scope"]["end"],
-        country_codes=snakemake.params.country_codes_entsoe,
+        country_codes=snakemake.params.country_codes,
         token=snakemake.input.token_entsoe,
         output_load=snakemake.output.load,
     )

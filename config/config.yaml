@@ -2,7 +2,10 @@
 temporal_scope:
   start: "2017-01-01"
   end: "2018-01-01"
-use_load: entsoe_api # entsoe_opsd or entsoe_api
+# provide a list of sources and set their priority order. Options include: entsoe_api, opsd_api
+  load_sources: 
+    -entsoe_api
+    -opsd_api
 
 # Gap filling rules for creating synthetic demand data. Rule order is respected 
 # i.e. whichever is listed first, is applied first. Enabled by default therefore

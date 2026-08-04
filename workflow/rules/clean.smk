@@ -1,17 +1,68 @@
-rule clean_load_entsoe_opsd:
+rule prepare_load_opsd:
     input:
         load="<resources>/automatic/load_entsoe_opsd.csv",
     output:
-        load="<resources>/automatic/load_entsoe_opsd.parquet",
-        value_source="<resources>/automatic/load_entsoe_opsd_value_source.parquet",
+        load="<resources>/automatic/load_opsd_api.parquet",
     params:
-        gap_filling=config["gap_filling"],
+        start=config["temporal_scope"]["start"],
+        end=config["temporal_scope"]["end"],
+        country_codes=internal["load_entsoe_api"]["countries"],
     log:
-        "<logs>/clean_load_entsoe_opsd.log",
+        "<logs>/prepare_load_opsd.log",
     conda:
         "../envs/module.yaml"
+    message:
+        "Prepare electricity-demand data from OPSD."
     script:
-        "../scripts/clean_load_entsoe_opsd.py"
+        "../scripts/prepare_load_opsd.py"
+
+
+LOAD_SOURCE_PATHS = {
+    "entsoe_api": (
+        "<resources>/automatic/"
+        "load_entsoe_api.parquet"
+    ),
+    "opsd_api": (
+        "<resources>/automatic/"
+        "load_opsd_api.parquet"
+    ),
+}
+
+
+def configured_load_inputs(wildcards):
+    return [
+        LOAD_SOURCE_PATHS[source_name]
+        for source_name in config["load_sources"]
+    ]
+
+
+rule clean_demand:
+    input:
+        configured_load_inputs
+    output:
+        demand=(
+            "<resources>/automatic/"
+            "load_cleaned.parquet"
+        ),
+        data_source=(
+            "<resources>/automatic/"
+            "load_data_source.parquet"
+        ),
+        value_source=(
+            "<resources>/automatic/"
+            "load_value_source.parquet"
+        ),
+    params:
+        source_names=config["load_sources"],
+        gap_filling=config["gap_filling"],
+    log:
+        "<logs>/clean_demand.log",
+    conda:
+        "../envs/module.yaml"
+    message:
+        "Combine and clean electricity-demand sources."
+    script:
+        "../scripts/clean_demand.py"
 
 
 rule clean_population:

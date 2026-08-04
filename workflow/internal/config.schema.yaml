@@ -73,12 +73,19 @@ properties:
       - start
       - end
 
-  use_load:
-    type: string
-    description: "The source of load data to use in the simulation. Options are 'entsoe_api' or 'entsoe_opsd'."
-    enum:
-      - "entsoe_api"
-      - "entsoe_opsd"
+  load_sources:
+    type: array
+    description: >
+      Ordered electricity-demand sources. Sources are applied from highest
+      to lowest priority, with later sources filling only values missing
+      from earlier sources.
+    minItems: 1
+    uniqueItems: true
+    items:
+      type: string
+      enum:
+        - entsoe_api
+        - opsd_api
 
   gap_filling:
     type: object

@@ -12,7 +12,7 @@ rule download_load_entsoe_api:
     conda:
         "../envs/module.yaml"
     params:
-        country_codes_entsoe=internal["load_entsoe_api"]["countries"],
+        country_codes=internal["load_entsoe_api"]["countries"],
     message:
         "Download electricity load from ENTSOE."
     script:

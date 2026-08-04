@@ -2,7 +2,10 @@ integration_test:
   temporal_scope:
     start: "2017-01-01"
     end: "2017-01-03"
-  use_load: entsoe_api # entsoe_opsd or entsoe_api
+  # provide a list of sources and set their priority order. Options include: entsoe_api, opsd_api
+  load_sources: 
+    - entsoe_api
+    - opsd_api
 
   gap_filling:
       enabled: true

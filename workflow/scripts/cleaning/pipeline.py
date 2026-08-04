@@ -7,12 +7,36 @@ from typing import Any
 
 import pandas as pd
 
-from gap_filling.copy_period import METHOD_NAME as COPY_PERIOD
-from gap_filling.copy_period import apply_copy_period
-from gap_filling.linear_interpolation import METHOD_NAME as LINEAR_INTERPOLATION
-from gap_filling.linear_interpolation import apply_linear_interpolation
+from cleaning.combine_sources import combine_sources
+from cleaning.copy_period import METHOD_NAME as COPY_PERIOD
+from cleaning.copy_period import apply_copy_period
+from cleaning.linear_interpolation import METHOD_NAME as LINEAR_INTERPOLATION
+from cleaning.linear_interpolation import apply_linear_interpolation
 
 logger = logging.getLogger(__name__)
+
+def clean_demand(
+    sources: Mapping[str, pd.DataFrame],
+    *,
+    source_priority: Sequence[str],
+    gap_filling_config: Mapping[str, Any],
+) -> tuple[
+    pd.DataFrame,
+    pd.DataFrame,
+    pd.DataFrame,
+]:
+    """Combine observed sources and fill remaining gaps."""
+    combined, data_source = combine_sources(
+        sources,
+        priority=source_priority,
+    )
+
+    cleaned, value_source = fill_gaps(
+        combined,
+        config=gap_filling_config,
+    )
+
+    return cleaned, data_source, value_source
 
 def fill_gaps(
     load: pd.DataFrame,
