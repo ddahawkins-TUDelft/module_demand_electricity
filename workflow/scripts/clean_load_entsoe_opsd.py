@@ -34,7 +34,7 @@ def get_map_alpha2_to_alpha3(countries_alpha_2):
     return map_alpha2_to_alpha3
 
 
-def main(path_raw_load, output_load):
+def main(path_raw_load, output):
     """Clean ENTSO-E load data (units of MW), downloaded from open power system data (OPSD)."""
     load = pd.read_csv(path_raw_load)
     load = LoadENTSOE.validate(load)
@@ -62,9 +62,10 @@ def main(path_raw_load, output_load):
     )
 
     # save data and plots
-    load_pivot.to_parquet(output_load)
+    load_pivot.to_parquet(output.output_load)
+    value_source.to_parquet(output.value_source)
 
 
 if __name__ == "__main__":
     sys.stderr = open(snakemake.log[0], "w", buffering=1)
-    main(path_raw_load=snakemake.input.load, output_load=snakemake.output.load)
+    main(path_raw_load=snakemake.input.load, output=snakemake.output)
