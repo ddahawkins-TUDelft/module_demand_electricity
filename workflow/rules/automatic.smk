@@ -13,6 +13,8 @@ rule download_load_entsoe_api:
         "../envs/module.yaml"
     params:
         country_codes=internal["load_entsoe_api"]["countries"],
+        temporal_start=config["temporal_scope"]["start"],
+        temporal_end=config["temporal_scope"]["end"],
     message:
         "Download electricity load from ENTSOE."
     script:

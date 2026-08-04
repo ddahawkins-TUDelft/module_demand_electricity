@@ -69,6 +69,34 @@ rule clean_demand:
         "../scripts/clean_demand.py"
 
 
+rule plot_cleaning_timeline:
+    input:
+        demand=(
+            "<resources>/automatic/"
+            "load_cleaned.parquet"
+        ),
+        cleaning_method=(
+            "<resources>/automatic/"
+            "load_cleaning_method.parquet"
+        ),
+        cleaning_method_rank=(
+            "<resources>/automatic/"
+            "load_cleaning_method_rank.parquet"
+        ),
+    output:
+        plot=(
+            "<results>/{shape}/"
+            "load_cleaning_timeline.pdf"
+        ),
+    log:
+        "<logs>/{shape}/plot_cleaning_timeline.log",
+    conda:
+        "../envs/module.yaml"
+    message:
+        "Plot electricity-demand cleaning provenance."
+    script:
+        "../scripts/cleaning/plot_cleaning_timeline.py"
+
 rule clean_population:
     input:
         vector="<shapes>",
@@ -79,3 +107,4 @@ rule clean_population:
         "<logs>/{shape}/clean_population.log",
     wrapper:
         "v7.2.0/geo/rasterio/clip-geotiff"
+
