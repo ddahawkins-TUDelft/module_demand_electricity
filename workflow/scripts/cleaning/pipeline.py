@@ -12,8 +12,10 @@ from cleaning.copy_period import METHOD_NAME as COPY_PERIOD
 from cleaning.copy_period import apply_copy_period
 from cleaning.linear_interpolation import METHOD_NAME as LINEAR_INTERPOLATION
 from cleaning.linear_interpolation import apply_linear_interpolation
+from cleaning.provenance import build_cleaning_method_ranks, derive_cleaning_method_rank
 
 logger = logging.getLogger(__name__)
+
 
 def clean_demand(
     sources: Mapping[str, pd.DataFrame],
@@ -24,58 +26,98 @@ def clean_demand(
     pd.DataFrame,
     pd.DataFrame,
     pd.DataFrame,
+    pd.DataFrame,
 ]:
     """Combine observed sources and fill remaining gaps."""
-    combined, data_source = combine_sources(
+    (
+        combined,
+        data_source,
+        cleaning_method,
+    ) = combine_sources(
         sources,
         priority=source_priority,
     )
 
-    cleaned, value_source = fill_gaps(
+    cleaned, cleaning_method = fill_gaps(
         combined,
+        cleaning_method=cleaning_method,
         config=gap_filling_config,
     )
 
-    return cleaned, data_source, value_source
+    rules = gap_filling_config["rules"]
+
+    cleaning_method_ranks = build_cleaning_method_ranks(
+        source_priority=source_priority,
+        rules=rules,
+    )
+
+    cleaning_method_rank = derive_cleaning_method_rank(
+        cleaning_method=cleaning_method,
+        ranks=cleaning_method_ranks,
+    )
+
+    return (
+        cleaned,
+        data_source,
+        cleaning_method,
+        cleaning_method_rank,
+    )
+
 
 def fill_gaps(
     load: pd.DataFrame,
     *,
+    cleaning_method: pd.DataFrame,
     config: Mapping[str, Any],
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Apply configured gap-filling rules and record value provenance.
+    """Apply configured gap-filling rules and record method provenance.
 
     Parameters
     ----------
     load:
         Hourly demand data indexed by timestamp, with one column per country.
+    cleaning_method:
+        Per-cell cleaning-method provenance for the observed input values.
+        Missing input values should contain ``pd.NA``.
     config:
         Gap-filling configuration containing ``enabled`` and ``rules``.
 
-    Returns:
+    Returns
     -------
     filled:
         Load after applying the configured rules. If gap filling is disabled,
         this is an unchanged copy of ``load``.
-    value_source:
-        Per-cell provenance such as ``observed``,
-        ``linear_interpolation``, or ``missing``.
+    cleaning_method:
+        Per-cell provenance containing the observed-source identifier,
+        configured gap-filling rule name, or ``missing``.
     """
     _validate_load(load)
+    _validate_cleaning_method(
+        load=load,
+        cleaning_method=cleaning_method,
+    )
     _validate_config(config)
 
     filled = load.copy()
-    value_source = _initialise_value_source(load)
+    cleaning_method = cleaning_method.copy()
 
     if not config["enabled"]:
         logger.info("Gap filling is disabled.")
-        return filled, value_source
+
+        cleaning_method = cleaning_method.fillna(
+            "missing"
+        )
+
+        return filled, cleaning_method
 
     rules = config["rules"]
-    original_gap_duration = calculate_missing_run_durations(load)
+    original_gap_duration = calculate_missing_run_durations(
+        load
+    )
 
     for rule in rules:
         method = _get_method(rule)
+        rule_name = _get_rule_name(rule)
 
         if method == LINEAR_INTERPOLATION:
             filled, newly_filled = apply_linear_interpolation(
@@ -101,16 +143,32 @@ def fill_gaps(
                 f"Unsupported gap-filling method: {method!r}"
             )
 
-        value_source = value_source.mask(newly_filled, method)
-        _log_rule_results(method, newly_filled)
+        cleaning_method = cleaning_method.mask(
+            newly_filled,
+            rule_name,
+        )
 
-    unresolved = int(filled.isna().to_numpy().sum())
+        _log_rule_results(
+            rule_name=rule_name,
+            method=method,
+            newly_filled=newly_filled,
+        )
+
+    cleaning_method = cleaning_method.fillna(
+        "missing"
+    )
+
+    unresolved = int(
+        filled.isna().to_numpy().sum()
+    )
+
     logger.info(
         "Gap filling completed with %s unresolved values.",
         unresolved,
     )
 
-    return filled, value_source
+    return filled, cleaning_method
+
 
 def calculate_missing_run_durations(
     load: pd.DataFrame,
@@ -156,6 +214,29 @@ def _get_method(rule: Mapping[str, Any]) -> str:
         )
 
     return method
+
+
+def _get_rule_name(
+    rule: Mapping[str, Any],
+) -> str:
+    try:
+        name = rule["name"]
+    except KeyError as error:
+        raise ValueError(
+            "Each gap-filling rule must define a 'name'."
+        ) from error
+
+    if not isinstance(name, str):
+        raise TypeError(
+            "Gap-filling rule 'name' must be a string."
+        )
+
+    if not name:
+        raise ValueError(
+            "Gap-filling rule 'name' must not be empty."
+        )
+
+    return name
 
 
 def _validate_load(load: pd.DataFrame) -> None:
@@ -214,13 +295,18 @@ def _infer_regular_timestep(
 
 
 def _log_rule_results(
+    *,
+    rule_name: str,
     method: str,
     newly_filled: pd.DataFrame,
 ) -> None:
-    total = int(newly_filled.to_numpy().sum())
+    total = int(
+        newly_filled.to_numpy().sum()
+    )
 
     logger.info(
-        "Gap-filling method '%s' filled %s values.",
+        "Gap-filling rule '%s' using method '%s' filled %s values.",
+        rule_name,
         method,
         total,
     )
@@ -230,21 +316,11 @@ def _log_rule_results(
 
         if count:
             logger.info(
-                "%s: %s values filled using '%s'.",
+                "%s: %s values filled using rule '%s'.",
                 country,
                 count,
-                method,
+                rule_name,
             )
-
-def _initialise_value_source(load: pd.DataFrame) -> pd.DataFrame:
-    value_source = pd.DataFrame(
-        "observed",
-        index=load.index,
-        columns=load.columns,
-        dtype="string",
-    )
-
-    return value_source.mask(load.isna(), "missing")
 
 
 def _validate_config(config: Mapping[str, Any]) -> None:
@@ -282,3 +358,55 @@ def _validate_config(config: Mapping[str, Any]) -> None:
             "is enabled."
         )
 
+
+def _validate_cleaning_method(
+    *,
+    load: pd.DataFrame,
+    cleaning_method: pd.DataFrame,
+) -> None:
+    if not isinstance(cleaning_method, pd.DataFrame):
+        raise TypeError(
+            "Cleaning method must be a pandas DataFrame."
+        )
+
+    if not cleaning_method.index.equals(load.index):
+        raise ValueError(
+            "Cleaning-method provenance must use the same "
+            "index as the load data."
+        )
+
+    if not cleaning_method.columns.equals(load.columns):
+        raise ValueError(
+            "Cleaning-method provenance must use the same "
+            "columns as the load data."
+        )
+
+    missing_observed_provenance = (
+        load.notna()
+        & cleaning_method.isna()
+    )
+
+    if missing_observed_provenance.any().any():
+        count = int(
+            missing_observed_provenance.to_numpy().sum()
+        )
+
+        raise ValueError(
+            "Cleaning-method provenance is missing for "
+            f"{count} observed load values."
+        )
+
+    provenance_for_missing_values = (
+        load.isna()
+        & cleaning_method.notna()
+    )
+
+    if provenance_for_missing_values.any().any():
+        count = int(
+            provenance_for_missing_values.to_numpy().sum()
+        )
+
+        raise ValueError(
+            "Cleaning-method provenance is already assigned "
+            f"to {count} missing load values."
+        )

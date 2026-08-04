@@ -11,8 +11,8 @@ def combine_sources(
     sources: Mapping[str, pd.DataFrame],
     *,
     priority: Sequence[str],
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Combine sources and record which source supplied each value."""
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Combine sources and record source and cleaning-method provenance."""
     if not priority:
         raise ValueError(
             "At least one demand source must be configured."
@@ -47,9 +47,23 @@ def combine_sources(
         dtype="string",
     )
 
+    cleaning_method = pd.DataFrame(
+        pd.NA,
+        index=combined.index,
+        columns=combined.columns,
+        dtype="string",
+    )
+
+    first_source_values = combined.notna()
+
     data_source = data_source.mask(
-        combined.notna(),
+        first_source_values,
         first_source,
+    )
+
+    cleaning_method = cleaning_method.mask(
+        first_source_values,
+        f"observed_{first_source}",
     )
 
     for source_name in priority[1:]:
@@ -67,7 +81,12 @@ def combine_sources(
             source_name,
         )
 
-    return combined, data_source
+        cleaning_method = cleaning_method.mask(
+            newly_supplied,
+            f"observed_{source_name}",
+        )
+
+    return combined, data_source, cleaning_method
 
 
 def _validate_source_alignment(

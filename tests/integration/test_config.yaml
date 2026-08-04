@@ -10,8 +10,10 @@ integration_test:
   gap_filling:
       enabled: true
       rules:
-        - method: linear_interpolation
+        - name: interpolate_short_gaps
+          method: linear_interpolation
           max_gap: 3h
-        - method: copy_period
+        - name: copy_previous_week
+          method: copy_period
           max_gap: 168h
           source_offset: -168h

@@ -14,104 +14,62 @@ $defs:
     description: >
       Positive duration expressed as an integer followed by h, d, or w,
       for example 3h, 7d, or 1w.
+
   signed_duration:
     type: string
     pattern: '^-?[1-9]\d*(h|d|w)$'
     description: >
       Non-zero signed duration such as -168h, 168h, -7d, or 1w.
 
+  gap_filling_rule_base:
+    type: object
+    properties:
+      name:
+        type: string
+        pattern: '^[a-z0-9_]+$'
+        description: >
+          Unique identifier for this configured gap-filling rule. Used for
+          provenance reporting and cleaning-method ranking.
+      method:
+        type: string
+        description: Gap-filling method applied by this rule.
+    required:
+      - name
+      - method
+
   linear_interpolation_rule:
-      type: object
-      additionalProperties: false
-      properties:
-        method:
-          const: linear_interpolation
-        max_gap:
-          $ref: "#/$defs/duration"
-      required:
-        - method
-        - max_gap
+    allOf:
+      - $ref: "#/$defs/gap_filling_rule_base"
+      - type: object
+        properties:
+          method:
+            const: linear_interpolation
+          max_gap:
+            $ref: "#/$defs/duration"
+        required:
+          - max_gap
+    unevaluatedProperties: false
 
   copy_period_rule:
-    type: object
-    additionalProperties: false
-    properties:
-      method:
-        const: copy_period
-      max_gap:
-        $ref: "#/$defs/duration"
-      source_offset:
-        $ref: "#/$defs/signed_duration"
-      require_complete_source:
-        type: boolean
-        default: true
-    required:
-      - method
-      - max_gap
-      - source_offset
+    allOf:
+      - $ref: "#/$defs/gap_filling_rule_base"
+      - type: object
+        properties:
+          method:
+            const: copy_period
+          max_gap:
+            $ref: "#/$defs/duration"
+          source_offset:
+            $ref: "#/$defs/signed_duration"
+          require_complete_source:
+            type: boolean
+            default: true
+        required:
+          - max_gap
+          - source_offset
+    unevaluatedProperties: false
 
   gap_filling_rule:
     oneOf:
       - $ref: "#/$defs/linear_interpolation_rule"
       - $ref: "#/$defs/copy_period_rule"
-
-type: object
-additionalProperties: false
-
-properties:
-  temporal_scope:
-    type: object
-    description: "The temporal scope of the simulation."
-    properties:
-      start:
-        $ref: "#/$defs/iso_date"
-        description: "Start date the simulation in ISO 8601 format (YYYY-MM-DD)."
-      end:
-        $ref: "#/$defs/iso_date"
-        description: "End date the simulation in ISO 8601 format (YYYY-MM-DD)."
-    required:
-      - start
-      - end
-
-  load_sources:
-    type: array
-    description: >
-      Ordered electricity-demand sources. Sources are applied from highest
-      to lowest priority, with later sources filling only values missing
-      from earlier sources.
-    minItems: 1
-    uniqueItems: true
-    items:
-      type: string
-      enum:
-        - entsoe_api
-        - opsd_api
-
-  gap_filling:
-    type: object
-    additionalProperties: false
-    properties:
-      enabled:
-        type: boolean
-
-      rules:
-        type: array
-        description: Gap-filling rules applied in the order listed.
-        items:
-          $ref: "#/$defs/gap_filling_rule"
-
-    required:
-      - enabled
-      - rules
-
-    allOf:
-      - if:
-          properties:
-            enabled:
-              const: true
-          required:
-            - enabled
-        then:
-          properties:
-            rules:
-              minItems: 1

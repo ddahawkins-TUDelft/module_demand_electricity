@@ -38,7 +38,12 @@ def main(
         )
     }
 
-    cleaned, data_source, value_source = clean_demand(
+    (
+        cleaned,
+        data_source,
+        cleaning_method,
+        cleaning_method_rank,
+    ) = clean_demand(
         sources,
         source_priority=source_names,
         gap_filling_config=gap_filling_config,
@@ -46,10 +51,18 @@ def main(
 
     cleaned.to_parquet(output.demand)
     data_source.to_parquet(output.data_source)
-    value_source.to_parquet(output.value_source)
+    cleaning_method.to_parquet(
+        output.cleaning_method
+    )
+    cleaning_method_rank.to_parquet(
+        output.cleaning_method_rank
+    )
 
     _log_source_counts(data_source)
-
+    _log_cleaning_method_counts(
+        cleaning_method,
+        cleaning_method_rank,
+    )
 
 def _read_prepared_source(
     path: str | Path,
@@ -92,6 +105,41 @@ def _log_source_counts(
         logger.info(
             "%s supplied %s observed values.",
             source_name,
+            int(count),
+        )
+
+
+def _log_cleaning_method_counts(
+    cleaning_method: pd.DataFrame,
+    cleaning_method_rank: pd.DataFrame,
+) -> None:
+    """Log the number of cells assigned to each cleaning method."""
+    method_counts = cleaning_method.stack().value_counts()
+
+    for method_name, count in method_counts.items():
+        method_mask = (
+            cleaning_method.eq(method_name)
+            .fillna(False)
+            .to_numpy(dtype=bool)
+        )
+
+        ranks = cleaning_method_rank.to_numpy()[
+            method_mask
+        ]
+
+        unique_ranks = pd.unique(ranks)
+
+        if len(unique_ranks) != 1:
+            raise ValueError(
+                "Cleaning method "
+                f"{method_name!r} has multiple ranks: "
+                f"{unique_ranks.tolist()}"
+            )
+
+        logger.info(
+            "Cleaning method '%s' at rank %s supplied %s values.",
+            method_name,
+            int(unique_ranks[0]),
             int(count),
         )
 

@@ -48,9 +48,13 @@ rule clean_demand:
             "<resources>/automatic/"
             "load_data_source.parquet"
         ),
-        value_source=(
+        cleaning_method=(
             "<resources>/automatic/"
-            "load_value_source.parquet"
+            "load_cleaning_method.parquet"
+        ),
+        cleaning_method_rank=(
+            "<resources>/automatic/"
+            "load_cleaning_method_rank.parquet"
         ),
     params:
         source_names=config["load_sources"],
