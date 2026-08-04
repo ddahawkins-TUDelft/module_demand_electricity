@@ -1,12 +1,18 @@
 $schema: "https://json-schema.org/draft/2020-12/schema"
-description: "Schema for user-provided configuration files."
+
+description: >
+  Schema for user-provided configuration files for the electricity-demand
+  module.
+
+type: object
 
 $defs:
   iso_date:
     type: string
     format: date
     pattern: '^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$'
-    description: "Date in ISO 8601 format (YYYY-MM-DD)."
+    description: >
+      Date in ISO 8601 format (YYYY-MM-DD).
 
   duration:
     type: string
@@ -30,9 +36,12 @@ $defs:
         description: >
           Unique identifier for this configured gap-filling rule. Used for
           provenance reporting and cleaning-method ranking.
+
       method:
         type: string
-        description: Gap-filling method applied by this rule.
+        description: >
+          Gap-filling method applied by this rule.
+
     required:
       - name
       - method
@@ -40,36 +49,116 @@ $defs:
   linear_interpolation_rule:
     allOf:
       - $ref: "#/$defs/gap_filling_rule_base"
+
       - type: object
         properties:
           method:
             const: linear_interpolation
+
           max_gap:
             $ref: "#/$defs/duration"
+
         required:
           - max_gap
+
     unevaluatedProperties: false
 
   copy_period_rule:
     allOf:
       - $ref: "#/$defs/gap_filling_rule_base"
+
       - type: object
         properties:
           method:
             const: copy_period
+
           max_gap:
             $ref: "#/$defs/duration"
+
           source_offset:
             $ref: "#/$defs/signed_duration"
+
           require_complete_source:
             type: boolean
             default: true
+            description: >
+              Require all source-period values needed for a gap to be
+              available before filling that gap.
+
         required:
           - max_gap
           - source_offset
+
     unevaluatedProperties: false
 
   gap_filling_rule:
     oneOf:
       - $ref: "#/$defs/linear_interpolation_rule"
       - $ref: "#/$defs/copy_period_rule"
+
+
+properties:
+  temporal_scope:
+    type: object
+    description: >
+      End-exclusive temporal scope for the electricity-demand time series.
+
+    properties:
+      start:
+        $ref: "#/$defs/iso_date"
+
+      end:
+        $ref: "#/$defs/iso_date"
+
+    required:
+      - start
+      - end
+
+    additionalProperties: false
+
+  load_sources:
+    type: array
+    description: >
+      Ordered electricity-demand sources. Sources listed earlier have
+      higher priority when more than one source supplies the same value.
+
+    minItems: 1
+    uniqueItems: true
+
+    items:
+      type: string
+      enum:
+        - entsoe_api
+        - neso
+        - opsd_api
+
+  gap_filling:
+    type: object
+    description: >
+      Ordered gap-filling configuration. Rules are applied in the order
+      provided, and that order contributes to cleaning-method ranking.
+
+    properties:
+      enabled:
+        type: boolean
+        default: true
+
+      rules:
+        type: array
+        default: []
+        items:
+          $ref: "#/$defs/gap_filling_rule"
+
+    required:
+      - enabled
+      - rules
+
+    additionalProperties: false
+
+
+required:
+  - temporal_scope
+  - load_sources
+  - gap_filling
+
+additionalProperties: false
