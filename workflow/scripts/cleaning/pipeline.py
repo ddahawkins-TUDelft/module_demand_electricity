@@ -7,6 +7,8 @@ from typing import Any
 
 import pandas as pd
 
+from cleaning.average_periods import METHOD_NAME as AVERAGE_PERIODS
+from cleaning.average_periods import apply_average_periods
 from cleaning.combine_sources import combine_sources
 from cleaning.copy_period import METHOD_NAME as COPY_PERIOD
 from cleaning.copy_period import apply_copy_period
@@ -123,6 +125,14 @@ def fill_gaps(
             filled, newly_filled = apply_linear_interpolation(
                 filled,
                 max_gap=rule["max_gap"],
+                original_gap_duration=original_gap_duration,
+            )
+
+        elif method == AVERAGE_PERIODS:
+            filled, newly_filled = apply_average_periods(
+                filled,
+                max_gap=rule["max_gap"],
+                source_offsets=rule["source_offsets"],
                 original_gap_duration=original_gap_duration,
             )
 

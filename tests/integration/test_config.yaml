@@ -11,10 +11,24 @@ integration_test:
   gap_filling:
       enabled: true
       rules:
+        # interpolates across tiny gaps where <=3 hours are missing
         - name: interpolate_short_gaps
           method: linear_interpolation
           max_gap: 3h
+        # takes the average of the same hour, one week in the future and one week in the past
+        - name: average_adjacent_weeks
+          method: average_periods
+          max_gap: 326h
+          source_offsets:
+            - -7d
+            - 7d
+        #copies from the previous period, maximum of up to 1 week
         - name: copy_previous_week
           method: copy_period
           max_gap: 168h
           source_offset: -168h
+        #copies from the following period, maximum of up to 1 week
+        - name: copy_following_week
+          method: copy_period
+          max_gap: 168h
+          source_offset: 168h

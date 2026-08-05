@@ -27,6 +27,16 @@ $defs:
     description: >
       Non-zero signed duration such as -168h, 168h, -7d, or 1w.
 
+  signed_durations:
+    type: array
+    minItems: 2
+    uniqueItems: true
+    items:
+      $ref: "#/$defs/signed_duration"
+    description: >
+      Two or more unique, non-zero signed durations identifying the
+      source periods to average.
+
   gap_filling_rule_base:
     type: object
     properties:
@@ -60,7 +70,26 @@ $defs:
 
         required:
           - max_gap
+    unevaluatedProperties: false
 
+  average_periods_rule:
+    allOf:
+      - $ref: "#/$defs/gap_filling_rule_base"
+
+      - type: object
+        properties:
+          method:
+            const: average_periods
+
+          max_gap:
+            $ref: "#/$defs/duration"
+
+          source_offsets:
+            $ref: "#/$defs/signed_durations"
+
+        required:
+          - max_gap
+          - source_offsets
     unevaluatedProperties: false
 
   copy_period_rule:
@@ -94,6 +123,7 @@ $defs:
   gap_filling_rule:
     oneOf:
       - $ref: "#/$defs/linear_interpolation_rule"
+      - $ref: "#/$defs/average_periods_rule"
       - $ref: "#/$defs/copy_period_rule"
 
 
