@@ -17,10 +17,33 @@ rule prepare_load_opsd:
         "../scripts/prepare_load_opsd.py"
 
 
+rule prepare_load_neso:
+    input:
+        annual_files=rules.download_load_neso.output.annual_files,
+    output:
+        load="<resources>/automatic/load_neso.parquet",
+    params:
+        start=config["temporal_scope"]["start"],
+        end=config["temporal_scope"]["end"],
+        country_codes=internal["load_entsoe_api"]["countries"],
+    log:
+        "<logs>/prepare_load_neso.log",
+    conda:
+        "../envs/module.yaml"
+    message:
+        "Prepare electricity-demand data from NESO."
+    script:
+        "../scripts/prepare_load_neso.py"
+        
+
 LOAD_SOURCE_PATHS = {
     "entsoe_api": (
         "<resources>/automatic/"
         "load_entsoe_api.parquet"
+    ),
+    "neso": (
+        "<resources>/automatic/"
+        "load_neso.parquet"
     ),
     "opsd_api": (
         "<resources>/automatic/"
@@ -29,7 +52,7 @@ LOAD_SOURCE_PATHS = {
 }
 
 
-def configured_load_inputs(wildcards):
+def configured_load_inputs(_wildcards):
     return [
         LOAD_SOURCE_PATHS[source_name]
         for source_name in config["load_sources"]
@@ -88,6 +111,9 @@ rule plot_cleaning_timeline:
             "<results>/{shape}/"
             "load_cleaning_timeline.pdf"
         ),
+    params:
+        source_names=config["load_sources"],
+        gap_filling=config["gap_filling"],
     log:
         "<logs>/{shape}/plot_cleaning_timeline.log",
     conda:

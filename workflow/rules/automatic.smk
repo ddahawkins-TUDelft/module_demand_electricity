@@ -1,5 +1,45 @@
-"""Rules to used to download automatic resource files."""
+"""Rules used to download automatic resource files."""
 
+from datetime import datetime, timedelta
+
+def _years_in_temporal_scope(
+    temporal_start: str,
+    temporal_end: str,
+) -> tuple[int, ...]:
+    """Return calendar years intersecting an end-exclusive scope."""
+    start = datetime.fromisoformat(temporal_start)
+    end = datetime.fromisoformat(temporal_end)
+
+    if end <= start:
+        raise ValueError(
+            "temporal_scope.end must be later than "
+            "temporal_scope.start."
+        )
+
+    # The configured end is exclusive. Subtract a very small
+    # amount so 2025-01-01 does not require the 2025 file.
+    final_included_time = end - timedelta(
+        microseconds=1
+    )
+
+    return tuple(
+        range(
+            start.year,
+            final_included_time.year + 1,
+        )
+    )
+
+
+NESO_YEARS = _years_in_temporal_scope(
+    config["temporal_scope"]["start"],
+    config["temporal_scope"]["end"],
+)
+
+NESO_RAW_FILES = expand(
+    "<resources>/automatic/neso/"
+    "historic_demand_{year}.csv",
+    year=NESO_YEARS,
+)
 
 rule download_load_entsoe_api:
     input:
@@ -38,6 +78,20 @@ rule download_load_entsoe_opsd:
         curl -sSLo {output.load:q} {params.url_load:q}
         """
 
+rule download_load_neso:
+    output:
+        annual_files=NESO_RAW_FILES,
+    params:
+        years=NESO_YEARS,
+    log:
+        "<logs>/download_load_neso.log",
+    localrule: True
+    conda:
+        "../envs/module.yaml"
+    message:
+        "Download historic electricity demand from NESO."
+    script:
+        "../scripts/download_load_neso.py"
 
 rule download_population:
     output:

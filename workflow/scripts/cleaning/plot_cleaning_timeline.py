@@ -9,8 +9,8 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from cmap import Colormap
 from matplotlib.colors import ListedColormap, to_rgba
-from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
 if TYPE_CHECKING:
@@ -25,6 +25,8 @@ def main(
     cleaning_method_path: str | Path,
     cleaning_method_rank_path: str | Path,
     output_path: str | Path,
+    source_names: list[str],
+    gap_filling_config: dict[str, Any],
 ) -> None:
     """Create the electricity-demand cleaning diagnostic."""
     demand = pd.read_parquet(demand_path)
@@ -39,9 +41,15 @@ def main(
         cleaning_method_rank=cleaning_method_rank,
     )
 
-    metadata = _build_rank_metadata(
+    metadata = _build_cleaning_method_metadata(
+        source_names=source_names,
+        gap_filling_config=gap_filling_config,
+    )
+
+    _validate_provenance_metadata(
         cleaning_method=cleaning_method,
         cleaning_method_rank=cleaning_method_rank,
+        metadata=metadata,
     )
 
     rank_colours = _build_rank_colours(metadata)
@@ -82,10 +90,16 @@ def main(
         countries=demand.columns,
     )
 
-    _add_dynamic_legend(
-        figure=figure,
-        metadata=metadata,
-        rank_colours=rank_colours,
+    legend_handles = _build_legend_handles(
+        metadata,
+        rank_colours,
+    )
+
+    figure.legend(
+        handles=legend_handles,
+        loc="center left",
+        bbox_to_anchor=(1.01, 0.5),
+        frameon=False,
     )
 
     output_path = Path(output_path)
@@ -105,6 +119,35 @@ def main(
         "Saved cleaning timeline to %s.",
         output_path,
     )
+
+
+def _build_legend_handles(
+    metadata: pd.DataFrame,
+    rank_colours: dict[
+        int,
+        tuple[float, float, float, float],
+    ],
+) -> list[Patch]:
+    """Create handles for every configured rank."""
+    handles: list[Patch] = []
+
+    ordered = metadata.sort_values(
+        "cleaning_method_rank"
+    )
+
+    for row in ordered.itertuples(index=False):
+        rank = int(row.cleaning_method_rank)
+
+        handles.append(
+            Patch(
+                facecolor=rank_colours[rank],
+                edgecolor="0.65",
+                linewidth=0.8,
+                label=str(row.label),
+            )
+        )
+
+    return handles
 
 
 def _validate_alignment(
@@ -151,12 +194,13 @@ def _validate_alignment(
         )
 
 
-def _build_rank_metadata(
+def _validate_provenance_metadata(
     *,
     cleaning_method: pd.DataFrame,
     cleaning_method_rank: pd.DataFrame,
-) -> pd.DataFrame:
-    """Return one ordered record for each method and rank."""
+    metadata: pd.DataFrame,
+) -> None:
+    """Validate observed provenance against configured metadata."""
     methods = cleaning_method.stack(
         future_stack=True
     ).rename("cleaning_method")
@@ -165,7 +209,7 @@ def _build_rank_metadata(
         future_stack=True
     ).rename("cleaning_method_rank")
 
-    metadata = (
+    present = (
         pd.concat(
             [methods, ranks],
             axis=1,
@@ -174,173 +218,129 @@ def _build_rank_metadata(
         .drop_duplicates()
     )
 
-    if metadata.empty:
-        raise ValueError(
-            "No cleaning-method provenance was found."
-        )
-
-    metadata["cleaning_method_rank"] = metadata[
+    present["cleaning_method_rank"] = present[
         "cleaning_method_rank"
     ].astype(int)
 
-    rank_count_per_method = (
-        metadata.groupby("cleaning_method")[
-            "cleaning_method_rank"
+    configured = metadata[
+        [
+            "cleaning_method",
+            "cleaning_method_rank",
         ]
-        .nunique()
+    ]
+
+    checked = present.merge(
+        configured,
+        on=[
+            "cleaning_method",
+            "cleaning_method_rank",
+        ],
+        how="left",
+        indicator=True,
     )
 
-    methods_with_multiple_ranks = (
-        rank_count_per_method.loc[
-            rank_count_per_method > 1
-        ]
-        .index
-        .tolist()
-    )
+    unknown = checked.loc[
+        checked["_merge"] == "left_only",
+        [
+            "cleaning_method",
+            "cleaning_method_rank",
+        ],
+    ]
 
-    if methods_with_multiple_ranks:
+    if not unknown.empty:
         raise ValueError(
-            "Cleaning methods must map to exactly one rank. "
-            "Methods with multiple ranks: "
-            f"{methods_with_multiple_ranks}"
+            "Cleaning provenance contains method/rank pairs "
+            "that are not defined by the configuration:\n"
+            f"{unknown.to_string(index=False)}"
         )
-
-    method_count_per_rank = (
-        metadata.groupby("cleaning_method_rank")[
-            "cleaning_method"
-        ]
-        .nunique()
-    )
-
-    ranks_with_multiple_methods = (
-        method_count_per_rank.loc[
-            method_count_per_rank > 1
-        ]
-        .index
-        .tolist()
-    )
-
-    if ranks_with_multiple_methods:
-        raise ValueError(
-            "Cleaning-method ranks must map to exactly one "
-            "method. Ranks with multiple methods: "
-            f"{ranks_with_multiple_methods}"
-        )
-
-    metadata["category"] = metadata[
-        "cleaning_method"
-    ].map(_classify_method)
-
-    return (
-        metadata.sort_values("cleaning_method_rank")
-        .reset_index(drop=True)
-    )
-
-
-def _classify_method(method: str) -> str:
-    """Classify one method for semantic colour assignment."""
-    if method == "missing":
-        return "missing"
-
-    if method.startswith("observed_"):
-        return "observed"
-
-    return "imputed"
 
 
 def _build_rank_colours(
     metadata: pd.DataFrame,
 ) -> dict[int, tuple[float, float, float, float]]:
-    """Assign colours according to method category and rank."""
+    """Assign colours by provenance category."""
     colours: dict[
         int,
         tuple[float, float, float, float],
     ] = {}
 
-    observed = metadata.loc[
-        metadata["category"] == "observed"
-    ].sort_values("cleaning_method_rank")
+    ordered = metadata.sort_values(
+        "cleaning_method_rank"
+    )
 
-    imputed = metadata.loc[
-        metadata["category"] == "imputed"
-    ].sort_values("cleaning_method_rank")
+    observed = ordered.loc[
+        ordered["category"] == "observed"
+    ]
 
-    missing = metadata.loc[
-        metadata["category"] == "missing"
-    ].sort_values("cleaning_method_rank")
+    imputed = ordered.loc[
+        ordered["category"] == "imputed"
+    ]
 
-    if not observed.empty:
-        principal_rank = int(
-            observed.iloc[0]["cleaning_method_rank"]
+    missing = ordered.loc[
+        ordered["category"] == "missing"
+    ]
+
+    if observed.empty:
+        raise ValueError(
+            "At least one observed source must be configured."
         )
 
-        # The preferred observed source is visually neutral.
-        colours[principal_rank] = to_rgba("white")
+    # Primary source is white. Subsequent observed sources
+    # become gradually darker, but remain very light so that
+    # the black demand trace stays clearly visible.
+    observed_shades = np.linspace(
+        1.0,
+        0.60,
+        len(observed),
+    )
 
-        fallback_observed = observed.iloc[1:]
+    for (_, row), shade in zip(
+        observed.iterrows(),
+        observed_shades,
+        strict=True,
+    ):
+        rank = int(row["cleaning_method_rank"])
 
-        if not fallback_observed.empty:
-            green_positions = np.linspace(
-                0.3,
-                0.6,
-                len(fallback_observed),
-            )
-
-            for (_, row), position in zip(
-                fallback_observed.iterrows(),
-                green_positions,
-                strict=True,
-            ):
-                rank = int(
-                    row["cleaning_method_rank"]
-                )
-
-                colours[rank] = plt.colormaps[
-                    "Greens"
-                ](position)
+        colours[rank] = (
+            float(shade),
+            float(shade),
+            float(shade),
+            1.0,
+        )
 
     if not imputed.empty:
-        imputation_positions = np.linspace(
-            0.35,
-            0.8,
+        colourtheme = Colormap(
+            "bids:plasma"
+        ).to_mpl()
+
+        positions = np.linspace(
+            0.0,
+            0.9,
             len(imputed),
         )
 
         for (_, row), position in zip(
             imputed.iterrows(),
-            imputation_positions,
+            positions,
             strict=True,
         ):
-            rank = int(
-                row["cleaning_method_rank"]
-            )
-
-            colours[rank] = plt.colormaps[
-                "YlOrBr"
-            ](position)
+            rank = int(row["cleaning_method_rank"])
+            colours[rank] = colourtheme(position)
 
     for _, row in missing.iterrows():
-        rank = int(
-            row["cleaning_method_rank"]
-        )
-
-        colours[rank] = plt.colormaps[
-            "Reds"
-        ](0.8)
+        rank = int(row["cleaning_method_rank"])
+        colours[rank] = to_rgba("#ff0000")
 
     expected_ranks = set(
-        metadata["cleaning_method_rank"]
+        metadata["cleaning_method_rank"].astype(int)
     )
 
-    unassigned_ranks = (
-        expected_ranks - set(colours)
-    )
+    missing_colours = expected_ranks - set(colours)
 
-    if unassigned_ranks:
+    if missing_colours:
         raise ValueError(
-            "No colour was assigned to cleaning-method "
-            "ranks: "
-            f"{sorted(unassigned_ranks)}"
+            "No colour was assigned to ranks: "
+            f"{sorted(missing_colours)}"
         )
 
     return colours
@@ -615,73 +615,6 @@ def _add_mean_load_labels(
     )
 
 
-def _add_dynamic_legend(
-    *,
-    figure: plt.Figure,
-    metadata: pd.DataFrame,
-    rank_colours: dict[
-        int,
-        tuple[float, float, float, float],
-    ],
-) -> None:
-    """Add a rank-ordered method legend."""
-    handles: list[Patch | Line2D] = [
-        Line2D(
-            [0],
-            [0],
-            color="black",
-            linewidth=1,
-            label="Mean-normalised hourly demand",
-        )
-    ]
-
-    for row in metadata.itertuples(
-        index=False
-    ):
-        rank = int(
-            row.cleaning_method_rank
-        )
-        method = str(
-            row.cleaning_method
-        )
-
-        colour = rank_colours[rank]
-
-        # A border keeps the white principal-source patch
-        # visible in the legend.
-        edge_colour = (
-            "0.65"
-            if row.category == "observed"
-            and rank == metadata[
-                "cleaning_method_rank"
-            ].min()
-            else "none"
-        )
-
-        handles.append(
-            Patch(
-                facecolor=colour,
-                edgecolor=edge_colour,
-                linewidth=0.8,
-                label=(
-                    f"Rank {rank}: "
-                    f"{_format_method_label(method)}"
-                ),
-            )
-        )
-
-    figure.legend(
-        handles=handles,
-        loc="outside lower center",
-        ncols=min(
-            4,
-            len(handles),
-        ),
-        frameon=True,
-        fontsize=8,
-    )
-
-
 def _format_method_label(
     method: str,
 ) -> str:
@@ -712,6 +645,71 @@ def _format_method_label(
         " ",
     ).capitalize()
 
+def _build_cleaning_method_metadata(
+    *,
+    source_names: list[str],
+    gap_filling_config: dict[str, Any],
+) -> pd.DataFrame:
+    """Build complete method metadata in configured rank order."""
+    rows: list[dict[str, Any]] = []
+    rank = 0
+
+    for source_name in source_names:
+        rows.append(
+            {
+                "cleaning_method": (
+                    f"observed_{source_name}"
+                ),
+                "cleaning_method_rank": rank,
+                "label": (
+                    f"Rank {rank}: Observed "
+                    f"({_format_source_name(source_name)})"
+                ),
+                "category": "observed",
+            }
+        )
+        rank += 1
+
+    for rule in gap_filling_config["rules"]:
+        rule_name = rule["name"]
+
+        rows.append(
+            {
+                "cleaning_method": rule_name,
+                "cleaning_method_rank": rank,
+                "label": (
+                    f"Rank {rank}: "
+                    f"{_format_rule_name(rule_name)}"
+                ),
+                "category": "imputed",
+            }
+        )
+        rank += 1
+
+    rows.append(
+        {
+            "cleaning_method": "missing",
+            "cleaning_method_rank": rank,
+            "label": f"Rank {rank}: Missing",
+            "category": "missing",
+        }
+    )
+
+    return pd.DataFrame(rows)
+
+
+def _format_source_name(source_name: str) -> str:
+    mapping = {
+        "entsoe_api": "ENTSO-E",
+        "neso": "NESO",
+        "opsd_api": "OPSD",
+    }
+    return mapping.get(source_name, source_name)
+
+
+def _format_rule_name(name: str) -> str:
+    return name.replace("_", " ").capitalize()
+
 
 if __name__ == "__main__":
     sys.stderr = open(
@@ -727,11 +725,9 @@ if __name__ == "__main__":
 
     main(
         demand_path=snakemake.input.demand,
-        cleaning_method_path=(
-            snakemake.input.cleaning_method
-        ),
-        cleaning_method_rank_path=(
-            snakemake.input.cleaning_method_rank
-        ),
+        cleaning_method_path=snakemake.input.cleaning_method,
+        cleaning_method_rank_path=snakemake.input.cleaning_method_rank,
         output_path=snakemake.output.plot,
+        source_names=snakemake.params.source_names,
+        gap_filling_config=snakemake.params.gap_filling,
     )

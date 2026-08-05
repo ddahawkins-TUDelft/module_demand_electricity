@@ -274,3 +274,4 @@ https://conda.anaconda.org/conda-forge/noarch/soupsieve-2.8.4-pyhd8ed1ab_0.conda
 https://conda.anaconda.org/conda-forge/noarch/beautifulsoup4-4.15.0-pyha770c72_0.conda#3b261da3fe9b4168738712832410b022
 https://conda.anaconda.org/conda-forge/noarch/entsoe-py-0.8.0-pyhd8ed1ab_0.conda#0c06dd1da8af688335732bb47dc51dc1
 https://conda.anaconda.org/conda-forge/linux-64/curl-8.9.1-h18eb788_0.conda#2e7dedf73dfbfcee662e2a0f6175e4bb
+https://conda.anaconda.org/conda-forge/noarch/cmap-0.7.2-pyhd8ed1ab_0.conda#992b4902eb5ff13646048cd7629a82bf
