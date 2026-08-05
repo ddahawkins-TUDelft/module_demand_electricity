@@ -103,14 +103,24 @@ def fill_gaps(
     filled = load.copy()
     cleaning_method = cleaning_method.copy()
 
-    if not config["enabled"]:
-        logger.info("Gap filling is disabled.")
+    mode = config["mode"]
+
+    if mode == "off":
+        logger.info(
+            "Gap filling is disabled because mode is 'off'."
+        )
 
         cleaning_method = cleaning_method.fillna(
             "missing"
         )
 
         return filled, cleaning_method
+
+    if mode == "advanced":
+        raise NotImplementedError(
+            "Gap-filling mode 'advanced' is not yet implemented. "
+            "Use mode 'basic' to apply the configured rules."
+        )
 
     rules = config["rules"]
     original_gap_duration = calculate_missing_run_durations(
@@ -339,14 +349,29 @@ def _validate_config(config: Mapping[str, Any]) -> None:
             "Gap-filling configuration must be a mapping."
         )
 
-    if "enabled" not in config:
+    if "mode" not in config:
         raise ValueError(
-            "Gap-filling configuration must define 'enabled'."
+            "Gap-filling configuration must define 'mode'."
         )
 
-    if not isinstance(config["enabled"], bool):
+    mode = config["mode"]
+
+    if not isinstance(mode, str):
         raise TypeError(
-            "Gap-filling configuration 'enabled' must be a boolean."
+            "Gap-filling configuration 'mode' must be a string."
+        )
+
+    supported_modes = {
+        "off",
+        "basic",
+        "advanced",
+    }
+
+    if mode not in supported_modes:
+        raise ValueError(
+            "Unsupported gap-filling mode "
+            f"{mode!r}. Expected one of "
+            f"{sorted(supported_modes)}."
         )
 
     if "rules" not in config:
@@ -362,10 +387,10 @@ def _validate_config(config: Mapping[str, Any]) -> None:
             "Gap-filling configuration 'rules' must be an ordered sequence."
         )
 
-    if config["enabled"] and not config["rules"]:
+    if mode in {"basic", "advanced"} and not config["rules"]:
         raise ValueError(
-            "At least one gap-filling rule is required when gap filling "
-            "is enabled."
+            "At least one gap-filling rule is required when "
+            f"gap-filling mode is {mode!r}."
         )
 
 

@@ -9,7 +9,7 @@ integration_test:
     - opsd_api
 
   gap_filling:
-      enabled: true
+      mode: basic
       rules:
         # interpolates across tiny gaps where <=3 hours are missing
         - name: interpolate_short_gaps

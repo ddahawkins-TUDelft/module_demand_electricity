@@ -169,9 +169,18 @@ properties:
       provided, and that order contributes to cleaning-method ranking.
 
     properties:
-      enabled:
-        type: boolean
-        default: true
+      mode:
+        type: string
+        enum:
+          - off
+          - basic
+          - advanced
+        default: basic
+        description: >
+          Gap-filling mode. 'off' disables gap filling, 'basic' applies
+          configured rules using data available within the requested temporal
+          scope, and 'advanced' additionally uses auxiliary-data planning and
+          advanced filling strategies.
 
       rules:
         type: array
@@ -180,7 +189,7 @@ properties:
           $ref: "#/$defs/gap_filling_rule"
 
     required:
-      - enabled
+      - mode
       - rules
 
     additionalProperties: false
