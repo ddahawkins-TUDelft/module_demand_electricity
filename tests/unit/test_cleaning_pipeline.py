@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from cleaning.pipeline import build_gap_report, clean_demand
+from cleaning.advanced.gap_report import build_gap_report
+from cleaning.pipeline import clean_demand
 
 
 def test_clean_demand_records_methods_and_ranks() -> None:
