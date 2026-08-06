@@ -37,17 +37,22 @@ def clean_demand(
         priority=source_priority,
     )
 
+    basic_config = {
+        "mode": gap_filling_config["mode"],
+        "rules": gap_filling_config["basic"]["rules"],
+    }
+
     cleaned, cleaning_method = fill_basic_gaps(
         combined,
         cleaning_method=cleaning_method,
-        config=gap_filling_config,
+        config=basic_config,
     )
 
-    rules = gap_filling_config["rules"]
+    basic_rules = gap_filling_config["basic"]["rules"]
 
     cleaning_method_ranks = build_cleaning_method_ranks(
         source_priority=source_priority,
-        rules=rules,
+        rules=basic_rules,
     )
 
     cleaning_method_rank = derive_cleaning_method_rank(

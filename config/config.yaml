@@ -12,27 +12,37 @@ load_sources:
 
 # Gap-filling rules are applied in the listed order.
 gap_filling:
-  #sets the data cleaning mode. Options: off,basic,Advanced
+  # Sets the data-cleaning mode. Options: off, basic, advanced.
   mode: advanced
-  rules:
-    # interpolates across tiny gaps where <=3 hours are missing
-    - name: interpolate_short_gaps
-      method: linear_interpolation
-      max_gap: 3h
-    # takes the average of the same hour, one week in the future and one week in the past
-    - name: average_adjacent_weeks
-      method: average_periods
-      max_gap: 326h
-      source_offsets:
-        - -7d
-        - 7d
-    #copies from the previous period, maximum of up to 1 week
-    - name: copy_previous_week
-      method: copy_period
-      max_gap: 168h
-      source_offset: -168h
-    #copies from the following period, maximum of up to 1 week
-    - name: copy_following_week
-      method: copy_period
-      max_gap: 168h
-      source_offset: 168h
+  
+  basic:
+    # Basic gap-filling rules are applied in the listed order.
+    rules:
+      # Interpolates across tiny gaps where no more than 3 hours are missing.
+      - name: interpolate_short_gaps
+        method: linear_interpolation
+        max_gap: 3h
+
+      # Takes the average of the same hour one week earlier and later.
+      - name: average_adjacent_weeks
+        method: average_periods
+        max_gap: 326h
+        source_offsets:
+          - -7d
+          - 7d
+
+      # Copies from the previous week for gaps of up to one week.
+      - name: copy_previous_week
+        method: copy_period
+        max_gap: 168h
+        source_offset: -168h
+
+      # Copies from the following week for gaps of up to one week.
+      - name: copy_following_week
+        method: copy_period
+        max_gap: 168h
+        source_offset: 168h
+
+  advanced:
+    # Explicit country-period instructions for unresolved cases.
+    overrides: {}

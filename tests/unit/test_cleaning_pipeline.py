@@ -75,20 +75,25 @@ def test_clean_demand_records_methods_and_ranks() -> None:
 
     gap_filling_config = {
         "mode": "basic",
-        "rules": [
-            {
-                "name": "interpolate_short_gaps",
-                "method": "linear_interpolation",
-                "max_gap": "3h",
-            },
-            {
-                "name": "copy_previous_week",
-                "method": "copy_period",
-                "max_gap": "168h",
-                "source_offset": "-168h",
-                "require_complete_source": True,
-            },
-        ],
+        "basic": {
+            "rules": [
+                {
+                    "name": "interpolate_short_gaps",
+                    "method": "linear_interpolation",
+                    "max_gap": "3h",
+                },
+                {
+                    "name": "copy_previous_week",
+                    "method": "copy_period",
+                    "max_gap": "168h",
+                    "source_offset": "-168h",
+                    "require_complete_source": True,
+                },
+            ],
+        },
+        "advanced": {
+            "overrides": {},
+        },
     }
 
     (
@@ -346,20 +351,25 @@ def test_advanced_mode_reports_unresolved_gaps() -> None:
 
     gap_filling_config = {
         "mode": "advanced",
-        "rules": [
-            {
-                "name": "interpolate_short_gaps",
-                "method": "linear_interpolation",
-                "max_gap": "3h",
-            },
-            {
-                "name": "copy_previous_week",
-                "method": "copy_period",
-                "max_gap": "168h",
-                "source_offset": "-168h",
-                "require_complete_source": True,
-            },
-        ],
+        "basic": {
+            "rules": [
+                {
+                    "name": "interpolate_short_gaps",
+                    "method": "linear_interpolation",
+                    "max_gap": "3h",
+                },
+                {
+                    "name": "copy_previous_week",
+                    "method": "copy_period",
+                    "max_gap": "168h",
+                    "source_offset": "-168h",
+                    "require_complete_source": True,
+                },
+            ],
+        },
+        "advanced": {
+            "overrides": {},
+        },
     }
 
     (
