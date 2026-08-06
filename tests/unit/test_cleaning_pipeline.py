@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-
-from cleaning.pipeline import clean_demand
+from cleaning.pipeline import build_gap_report, clean_demand
 
 
 def test_clean_demand_records_methods_and_ranks() -> None:
@@ -74,7 +73,7 @@ def test_clean_demand_records_methods_and_ranks() -> None:
     }
 
     gap_filling_config = {
-        "enabled": True,
+        "mode": "basic",
         "rules": [
             {
                 "name": "interpolate_short_gaps",
@@ -96,6 +95,7 @@ def test_clean_demand_records_methods_and_ranks() -> None:
         data_source,
         cleaning_method,
         cleaning_method_rank,
+        gap_report,
     ) = clean_demand(
         sources,
         source_priority=[
@@ -104,6 +104,8 @@ def test_clean_demand_records_methods_and_ranks() -> None:
         ],
         gap_filling_config=gap_filling_config,
     )
+
+    assert gap_report.empty
 
     # All outputs use the same grid.
     for frame in [
@@ -302,3 +304,256 @@ def test_clean_demand_records_methods_and_ranks() -> None:
         .to_dict()
         == expected_rank_counts
     )
+
+
+def test_advanced_mode_reports_unresolved_gaps() -> None:
+    """Report contiguous gaps remaining after basic gap filling."""
+    index = pd.date_range(
+        start="2017-01-01",
+        periods=400,
+        freq="h",
+        tz="UTC",
+    )
+
+    primary = pd.DataFrame(
+        {
+            "AAA": np.arange(
+                len(index),
+                dtype=float,
+            ),
+        },
+        index=index,
+    )
+
+    fallback = pd.DataFrame(
+        np.nan,
+        index=index,
+        columns=["AAA"],
+        dtype=float,
+    )
+
+    unresolved_timestamps = index[0:4]
+    primary.loc[
+        unresolved_timestamps,
+        "AAA",
+    ] = np.nan
+
+    sources = {
+        "primary": primary,
+        "fallback": fallback,
+    }
+
+    gap_filling_config = {
+        "mode": "advanced",
+        "rules": [
+            {
+                "name": "interpolate_short_gaps",
+                "method": "linear_interpolation",
+                "max_gap": "3h",
+            },
+            {
+                "name": "copy_previous_week",
+                "method": "copy_period",
+                "max_gap": "168h",
+                "source_offset": "-168h",
+                "require_complete_source": True,
+            },
+        ],
+    }
+
+    (
+        cleaned,
+        _data_source,
+        cleaning_method,
+        _cleaning_method_rank,
+        gap_report,
+    ) = clean_demand(
+        sources,
+        source_priority=[
+            "primary",
+            "fallback",
+        ],
+        gap_filling_config=gap_filling_config,
+    )
+
+    assert cleaned.loc[
+        unresolved_timestamps,
+        "AAA",
+    ].isna().all()
+
+    assert cleaning_method.loc[
+        unresolved_timestamps,
+        "AAA",
+    ].eq("missing").all()
+
+    assert len(gap_report) == 1
+
+    row = gap_report.iloc[0]
+
+    assert row["country"] == "AAA"
+    assert row["gap_start"] == index[0]
+    assert row["gap_end"] == index[3]
+    assert row["gap_hours"] == 4
+    assert bool(row["touches_start_boundary"])
+    assert not bool(row["touches_end_boundary"])
+
+
+def test_build_gap_report_identifies_contiguous_gaps_and_boundaries() -> None:
+    """Test the gap report captures gaps and boundaries as expected."""
+    index = pd.date_range(
+        "2021-01-01 00:00",
+        periods=8,
+        freq="h",
+        tz="UTC",
+    )
+
+    load = pd.DataFrame(
+        {
+            "ALB": pd.array(
+                [
+                    pd.NA,
+                    10.0,
+                    11.0,
+                    pd.NA,
+                    pd.NA,
+                    14.0,
+                    15.0,
+                    16.0,
+                ],
+                dtype="Float64",
+            ),
+            "TUR": pd.array(
+                [pd.NA] * 8,
+                dtype="Float64",
+            ),
+            "MNE": pd.array(
+                [
+                    20.0,
+                    21.0,
+                    22.0,
+                    23.0,
+                    24.0,
+                    25.0,
+                    pd.NA,
+                    pd.NA,
+                ],
+                dtype="Float64",
+            ),
+        },
+        index=index,
+    )
+
+    result = build_gap_report(
+        load,
+        enabled=True,
+    )
+
+    expected = pd.DataFrame(
+        {
+            "country": [
+                "ALB",
+                "ALB",
+                "MNE",
+                "TUR",
+            ],
+            "gap_start": [
+                index[0],
+                index[3],
+                index[6],
+                index[0],
+            ],
+            "gap_end": [
+                index[0],
+                index[4],
+                index[7],
+                index[7],
+            ],
+            "gap_hours": [
+                1,
+                2,
+                2,
+                8,
+            ],
+            "touches_start_boundary": [
+                True,
+                False,
+                False,
+                True,
+            ],
+            "touches_end_boundary": [
+                False,
+                False,
+                True,
+                True,
+            ],
+        }
+    )
+
+    pd.testing.assert_frame_equal(
+        result,
+        expected,
+    )
+
+
+def test_build_gap_report_returns_empty_report_when_disabled() -> None:
+    """Tests that gap report is empty when disabled."""
+    result = build_gap_report(
+        pd.DataFrame(),
+        enabled=False,
+    )
+
+    expected = pd.DataFrame(
+        columns=[
+            "country",
+            "gap_start",
+            "gap_end",
+            "gap_hours",
+            "touches_start_boundary",
+            "touches_end_boundary",
+        ]
+    )
+
+    pd.testing.assert_frame_equal(
+        result,
+        expected,
+    )
+
+
+def test_build_gap_report_returns_empty_report_when_no_gaps_remain() -> None:
+    """Tests that gap report is empty when there are no gaps."""
+    index = pd.date_range(
+        "2021-01-01 00:00",
+        periods=3,
+        freq="h",
+        tz="UTC",
+    )
+
+    load = pd.DataFrame(
+        {
+            "ALB": [10.0, 11.0, 12.0],
+            "TUR": [20.0, 21.0, 22.0],
+        },
+        index=index,
+    )
+
+    result = build_gap_report(
+        load,
+        enabled=True,
+    )
+
+    expected = pd.DataFrame(
+        columns=[
+            "country",
+            "gap_start",
+            "gap_end",
+            "gap_hours",
+            "touches_start_boundary",
+            "touches_end_boundary",
+        ]
+    )
+
+    pd.testing.assert_frame_equal(
+        result,
+        expected,
+    )
+

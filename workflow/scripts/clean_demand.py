@@ -43,6 +43,7 @@ def main(
         data_source,
         cleaning_method,
         cleaning_method_rank,
+        gap_report
     ) = clean_demand(
         sources,
         source_priority=source_names,
@@ -57,12 +58,18 @@ def main(
     cleaning_method_rank.to_parquet(
         output.cleaning_method_rank
     )
+    gap_report.to_parquet(
+        output.gap_report,
+        index=False,
+    )
 
     _log_source_counts(data_source)
     _log_cleaning_method_counts(
         cleaning_method,
         cleaning_method_rank,
     )
+    _log_gap_report(gap_report)
+
 
 def _read_prepared_source(
     path: str | Path,
@@ -143,6 +150,36 @@ def _log_cleaning_method_counts(
             int(count),
         )
 
+
+def _log_gap_report(
+    gap_report: pd.DataFrame,
+) -> None:
+    """Log unresolved-gap counts by country."""
+    if gap_report.empty:
+        logger.info(
+            "No advanced unresolved-gap report was generated."
+        )
+        return
+
+    logger.info(
+        "Gap report contains %s contiguous unresolved gaps.",
+        len(gap_report),
+    )
+
+    country_summary = gap_report.groupby(
+        "country"
+    ).agg(
+        gap_count=("country", "size"),
+        missing_hours=("gap_hours", "sum"),
+    )
+
+    for country, row in country_summary.iterrows():
+        logger.info(
+            "%s: %s unresolved gaps covering %s hours.",
+            country,
+            int(row["gap_count"]),
+            int(row["missing_hours"]),
+        )
 
 if __name__ == "__main__":
     sys.stderr = open(

@@ -25,10 +25,11 @@ def clean_demand(
     source_priority: Sequence[str],
     gap_filling_config: Mapping[str, Any],
 ) -> tuple[
-    pd.DataFrame,
-    pd.DataFrame,
-    pd.DataFrame,
-    pd.DataFrame,
+    pd.DataFrame, #data
+    pd.DataFrame, #sources
+    pd.DataFrame, #method
+    pd.DataFrame, #rank
+    pd.DataFrame, #gap_report
 ]:
     """Combine observed sources and fill remaining gaps."""
     (
@@ -58,11 +59,25 @@ def clean_demand(
         ranks=cleaning_method_ranks,
     )
 
+    gap_report = build_gap_report(
+        cleaned,
+        enabled=gap_filling_config["mode"] == "advanced",
+    )
+
+    if gap_filling_config["mode"] == "advanced":
+        logger.info(
+            "Advanced gap diagnosis found %s unresolved gaps "
+            "covering %s values.",
+            len(gap_report),
+            int(gap_report["gap_hours"].sum()),
+        )
+
     return (
         cleaned,
         data_source,
         cleaning_method,
         cleaning_method_rank,
+        gap_report
     )
 
 
@@ -82,7 +97,7 @@ def fill_gaps(
         Per-cell cleaning-method provenance for the observed input values.
         Missing input values should contain ``pd.NA``.
     config:
-        Gap-filling configuration containing ``enabled`` and ``rules``.
+        Gap-filling configuration containing ``mode`` and ``rules``.
 
     Returns
     -------
@@ -115,12 +130,6 @@ def fill_gaps(
         )
 
         return filled, cleaning_method
-
-    if mode == "advanced":
-        raise NotImplementedError(
-            "Gap-filling mode 'advanced' is not yet implemented. "
-            "Use mode 'basic' to apply the configured rules."
-        )
 
     rules = config["rules"]
     original_gap_duration = calculate_missing_run_durations(
@@ -218,6 +227,82 @@ def calculate_missing_run_durations(
         durations[column] = run_lengths * timestep
 
     return durations
+
+
+def build_gap_report(
+    load: pd.DataFrame,
+    *,
+    enabled: bool,
+) -> pd.DataFrame:
+    """Describe contiguous unresolved gaps in cleaned load data.
+
+    An empty report with the expected columns is returned when reporting
+    is disabled or when no unresolved gaps remain.
+    """
+    columns = [
+        "country",
+        "gap_start",
+        "gap_end",
+        "gap_hours",
+        "touches_start_boundary",
+        "touches_end_boundary",
+    ]
+
+    if not enabled:
+        return pd.DataFrame(columns=columns)
+
+    _validate_load(load)
+
+    records: list[dict[str, Any]] = []
+
+    first_timestamp = load.index[0]
+    last_timestamp = load.index[-1]
+
+    for country in load.columns:
+        missing = load[country].isna()
+
+        if not missing.any():
+            continue
+
+        group_ids = missing.ne(
+            missing.shift(fill_value=False)
+        ).cumsum()
+
+        for _, group in missing.groupby(group_ids):
+            if not bool(group.iloc[0]):
+                continue
+
+            timestamps = group.index
+
+            records.append(
+                {
+                    "country": country,
+                    "gap_start": timestamps[0],
+                    "gap_end": timestamps[-1],
+                    "gap_hours": len(timestamps),
+                    "touches_start_boundary": (
+                        timestamps[0] == first_timestamp
+                    ),
+                    "touches_end_boundary": (
+                        timestamps[-1] == last_timestamp
+                    ),
+                }
+            )
+
+    report = pd.DataFrame.from_records(
+        records,
+        columns=columns,
+    )
+
+    if report.empty:
+        return report
+
+    return report.sort_values(
+        [
+            "country",
+            "gap_start",
+        ]
+    ).reset_index(drop=True)
 
 
 def _get_method(rule: Mapping[str, Any]) -> str:

@@ -12,7 +12,8 @@ load_sources:
 
 # Gap-filling rules are applied in the listed order.
 gap_filling:
-  enabled: true
+  #sets the data cleaning mode. Options: off,basic,Advanced
+  mode: advanced
   rules:
     # interpolates across tiny gaps where <=3 hours are missing
     - name: interpolate_short_gaps

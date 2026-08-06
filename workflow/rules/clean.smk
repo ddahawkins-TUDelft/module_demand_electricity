@@ -100,6 +100,10 @@ rule clean_demand:
             "<resources>/automatic/"
             "load_cleaning_method_rank.parquet"
         ),
+        gap_report=(
+            "<resources>/automatic/"
+            "load_gap_report.parquet"
+        ),
     params:
         source_names=config["load_sources"],
         gap_filling=config["gap_filling"],
