@@ -104,6 +104,10 @@ rule clean_demand:
             "<resources>/automatic/"
             "load_gap_report.parquet"
         ),
+        auxiliary_fill_plan=(
+            "<resources>/automatic/"
+            "load_auxiliary_fill_plan.parquet"
+        ),
     params:
         source_names=config["load_sources"],
         gap_filling=config["gap_filling"],

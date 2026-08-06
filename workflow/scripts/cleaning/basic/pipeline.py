@@ -355,7 +355,7 @@ def _validate_config(config: Mapping[str, Any]) -> None:
             "Gap-filling configuration 'rules' must be an ordered sequence."
         )
 
-    if mode in {"basic", "advanced"} and not config["rules"]:
+    if mode == "basic" and not config["rules"]:
         raise ValueError(
             "At least one gap-filling rule is required when "
             f"gap-filling mode is {mode!r}."

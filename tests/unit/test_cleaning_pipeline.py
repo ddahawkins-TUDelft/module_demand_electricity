@@ -102,6 +102,7 @@ def test_clean_demand_records_methods_and_ranks() -> None:
         cleaning_method,
         cleaning_method_rank,
         gap_report,
+        auxiliary_fill_plan
     ) = clean_demand(
         sources,
         source_priority=[
@@ -378,6 +379,7 @@ def test_advanced_mode_reports_unresolved_gaps() -> None:
         cleaning_method,
         _cleaning_method_rank,
         gap_report,
+        auxiliary_fill_plan
     ) = clean_demand(
         sources,
         source_priority=[
@@ -386,6 +388,19 @@ def test_advanced_mode_reports_unresolved_gaps() -> None:
         ],
         gap_filling_config=gap_filling_config,
     )
+
+    assert auxiliary_fill_plan.empty
+    assert list(auxiliary_fill_plan.columns) == [
+        "rule_name",
+        "country",
+        "target_start",
+        "target_end",
+        "scope",
+        "method",
+        "status",
+        "source_count",
+        "scaling_method",
+    ]
 
     assert cleaned.loc[
         unresolved_timestamps,
@@ -568,3 +583,63 @@ def test_build_gap_report_returns_empty_report_when_no_gaps_remain() -> None:
         expected,
     )
 
+def test_advanced_mode_builds_auxiliary_fill_plan() -> None:
+    """Tests construction of the auxiliary fill plan."""
+    index = pd.date_range(
+        "2021-01-01",
+        periods=3,
+        freq="h",
+        tz="UTC",
+    )
+    source = pd.DataFrame(
+        {"ALB": [1.0, None, 3.0]},
+        index=index,
+    )
+
+    config = {
+        "mode": "advanced",
+        "basic": {
+            "rules": [],
+        },
+        "advanced": {
+            "overrides": {
+                "fill_albania_from_greece": {
+                    "country": "ALB",
+                    "start": "2021-01-01 01:00",
+                    "end": "2021-01-01 01:00",
+                    "scope": "fill_gaps_within_period",
+                    "method": "construct_from_sources",
+                    "sources": [
+                        {
+                            "country": "GRC",
+                            "start": "2021-01-01 01:00",
+                            "end": "2021-01-01 01:00",
+                        }
+                    ],
+                }
+            },
+        },
+    }
+
+    (
+        _cleaned,
+        _data_source,
+        _cleaning_method,
+        _cleaning_method_rank,
+        _gap_report,
+        auxiliary_fill_plan,
+    ) = clean_demand(
+        {"entsoe_api": source},
+        source_priority=["entsoe_api"],
+        gap_filling_config=config,
+    )
+
+    assert len(auxiliary_fill_plan) == 1
+
+    row = auxiliary_fill_plan.iloc[0]
+
+    assert row["rule_name"] == "fill_albania_from_greece"
+    assert row["country"] == "ALB"
+    assert row["method"] == "construct_from_sources"
+    assert row["status"] == "ready"
+    assert row["source_count"] == 1

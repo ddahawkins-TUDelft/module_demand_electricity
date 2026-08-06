@@ -43,7 +43,8 @@ def main(
         data_source,
         cleaning_method,
         cleaning_method_rank,
-        gap_report
+        gap_report,
+        auxiliary_fill_plan
     ) = clean_demand(
         sources,
         source_priority=source_names,
@@ -51,23 +52,28 @@ def main(
     )
 
     cleaned.to_parquet(output.demand)
+
     data_source.to_parquet(output.data_source)
     cleaning_method.to_parquet(
         output.cleaning_method
     )
+
     cleaning_method_rank.to_parquet(
         output.cleaning_method_rank
     )
+
     gap_report.to_parquet(
         output.gap_report,
         index=False,
     )
 
-    _log_source_counts(data_source)
-    _log_cleaning_method_counts(
-        cleaning_method,
-        cleaning_method_rank,
+    auxiliary_fill_plan.to_parquet(
+        output.auxiliary_fill_plan,
+        index=False,
     )
+
+    _log_source_counts(data_source)
+    _log_cleaning_method_counts(cleaning_method,cleaning_method_rank)
     _log_gap_report(gap_report)
 
 

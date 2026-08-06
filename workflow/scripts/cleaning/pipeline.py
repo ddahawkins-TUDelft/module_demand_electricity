@@ -8,6 +8,7 @@ from typing import Any
 import pandas as pd
 
 from cleaning.advanced.gap_report import build_gap_report
+from cleaning.advanced.plan import build_auxiliary_fill_plan
 from cleaning.basic.pipeline import fill_basic_gaps
 from cleaning.combine_sources import combine_sources
 from cleaning.provenance import build_cleaning_method_ranks, derive_cleaning_method_rank
@@ -26,6 +27,7 @@ def clean_demand(
     pd.DataFrame, #method
     pd.DataFrame, #rank
     pd.DataFrame, #gap_report
+    pd.DataFrame, #auxiliary_fill_plan
 ]:
     """Combine observed sources and fill remaining gaps."""
     (
@@ -66,6 +68,11 @@ def clean_demand(
     )
 
     if gap_filling_config["mode"] == "advanced":
+        advanced_overrides = gap_filling_config["advanced"]["overrides"]
+        auxiliary_fill_plan = build_auxiliary_fill_plan(
+            advanced_overrides
+        )
+
         logger.info(
             "Advanced gap diagnosis found %s unresolved gaps "
             "covering %s values.",
@@ -73,10 +80,20 @@ def clean_demand(
             int(gap_report["gap_hours"].sum()),
         )
 
+        logger.info(
+            "Advanced auxiliary-fill plan contains %s configured "
+            "instructions.",
+            len(auxiliary_fill_plan),
+        )
+    else:
+        auxiliary_fill_plan = build_auxiliary_fill_plan({})
+
     return (
         cleaned,
         data_source,
         cleaning_method,
         cleaning_method_rank,
-        gap_report
+        gap_report,
+        auxiliary_fill_plan,
     )
+
