@@ -75,18 +75,21 @@ rule download_load_entsoe_opsd:
         curl -sSLo {output.load:q} {params.url_load:q}
         """
 
-rule download_load_neso:
+rule download_load_neso_year:
     output:
-        annual_files=NESO_RAW_FILES,
+        annual_file=(
+            "<resources>/automatic/neso/"
+            "historic_demand_{year}.csv"
+        ),
     params:
-        years=NESO_YEARS,
+        year=lambda wildcards: int(wildcards.year),
     log:
-        "<logs>/download_load_neso.log",
+        "<logs>/download_load_neso_{year}.log",
     localrule: True
     conda:
         "../envs/module.yaml"
     message:
-        "Download historic electricity demand from NESO."
+        "Download NESO historic electricity demand for {wildcards.year}."
     script:
         "../scripts/download_load_neso.py"
 

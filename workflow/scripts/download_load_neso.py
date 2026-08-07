@@ -257,11 +257,9 @@ if __name__ == "__main__":
 
     download_annual_files(
         years=[
-            int(year)
-            for year in snakemake.params.years
+            int(snakemake.params.year)
         ],
         output_paths=[
-            Path(path)
-            for path in snakemake.output
+            Path(snakemake.output.annual_file)
         ],
     )

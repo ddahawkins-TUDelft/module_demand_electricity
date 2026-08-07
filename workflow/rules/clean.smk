@@ -19,7 +19,7 @@ rule prepare_load_opsd:
 
 rule prepare_load_neso:
     input:
-        annual_files=rules.download_load_neso.output.annual_files,
+        annual_files=NESO_RAW_FILES,
     output:
         load="<resources>/automatic/load_neso.parquet",
     params:
