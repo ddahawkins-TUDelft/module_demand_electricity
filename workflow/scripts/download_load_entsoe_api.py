@@ -97,8 +97,8 @@ def main(start, end, country_codes, token, output_load):
 if __name__ == "__main__":
     sys.stderr = open(snakemake.log[0], "w", buffering=1)
     main(
-        start=snakemake.config["temporal_scope"]["start"],
-        end=snakemake.config["temporal_scope"]["end"],
+        start=snakemake.params.temporal_start,
+        end=snakemake.params.temporal_end,
         country_codes=snakemake.params.country_codes,
         token=snakemake.input.token_entsoe,
         output_load=snakemake.output.load,
