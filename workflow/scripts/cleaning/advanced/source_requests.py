@@ -1,0 +1,132 @@
+"""Plan source requests for auxiliary electricity-demand data."""
+
+from __future__ import annotations
+
+from collections.abc import Sequence
+
+import pandas as pd
+
+SOURCE_REQUEST_COLUMNS = [
+    "source",
+    "country",
+    "start",
+    "end",
+]
+
+SUPPORTED_SOURCES = {
+    "entsoe_api",
+    "neso",
+    "opsd",
+}
+
+
+def build_auxiliary_source_requests(
+    requirements: pd.DataFrame,
+    *,
+    source_names: Sequence[str],
+) -> pd.DataFrame:
+    """Map auxiliary requirements onto applicable configured sources."""
+    _validate_source_names(source_names)
+
+    if requirements.empty:
+        return pd.DataFrame(
+            columns=SOURCE_REQUEST_COLUMNS
+        )
+
+    requests: list[dict[str, object]] = []
+
+    for source_name in source_names:
+        for row in requirements.itertuples(index=False):
+            if not _source_supports_country(
+                source_name,
+                row.country,
+            ):
+                continue
+
+            requests.append(
+                {
+                    "source": source_name,
+                    "country": row.country,
+                    "start": row.start,
+                    "end": row.end,
+                }
+            )
+
+    return pd.DataFrame(
+        requests,
+        columns=SOURCE_REQUEST_COLUMNS,
+    )
+
+
+def _source_supports_country(
+    source_name: str,
+    country: str,
+) -> bool:
+    """Return whether a source is structurally applicable to a country."""
+    if source_name == "neso":
+        return country == "GBR"
+
+    if source_name in {
+        "entsoe_api",
+        "opsd",
+    }:
+        return True
+
+    raise ValueError(
+        f"Unsupported auxiliary load source: {source_name!r}"
+    )
+
+
+def _validate_source_names(
+    source_names: Sequence[str],
+) -> None:
+    """Validate configured sources used for auxiliary acquisition."""
+    unknown = [
+        source_name
+        for source_name in source_names
+        if source_name not in SUPPORTED_SOURCES
+    ]
+
+    if unknown:
+        raise ValueError(
+            "Unsupported auxiliary load sources: "
+            f"{unknown}"
+        )
+
+    if len(source_names) != len(set(source_names)):
+        raise ValueError(
+            "Auxiliary load source names must be unique."
+        )
+
+def build_auxiliary_source_batches(
+    requests: pd.DataFrame,
+) -> list[dict[str, object]]:
+    """Group source requests sharing the same acquisition period."""
+    if requests.empty:
+        return []
+
+    batches: list[dict[str, object]] = []
+
+    grouped = requests.groupby(
+        ["source", "start", "end"],
+        sort=False,
+    )
+
+    for (
+        source,
+        start,
+        end,
+    ), group in grouped:
+        batches.append(
+            {
+                "source": source,
+                "start": start,
+                "end": end,
+                "countries": sorted(
+                    group["country"].unique().tolist()
+                ),
+            }
+        )
+
+    return batches
+
