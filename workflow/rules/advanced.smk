@@ -130,6 +130,79 @@ def auxiliary_opsd_outputs(_wildcards):
     ]
 
 
+def get_auxiliary_neso_batch(
+    wildcards,
+    input,
+) -> dict:
+    """Return the NESO batch for this job."""
+    return get_auxiliary_batch(
+        input.plan,
+        batch_id=wildcards.batch_id,
+        source="neso",
+    )
+
+
+def auxiliary_neso_raw_files(wildcards):
+    """Return annual NESO files required by one auxiliary batch."""
+    plan_path = (
+        checkpoints
+        .plan_auxiliary_data
+        .get()
+        .output
+        .plan
+    )
+
+    batch = get_auxiliary_batch(
+        plan_path,
+        batch_id=wildcards.batch_id,
+        source="neso",
+    )
+
+    years = _years_in_period(
+        batch["start"],
+        batch["end"],
+    )
+
+    return [
+        (
+            "<resources>/automatic/neso/"
+            f"historic_demand_{year}.csv"
+        )
+        for year in years
+    ]
+
+
+def auxiliary_neso_outputs(_wildcards):
+    """Return all NESO outputs required by the acquisition plan."""
+    plan_path = (
+        checkpoints
+        .plan_auxiliary_data
+        .get()
+        .output
+        .plan
+    )
+
+    with open(
+        plan_path,
+        encoding="utf-8",
+    ) as file:
+        plan = json.load(file)
+
+    batch_ids = [
+        batch["batch_id"]
+        for batch in plan["batches"]
+        if batch["source"] == "neso"
+    ]
+
+    return [
+        (
+            "<resources>/automatic/"
+            "auxiliary/neso/"
+            f"{batch_id}.parquet"
+        )
+        for batch_id in batch_ids
+    ]
+
 
 checkpoint plan_auxiliary_data:
     input:
@@ -249,3 +322,44 @@ rule prepare_auxiliary_load_opsd:
         "Prepare auxiliary electricity-demand data from OPSD."
     script:
         "../scripts/prepare_load_opsd.py"
+
+rule prepare_auxiliary_load_neso:
+    input:
+        plan=auxiliary_acquisition_plan,
+        annual_files=auxiliary_neso_raw_files,
+    output:
+        load=(
+            "<resources>/automatic/"
+            "auxiliary/neso/"
+            "{batch_id}.parquet"
+        ),
+    params:
+        start=lambda wildcards, input: (
+            get_auxiliary_neso_batch(
+                wildcards,
+                input,
+            )["start"]
+        ),
+        end=lambda wildcards, input: (
+            get_auxiliary_neso_batch(
+                wildcards,
+                input,
+            )["end"]
+        ),
+        country_codes=lambda wildcards, input: (
+            get_auxiliary_neso_batch(
+                wildcards,
+                input,
+            )["countries"]
+        ),
+    log:
+        (
+            "<logs>/auxiliary/"
+            "neso/{batch_id}.log"
+        ),
+    conda:
+        "../envs/module.yaml"
+    message:
+        "Prepare auxiliary electricity-demand data from NESO."
+    script:
+        "../scripts/prepare_load_neso.py"

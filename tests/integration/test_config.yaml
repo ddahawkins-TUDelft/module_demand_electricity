@@ -54,7 +54,7 @@ integration_test:
           scope: fill_gaps_within_period
           method: construct_from_sources
           sources:
-            - country: GRC
+            - country: GBR
               start: "2020-01-01"
               end: "2020-02-01"
               weight: 1
