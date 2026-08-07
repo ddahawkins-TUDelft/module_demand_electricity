@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Sequence
 
 import pandas as pd
@@ -147,13 +148,17 @@ def _build_batch_id(
     countries: list[str],
 ) -> str:
     """Build a deterministic identifier for an auxiliary source batch."""
-    countries_part = "-".join(
+    countries_key = ",".join(
         sorted(countries)
     )
+
+    countries_hash = hashlib.sha1(
+        countries_key.encode("utf-8")
+    ).hexdigest()[:8]
 
     return (
         f"{source}__"
         f"{start.strftime('%Y%m%dT%H%M')}__"
         f"{end.strftime('%Y%m%dT%H%M')}__"
-        f"{countries_part}"
+        f"{countries_hash}"
     )

@@ -180,12 +180,40 @@ def test_build_batch_id_is_independent_of_country_order() -> None:
 
     assert first == second
 
-    assert first == (
+    assert first.startswith(
         "entsoe_api__"
         "20200101T0000__"
         "20200201T0000__"
-        "ALB-GRC"
     )
+
+
+def test_build_batch_id_changes_for_different_country_sets() -> None:
+    common = {
+        "source": "entsoe_api",
+        "start": pd.Timestamp(
+            "2020-01-01",
+            tz="UTC",
+        ),
+        "end": pd.Timestamp(
+            "2020-02-01",
+            tz="UTC",
+        ),
+    }
+
+    first = _build_batch_id(
+        **common,
+        countries=["ALB"],
+    )
+
+    second = _build_batch_id(
+        **common,
+        countries=[
+            "ALB",
+            "GRC",
+        ],
+    )
+
+    assert first != second
 
 
 def test_build_source_batches_groups_matching_periods() -> None:
@@ -226,11 +254,20 @@ def test_build_source_batches_groups_matching_periods() -> None:
 
     assert result == [
         {
-            "batch_id": (
-                "entsoe_api__"
-                "20200101T0000__"
-                "20200201T0000__"
-                "ALB-GRC"
+            "batch_id": _build_batch_id(
+                source="entsoe_api",
+                start=pd.Timestamp(
+                    "2020-01-01",
+                    tz="UTC",
+                ),
+                end=pd.Timestamp(
+                    "2020-02-01",
+                    tz="UTC",
+                ),
+                countries=[
+                    "ALB",
+                    "GRC",
+                ],
             ),
             "source": "entsoe_api",
             "start": pd.Timestamp(
@@ -247,11 +284,19 @@ def test_build_source_batches_groups_matching_periods() -> None:
             ],
         },
         {
-            "batch_id": (
-                "entsoe_api__"
-                "20210101T0000__"
-                "20210201T0000__"
-                "MNE"
+            "batch_id": _build_batch_id(
+                source="entsoe_api",
+                start=pd.Timestamp(
+                    "2021-01-01",
+                    tz="UTC",
+                ),
+                end=pd.Timestamp(
+                    "2021-02-01",
+                    tz="UTC",
+                ),
+                countries=[
+                    "MNE",
+                ],
             ),
             "source": "entsoe_api",
             "start": pd.Timestamp(
@@ -304,32 +349,31 @@ def test_build_source_batches_keeps_sources_separate() -> None:
         requests
     )
 
-    assert len(result) == 2
-
-    assert [
-        batch["source"]
-        for batch in result
-    ] == [
-        "entsoe_api",
-        "opsd_api",
-    ]
-
-    assert [
-        batch["batch_id"]
-        for batch in result
-    ] == [
-        (
-            "entsoe_api__"
-            "20200101T0000__"
-            "20200201T0000__"
-            "GBR"
-        ),
-        (
-            "opsd_api__"
-            "20200101T0000__"
-            "20200201T0000__"
-            "GBR"
-        ),
+    assert result == [
+        {
+            "batch_id": _build_batch_id(
+                source="entsoe_api",
+                start=start,
+                end=end,
+                countries=["GBR"],
+            ),
+            "source": "entsoe_api",
+            "start": start,
+            "end": end,
+            "countries": ["GBR"],
+        },
+        {
+            "batch_id": _build_batch_id(
+                source="opsd_api",
+                start=start,
+                end=end,
+                countries=["GBR"],
+            ),
+            "source": "opsd_api",
+            "start": start,
+            "end": end,
+            "countries": ["GBR"],
+        },
     ]
 
 

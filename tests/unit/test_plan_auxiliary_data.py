@@ -1,6 +1,7 @@
 """Tests for auxiliary acquisition planning."""
 
 import pandas as pd
+from cleaning.advanced.source_requests import _build_batch_id
 from plan_auxiliary_data import build_auxiliary_acquisition_plan
 
 
@@ -73,6 +74,7 @@ def test_advanced_plan_with_no_overrides_is_empty() -> None:
         "batches": [],
     }
 
+
 def test_advanced_plan_builds_serializable_source_batches() -> None:
     config = {
         "mode": "advanced",
@@ -122,14 +124,23 @@ def test_advanced_plan_builds_serializable_source_batches() -> None:
         ],
     )
 
+    start = pd.Timestamp(
+        "2020-01-01",
+        tz="UTC",
+    )
+    end = pd.Timestamp(
+        "2020-02-01",
+        tz="UTC",
+    )
+
     assert result == {
         "batches": [
             {
-                "batch_id": (
-                    "entsoe_api__"
-                    "20200101T0000__"
-                    "20200201T0000__"
-                    "GRC"
+                "batch_id": _build_batch_id(
+                    source="entsoe_api",
+                    start=start,
+                    end=end,
+                    countries=["GRC"],
                 ),
                 "source": "entsoe_api",
                 "start": "2020-01-01T00:00:00+00:00",
@@ -137,11 +148,11 @@ def test_advanced_plan_builds_serializable_source_batches() -> None:
                 "countries": ["GRC"],
             },
             {
-                "batch_id": (
-                    "opsd_api__"
-                    "20200101T0000__"
-                    "20200201T0000__"
-                    "GRC"
+                "batch_id": _build_batch_id(
+                    source="opsd_api",
+                    start=start,
+                    end=end,
+                    countries=["GRC"],
                 ),
                 "source": "opsd_api",
                 "start": "2020-01-01T00:00:00+00:00",
@@ -150,6 +161,7 @@ def test_advanced_plan_builds_serializable_source_batches() -> None:
             },
         ]
     }
+
 
 def test_empty_fill_plan_produces_no_acquisition_batches() -> None:
     config = {
