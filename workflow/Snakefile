@@ -37,6 +37,7 @@ workflow.source_path("scripts/_schemas.py")
 include: "rules/automatic.smk"
 include: "rules/clean.smk"
 include: "rules/prepare_demand.smk"
+include: "rules/advanced.smk"
 
 
 rule all:

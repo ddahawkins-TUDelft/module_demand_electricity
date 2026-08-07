@@ -117,16 +117,43 @@ def build_auxiliary_source_batches(
         start,
         end,
     ), group in grouped:
+
+        countries = sorted(
+            group["country"].unique().tolist()
+        )
+
         batches.append(
             {
+                "batch_id": _build_batch_id(
+                    source=source,
+                    start=start,
+                    end=end,
+                    countries=countries,
+                ),
                 "source": source,
                 "start": start,
                 "end": end,
-                "countries": sorted(
-                    group["country"].unique().tolist()
-                ),
+                "countries": countries,
             }
         )
 
     return batches
 
+def _build_batch_id(
+    *,
+    source: str,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+    countries: list[str],
+) -> str:
+    """Build a deterministic identifier for an auxiliary source batch."""
+    countries_part = "-".join(
+        sorted(countries)
+    )
+
+    return (
+        f"{source}__"
+        f"{start.strftime('%Y%m%dT%H%M')}__"
+        f"{end.strftime('%Y%m%dT%H%M')}__"
+        f"{countries_part}"
+    )

@@ -4,8 +4,9 @@ import pandas as pd
 import pytest
 from cleaning.advanced.source_requests import (
     SOURCE_REQUEST_COLUMNS,
-    build_auxiliary_source_requests,
+    _build_batch_id,
     build_auxiliary_source_batches,
+    build_auxiliary_source_requests,
 )
 
 
@@ -40,8 +41,10 @@ def test_build_source_requests_uses_all_applicable_sources() -> None:
     )
 
     assert list(
-        result[["source", "country"]]
-        .itertuples(index=False, name=None)
+        result[["source", "country"]].itertuples(
+            index=False,
+            name=None,
+        )
     ) == [
         ("entsoe_api", "GBR"),
         ("entsoe_api", "GRC"),
@@ -141,6 +144,50 @@ def test_duplicate_source_names_are_rejected() -> None:
             ],
         )
 
+
+def test_build_batch_id_is_independent_of_country_order() -> None:
+    first = _build_batch_id(
+        source="entsoe_api",
+        start=pd.Timestamp(
+            "2020-01-01",
+            tz="UTC",
+        ),
+        end=pd.Timestamp(
+            "2020-02-01",
+            tz="UTC",
+        ),
+        countries=[
+            "ALB",
+            "GRC",
+        ],
+    )
+
+    second = _build_batch_id(
+        source="entsoe_api",
+        start=pd.Timestamp(
+            "2020-01-01",
+            tz="UTC",
+        ),
+        end=pd.Timestamp(
+            "2020-02-01",
+            tz="UTC",
+        ),
+        countries=[
+            "GRC",
+            "ALB",
+        ],
+    )
+
+    assert first == second
+
+    assert first == (
+        "entsoe_api__"
+        "20200101T0000__"
+        "20200201T0000__"
+        "ALB-GRC"
+    )
+
+
 def test_build_source_batches_groups_matching_periods() -> None:
     requests = pd.DataFrame(
         {
@@ -179,6 +226,12 @@ def test_build_source_batches_groups_matching_periods() -> None:
 
     assert result == [
         {
+            "batch_id": (
+                "entsoe_api__"
+                "20200101T0000__"
+                "20200201T0000__"
+                "ALB-GRC"
+            ),
             "source": "entsoe_api",
             "start": pd.Timestamp(
                 "2020-01-01",
@@ -194,6 +247,12 @@ def test_build_source_batches_groups_matching_periods() -> None:
             ],
         },
         {
+            "batch_id": (
+                "entsoe_api__"
+                "20210101T0000__"
+                "20210201T0000__"
+                "MNE"
+            ),
             "source": "entsoe_api",
             "start": pd.Timestamp(
                 "2021-01-01",
@@ -208,6 +267,7 @@ def test_build_source_batches_groups_matching_periods() -> None:
             ],
         },
     ]
+
 
 def test_build_source_batches_keeps_sources_separate() -> None:
     start = pd.Timestamp(
@@ -253,6 +313,25 @@ def test_build_source_batches_keeps_sources_separate() -> None:
         "entsoe_api",
         "opsd",
     ]
+
+    assert [
+        batch["batch_id"]
+        for batch in result
+    ] == [
+        (
+            "entsoe_api__"
+            "20200101T0000__"
+            "20200201T0000__"
+            "GBR"
+        ),
+        (
+            "opsd__"
+            "20200101T0000__"
+            "20200201T0000__"
+            "GBR"
+        ),
+    ]
+
 
 def test_build_source_batches_returns_empty_list() -> None:
     requests = pd.DataFrame(
