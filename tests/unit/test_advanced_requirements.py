@@ -4,6 +4,8 @@ import pandas as pd
 from cleaning.advanced.requirements import (
     REQUIREMENT_COLUMNS,
     compile_auxiliary_requirements,
+    expand_auxiliary_requirements,
+    get_basic_cleaning_context,
 )
 
 
@@ -219,3 +221,122 @@ def test_compile_auxiliary_requirements_merges_adjacent_periods() -> None:
         "2019-03-01",
         tz="UTC",
     )
+
+def test_expand_requirements_without_rules_is_unchanged() -> None:
+    requirements = pd.DataFrame(
+        {
+            "country": ["GRC"],
+            "start": [pd.Timestamp("2020-01-01", tz="UTC")],
+            "end": [pd.Timestamp("2020-02-01", tz="UTC")],
+        }
+    )
+
+    result = expand_auxiliary_requirements(
+        requirements,
+        rules=[],
+    )
+
+    pd.testing.assert_frame_equal(
+        result,
+        requirements,
+    )
+
+def test_expand_requirements_can_be_disabled() -> None:
+    requirements = pd.DataFrame(
+        {
+            "country": ["GRC"],
+            "start": [pd.Timestamp("2020-01-01", tz="UTC")],
+            "end": [pd.Timestamp("2020-02-01", tz="UTC")],
+        }
+    )
+
+    rules = [
+        {
+            "name": "copy_previous_week",
+            "method": "copy_period",
+            "max_gap": "168h",
+            "source_offset": "-168h",
+        }
+    ]
+
+    result = expand_auxiliary_requirements(
+        requirements,
+        rules=rules,
+        enabled=False,
+    )
+
+    pd.testing.assert_frame_equal(
+        result,
+        requirements,
+    )
+
+def test_expand_requirements_can_be_disabled() -> None:
+    requirements = pd.DataFrame(
+        {
+            "country": ["GRC"],
+            "start": [pd.Timestamp("2020-01-01", tz="UTC")],
+            "end": [pd.Timestamp("2020-02-01", tz="UTC")],
+        }
+    )
+
+    rules = [
+        {
+            "name": "copy_previous_week",
+            "method": "copy_period",
+            "max_gap": "168h",
+            "source_offset": "-168h",
+        }
+    ]
+
+    result = expand_auxiliary_requirements(
+        requirements,
+        rules=rules,
+        enabled=False,
+    )
+
+    pd.testing.assert_frame_equal(
+        result,
+        requirements,
+    )
+
+
+def test_basic_context_for_copy_period() -> None:
+    rules = [
+        {
+            "name": "copy_previous_week",
+            "method": "copy_period",
+            "max_gap": "168h",
+            "source_offset": "-168h",
+        }
+    ]
+
+    left, right = get_basic_cleaning_context(rules)
+
+    assert left == pd.Timedelta("7D")
+    assert right == pd.Timedelta("7D")
+
+
+def test_basic_context_compounds_across_ordered_rules() -> None:
+    rules = [
+        {
+            "name": "average_adjacent_weeks",
+            "method": "average_periods",
+            "max_gap": "168h",
+            "source_offsets": [
+                "-168h",
+                "168h",
+            ],
+        },
+        {
+            "name": "copy_previous_week",
+            "method": "copy_period",
+            "max_gap": "168h",
+            "source_offset": "-168h",
+        },
+    ]
+
+    left, right = get_basic_cleaning_context(rules)
+
+    assert left == pd.Timedelta("14D")
+    assert right == pd.Timedelta("7D")
+

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 import pandas as pd
@@ -123,4 +123,90 @@ def _merge_requirements(
         merged_rows,
         columns=REQUIREMENT_COLUMNS,
     )
+
+def get_basic_cleaning_context(
+    rules: Sequence[Mapping[str, Any]],
+) -> tuple[pd.Timedelta, pd.Timedelta]:
+    """Return required left and right context for ordered basic rules."""
+    left = pd.Timedelta(0)
+    right = pd.Timedelta(0)
+
+    for rule in rules:
+        method = rule["method"]
+        max_gap = pd.Timedelta(rule["max_gap"])
+
+        # Context is also needed to classify gaps correctly at boundaries.
+        rule_left = -max_gap
+        rule_right = max_gap
+
+        if method == "linear_interpolation":
+            offsets = [
+                -pd.Timedelta(hours=1),
+                pd.Timedelta(hours=1),
+            ]
+
+        elif method == "copy_period":
+            offsets = [
+                pd.Timedelta(rule["source_offset"]),
+            ]
+
+        elif method == "average_periods":
+            offsets = [
+                pd.Timedelta(offset)
+                for offset in rule["source_offsets"]
+            ]
+
+        else:
+            raise ValueError(
+                f"Unsupported basic gap-filling method: {method!r}"
+            )
+
+        previous_left = left
+        previous_right = right
+
+        for offset in offsets:
+            rule_left = min(
+                rule_left,
+                offset + previous_left,
+            )
+            rule_right = max(
+                rule_right,
+                offset + previous_right,
+            )
+
+        left = min(
+            previous_left,
+            rule_left,
+        )
+        right = max(
+            previous_right,
+            rule_right,
+        )
+
+    return -left, right
+
+def expand_auxiliary_requirements(
+    requirements: pd.DataFrame,
+    *,
+    rules: Sequence[Mapping[str, Any]],
+    enabled: bool = True,
+) -> pd.DataFrame:
+    """Expand auxiliary periods with context needed for basic cleaning."""
+    if requirements.empty or not enabled or not rules:
+        return requirements.copy()
+
+    left_context, right_context = get_basic_cleaning_context(
+        rules
+    )
+
+    expanded = requirements.copy()
+
+    expanded["start"] = (
+        expanded["start"] - left_context
+    )
+    expanded["end"] = (
+        expanded["end"] + right_context
+    )
+
+    return _merge_requirements(expanded)
 
