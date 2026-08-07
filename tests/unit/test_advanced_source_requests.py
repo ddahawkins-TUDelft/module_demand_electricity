@@ -5,6 +5,7 @@ import pytest
 from cleaning.advanced.source_requests import (
     SOURCE_REQUEST_COLUMNS,
     _build_batch_id,
+    _build_group_id,
     build_auxiliary_source_batches,
     build_auxiliary_source_requests,
 )
@@ -216,6 +217,25 @@ def test_build_batch_id_changes_for_different_country_sets() -> None:
     assert first != second
 
 
+def test_build_group_id_depends_only_on_period() -> None:
+    start = pd.Timestamp(
+        "2020-01-01",
+        tz="UTC",
+    )
+    end = pd.Timestamp(
+        "2020-02-01",
+        tz="UTC",
+    )
+
+    assert _build_group_id(
+        start=start,
+        end=end,
+    ) == (
+        "20200101T0000__"
+        "20200201T0000"
+    )
+
+
 def test_build_source_batches_groups_matching_periods() -> None:
     requests = pd.DataFrame(
         {
@@ -252,64 +272,61 @@ def test_build_source_batches_groups_matching_periods() -> None:
         requests
     )
 
+    first_start = pd.Timestamp(
+        "2020-01-01",
+        tz="UTC",
+    )
+    first_end = pd.Timestamp(
+        "2020-02-01",
+        tz="UTC",
+    )
+    second_start = pd.Timestamp(
+        "2021-01-01",
+        tz="UTC",
+    )
+    second_end = pd.Timestamp(
+        "2021-02-01",
+        tz="UTC",
+    )
+
     assert result == [
         {
+            "group_id": _build_group_id(
+                start=first_start,
+                end=first_end,
+            ),
             "batch_id": _build_batch_id(
                 source="entsoe_api",
-                start=pd.Timestamp(
-                    "2020-01-01",
-                    tz="UTC",
-                ),
-                end=pd.Timestamp(
-                    "2020-02-01",
-                    tz="UTC",
-                ),
+                start=first_start,
+                end=first_end,
                 countries=[
                     "ALB",
                     "GRC",
                 ],
             ),
             "source": "entsoe_api",
-            "start": pd.Timestamp(
-                "2020-01-01",
-                tz="UTC",
-            ),
-            "end": pd.Timestamp(
-                "2020-02-01",
-                tz="UTC",
-            ),
+            "start": first_start,
+            "end": first_end,
             "countries": [
                 "ALB",
                 "GRC",
             ],
         },
         {
+            "group_id": _build_group_id(
+                start=second_start,
+                end=second_end,
+            ),
             "batch_id": _build_batch_id(
                 source="entsoe_api",
-                start=pd.Timestamp(
-                    "2021-01-01",
-                    tz="UTC",
-                ),
-                end=pd.Timestamp(
-                    "2021-02-01",
-                    tz="UTC",
-                ),
-                countries=[
-                    "MNE",
-                ],
+                start=second_start,
+                end=second_end,
+                countries=["MNE"],
             ),
             "source": "entsoe_api",
-            "start": pd.Timestamp(
-                "2021-01-01",
-                tz="UTC",
-            ),
-            "end": pd.Timestamp(
-                "2021-02-01",
-                tz="UTC",
-            ),
-            "countries": [
-                "MNE",
-            ],
+            "start": second_start,
+            "end": second_end,
+            "countries": ["MNE"],
         },
     ]
 
@@ -349,8 +366,14 @@ def test_build_source_batches_keeps_sources_separate() -> None:
         requests
     )
 
+    group_id = _build_group_id(
+        start=start,
+        end=end,
+    )
+
     assert result == [
         {
+            "group_id": group_id,
             "batch_id": _build_batch_id(
                 source="entsoe_api",
                 start=start,
@@ -363,6 +386,7 @@ def test_build_source_batches_keeps_sources_separate() -> None:
             "countries": ["GBR"],
         },
         {
+            "group_id": group_id,
             "batch_id": _build_batch_id(
                 source="opsd_api",
                 start=start,

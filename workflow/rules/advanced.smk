@@ -204,6 +204,85 @@ def auxiliary_neso_outputs(_wildcards):
     ]
 
 
+def get_auxiliary_group_batches(
+    plan_path,
+    *,
+    group_id: str,
+) -> list[dict]:
+    """Return all acquisition batches belonging to one auxiliary group."""
+    with open(plan_path, encoding="utf-8") as file:
+        plan = json.load(file)
+
+    batches = [
+        batch
+        for batch in plan["batches"]
+        if batch["group_id"] == group_id
+    ]
+
+    if not batches:
+        raise ValueError(
+            f"No auxiliary batches found for group {group_id!r}."
+        )
+
+    return batches
+
+
+def auxiliary_group_source_files(wildcards):
+    """Return prepared source files for one auxiliary group."""
+    plan_path = (
+        checkpoints
+        .plan_auxiliary_data
+        .get()
+        .output
+        .plan
+    )
+
+    batches = get_auxiliary_group_batches(
+        plan_path,
+        group_id=wildcards.group_id,
+    )
+
+    return [
+        (
+            "<resources>/automatic/"
+            f"auxiliary/{batch['source']}/"
+            f"{batch['batch_id']}.parquet"
+        )
+        for batch in batches
+    ]
+
+
+def auxiliary_combined_outputs(_wildcards):
+    """Return all combined auxiliary group outputs."""
+    plan_path = (
+        checkpoints
+        .plan_auxiliary_data
+        .get()
+        .output
+        .plan
+    )
+
+    with open(plan_path, encoding="utf-8") as file:
+        plan = json.load(file)
+
+    group_ids = sorted(
+        {
+            batch["group_id"]
+            for batch in plan["batches"]
+        }
+    )
+
+    return [
+        (
+            "<resources>/automatic/"
+            "auxiliary/combined/"
+            f"{group_id}.parquet"
+        )
+        for group_id in group_ids
+    ]
+
+
+
 checkpoint plan_auxiliary_data:
     input:
         fill_plan=rules.clean_demand.output.auxiliary_fill_plan,
@@ -363,3 +442,33 @@ rule prepare_auxiliary_load_neso:
         "Prepare auxiliary electricity-demand data from NESO."
     script:
         "../scripts/prepare_load_neso.py"
+
+
+rule combine_auxiliary_sources:
+    input:
+        plan=auxiliary_acquisition_plan,
+        sources=auxiliary_group_source_files,
+    output:
+        demand=(
+            "<resources>/automatic/"
+            "auxiliary/combined/"
+            "{group_id}.parquet"
+        ),
+        data_source=(
+            "<resources>/automatic/"
+            "auxiliary/combined/"
+            "{group_id}_data_source.parquet"
+        ),
+        cleaning_method=(
+            "<resources>/automatic/"
+            "auxiliary/combined/"
+            "{group_id}_cleaning_method.parquet"
+        ),
+    params:
+        source_priority=config["load_sources"],
+    conda:
+        "../envs/module.yaml"
+    message:
+        "Combine auxiliary electricity-demand sources."
+    script:
+        "../scripts/combine_auxiliary_sources.py"

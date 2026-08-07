@@ -1,7 +1,10 @@
 """Tests for auxiliary acquisition planning."""
 
 import pandas as pd
-from cleaning.advanced.source_requests import _build_batch_id
+from cleaning.advanced.source_requests import (
+    _build_batch_id,
+    _build_group_id,
+)
 from plan_auxiliary_data import build_auxiliary_acquisition_plan
 
 
@@ -133,9 +136,15 @@ def test_advanced_plan_builds_serializable_source_batches() -> None:
         tz="UTC",
     )
 
+    group_id = _build_group_id(
+        start=start,
+        end=end,
+    )
+
     assert result == {
         "batches": [
             {
+                "group_id": group_id,
                 "batch_id": _build_batch_id(
                     source="entsoe_api",
                     start=start,
@@ -148,6 +157,7 @@ def test_advanced_plan_builds_serializable_source_batches() -> None:
                 "countries": ["GRC"],
             },
             {
+                "group_id": group_id,
                 "batch_id": _build_batch_id(
                     source="opsd_api",
                     start=start,

@@ -102,14 +102,18 @@ def _validate_source_names(
 def build_auxiliary_source_batches(
     requests: pd.DataFrame,
 ) -> list[dict[str, object]]:
-    """Group source requests sharing the same acquisition period."""
+    """Group compatible auxiliary source requests into batches."""
     if requests.empty:
         return []
 
     batches: list[dict[str, object]] = []
 
     grouped = requests.groupby(
-        ["source", "start", "end"],
+        [
+            "source",
+            "start",
+            "end",
+        ],
         sort=False,
     )
 
@@ -118,13 +122,18 @@ def build_auxiliary_source_batches(
         start,
         end,
     ), group in grouped:
-
         countries = sorted(
-            group["country"].unique().tolist()
+            group["country"]
+            .unique()
+            .tolist()
         )
 
         batches.append(
             {
+                "group_id": _build_group_id(
+                    start=start,
+                    end=end,
+                ),
                 "batch_id": _build_batch_id(
                     source=source,
                     start=start,
@@ -139,6 +148,7 @@ def build_auxiliary_source_batches(
         )
 
     return batches
+
 
 def _build_batch_id(
     *,
@@ -161,4 +171,16 @@ def _build_batch_id(
         f"{start.strftime('%Y%m%dT%H%M')}__"
         f"{end.strftime('%Y%m%dT%H%M')}__"
         f"{countries_hash}"
+    )
+
+
+def _build_group_id(
+    *,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+) -> str:
+    """Build a deterministic identifier for an auxiliary period group."""
+    return (
+        f"{start.strftime('%Y%m%dT%H%M')}__"
+        f"{end.strftime('%Y%m%dT%H%M')}"
     )
