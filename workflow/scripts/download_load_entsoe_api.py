@@ -7,6 +7,7 @@ from warnings import warn
 import pandas as pd
 import pycountry
 import yaml
+from _time import as_utc_timestamp, build_hourly_index
 from entsoe import EntsoePandasClient
 from entsoe.exceptions import NoMatchingDataError
 
@@ -29,8 +30,8 @@ def load_yaml(path):
 
 def main(start, end, country_codes, token, output_load):
     """Download load in MW via the ENTSO-E API."""
-    start = pd.Timestamp(start, tz="UTC")
-    end = pd.Timestamp(end, tz="UTC")
+    start = as_utc_timestamp(start)
+    end = as_utc_timestamp(end)
     token = load_txt(token).strip()
     client = EntsoePandasClient(api_key=token)
 
@@ -60,11 +61,9 @@ def main(start, end, country_codes, token, output_load):
     df = df.resample("1h").mean()
 
     # reindexing to add some security to the entsoe download
-    target_index = pd.date_range(
+    target_index = build_hourly_index(
         start=start,
         end=end,
-        freq="h",
-        inclusive="left",
     )
 
     df = df.reindex(

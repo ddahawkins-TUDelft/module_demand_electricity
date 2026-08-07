@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable
 
 import pandas as pd
+from _time import build_hourly_index
 from cleaning.neso import add_utc_timestamps
 
 if TYPE_CHECKING:
@@ -154,39 +155,6 @@ def _aggregate_hourly(
     return hourly
 
 
-def _build_target_index(
-    *,
-    temporal_start: str,
-    temporal_end: str,
-) -> pd.DatetimeIndex:
-    """Create the configured end-exclusive hourly UTC index."""
-    start = pd.Timestamp(temporal_start)
-    end = pd.Timestamp(temporal_end)
-
-    if start.tzinfo is None:
-        start = start.tz_localize("UTC")
-    else:
-        start = start.tz_convert("UTC")
-
-    if end.tzinfo is None:
-        end = end.tz_localize("UTC")
-    else:
-        end = end.tz_convert("UTC")
-
-    if end <= start:
-        raise ValueError(
-            "The temporal-scope end must be later than its start."
-        )
-
-    return pd.date_range(
-        start=start,
-        end=end,
-        freq="1h",
-        inclusive="left",
-        name="time",
-    )
-
-
 def prepare_load_neso(
     *,
     input_paths: Iterable[str | Path],
@@ -205,9 +173,9 @@ def prepare_load_neso(
             "Target country codes must be unique."
         )
 
-    target_index = _build_target_index(
-        temporal_start=temporal_start,
-        temporal_end=temporal_end,
+    target_index = build_hourly_index(
+        start=temporal_start,
+        end=temporal_end,
     )
 
     result = pd.DataFrame(

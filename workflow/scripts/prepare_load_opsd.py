@@ -7,18 +7,10 @@ from warnings import warn
 import pandas as pd
 import pycountry
 from _schemas import LoadENTSOE
+from _time import as_utc_timestamp, build_hourly_index
 
 if TYPE_CHECKING:
     snakemake: Any
-
-def as_utc_timestamp(value) -> pd.Timestamp:
-    """Convert a timestamp-like value to UTC."""
-    timestamp = pd.Timestamp(value)
-
-    if timestamp.tzinfo is None:
-        return timestamp.tz_localize("UTC")
-
-    return timestamp.tz_convert("UTC")
 
 
 def get_map_alpha2_to_alpha3(
@@ -101,11 +93,9 @@ def main(
         values="data",
     )
 
-    target_index = pd.date_range(
+    target_index = build_hourly_index(
         start=start,
         end=end,
-        freq="h",
-        inclusive="left",
     )
 
     prepared = prepared.reindex(
