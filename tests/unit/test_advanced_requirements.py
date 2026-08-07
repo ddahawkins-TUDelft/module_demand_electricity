@@ -3,6 +3,7 @@
 import pandas as pd
 from cleaning.advanced.requirements import (
     REQUIREMENT_COLUMNS,
+    build_auxiliary_acquisition_requirements,
     compile_auxiliary_requirements,
     expand_auxiliary_requirements,
     get_basic_cleaning_context,
@@ -340,3 +341,41 @@ def test_basic_context_compounds_across_ordered_rules() -> None:
     assert left == pd.Timedelta("14D")
     assert right == pd.Timedelta("7D")
 
+
+def test_build_auxiliary_acquisition_requirements_uses_basic_cleaning_config() -> None:
+    overrides = {
+        "reconstruct_albania": {
+            "method": "construct_from_sources",
+            "sources": [
+                {
+                    "country": "GRC",
+                    "start": "2020-01-01",
+                    "end": "2020-02-01",
+                },
+            ],
+        },
+    }
+
+    basic_rules = [
+        {
+            "name": "copy_previous_week",
+            "method": "copy_period",
+            "max_gap": "168h",
+            "source_offset": "-168h",
+        },
+    ]
+
+    result = build_auxiliary_acquisition_requirements(
+        overrides=overrides,
+        basic_rules=basic_rules,
+        basic_cleaning_enabled=True,
+    )
+
+    assert result.iloc[0]["start"] == pd.Timestamp(
+        "2019-12-25",
+        tz="UTC",
+    )
+    assert result.iloc[0]["end"] == pd.Timestamp(
+        "2020-02-08",
+        tz="UTC",
+    )

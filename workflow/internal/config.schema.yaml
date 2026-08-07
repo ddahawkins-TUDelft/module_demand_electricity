@@ -199,6 +199,33 @@ $defs:
       - $ref: "#/$defs/external_profile_rule"
       - $ref: "#/$defs/manual_review_rule"
       - $ref: "#/$defs/leave_missing_rule"
+  
+  auxiliary_basic_cleaning:
+    type: object
+    properties:
+      enabled:
+        type: boolean
+        default: true
+        description: >
+          Apply the configured basic gap-filling rules to auxiliary
+          demand data before it is used for advanced profile construction.
+
+    required:
+      - enabled
+
+    additionalProperties: false
+
+
+  auxiliary_data:
+    type: object
+    properties:
+      basic_cleaning:
+        $ref: "#/$defs/auxiliary_basic_cleaning"
+
+    required:
+      - basic_cleaning
+
+    additionalProperties: false
 
   gap_filling_rule_base:
     type: object
@@ -364,6 +391,9 @@ properties:
       advanced:
         type: object
         properties:
+          auxiliary_data:
+            $ref: "#/$defs/auxiliary_data"
+
           overrides:
             type: object
             default: {}
@@ -375,9 +405,11 @@ properties:
               $ref: "#/$defs/auxiliary_fill_rule"
 
         required:
+          - auxiliary_data
           - overrides
 
         additionalProperties: false
+
 
     required:
       - mode

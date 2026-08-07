@@ -46,3 +46,81 @@ def _format_validation_error(
     )
 
     return f"{path or '<root>'}: {error.message}"
+
+def test_advanced_auxiliary_basic_cleaning_can_be_disabled() -> None:
+    """Allow auxiliary basic cleaning to be disabled."""
+    with SCHEMA_PATH.open(encoding="utf-8") as schema_file:
+        schema = yaml.safe_load(schema_file)
+
+    config = {
+        "temporal_scope": {
+            "start": "2021-01-01",
+            "end": "2022-01-01",
+        },
+        "load_sources": [
+            "entsoe_api",
+        ],
+        "gap_filling": {
+            "mode": "advanced",
+            "basic": {
+                "rules": [],
+            },
+            "advanced": {
+                "auxiliary_data": {
+                    "basic_cleaning": {
+                        "enabled": False,
+                    },
+                },
+                "overrides": {},
+            },
+        },
+    }
+
+    validator = Draft202012Validator(schema)
+    errors = list(
+        validator.iter_errors(config)
+    )
+
+    assert not errors, "\n".join(
+        _format_validation_error(error)
+        for error in errors
+    )
+
+def test_advanced_mode_allows_no_rules_or_overrides() -> None:
+    """Allow advanced mode to run for diagnosis only."""
+    with SCHEMA_PATH.open(encoding="utf-8") as schema_file:
+        schema = yaml.safe_load(schema_file)
+
+    config = {
+        "temporal_scope": {
+            "start": "2021-01-01",
+            "end": "2022-01-01",
+        },
+        "load_sources": [
+            "entsoe_api",
+        ],
+        "gap_filling": {
+            "mode": "advanced",
+            "basic": {
+                "rules": [],
+            },
+            "advanced": {
+                "auxiliary_data": {
+                    "basic_cleaning": {
+                        "enabled": True,
+                    },
+                },
+                "overrides": {},
+            },
+        },
+    }
+
+    validator = Draft202012Validator(schema)
+    errors = list(
+        validator.iter_errors(config)
+    )
+
+    assert not errors, "\n".join(
+        _format_validation_error(error)
+        for error in errors
+    )

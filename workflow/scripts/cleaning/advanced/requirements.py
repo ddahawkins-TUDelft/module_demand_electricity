@@ -210,3 +210,20 @@ def expand_auxiliary_requirements(
 
     return _merge_requirements(expanded)
 
+
+def build_auxiliary_acquisition_requirements(
+    *,
+    overrides: Mapping[str, Mapping[str, Any]],
+    basic_rules: Sequence[Mapping[str, Any]],
+    basic_cleaning_enabled: bool,
+) -> pd.DataFrame:
+    """Build expanded auxiliary-data requirements for acquisition."""
+    exact_requirements = compile_auxiliary_requirements(
+        overrides
+    )
+
+    return expand_auxiliary_requirements(
+        exact_requirements,
+        rules=basic_rules,
+        enabled=basic_cleaning_enabled,
+    )

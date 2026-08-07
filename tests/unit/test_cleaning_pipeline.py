@@ -92,6 +92,11 @@ def test_clean_demand_records_methods_and_ranks() -> None:
             ],
         },
         "advanced": {
+            "auxiliary_data": {
+                "basic_cleaning": {
+                    "enabled": True,
+                },
+            },
             "overrides": {},
         },
     }
@@ -369,6 +374,11 @@ def test_advanced_mode_reports_unresolved_gaps() -> None:
             ],
         },
         "advanced": {
+            "auxiliary_data": {
+                "basic_cleaning": {
+                    "enabled": True,
+                },
+            },
             "overrides": {},
         },
     }
@@ -602,6 +612,11 @@ def test_advanced_mode_builds_auxiliary_fill_plan() -> None:
             "rules": [],
         },
         "advanced": {
+            "auxiliary_data": {
+                "basic_cleaning": {
+                    "enabled": True,
+                },
+            },
             "overrides": {
                 "fill_albania_from_greece": {
                     "country": "ALB",

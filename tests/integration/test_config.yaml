@@ -41,5 +41,9 @@ integration_test:
           source_offset: 168h
 
     advanced:
+      auxiliary_data:
+        basic_cleaning:
+          enabled: true
+
       # Explicit country-period instructions for unresolved cases.
       overrides: {}
