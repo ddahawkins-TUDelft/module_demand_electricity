@@ -46,4 +46,15 @@ integration_test:
           enabled: true
 
       # Explicit country-period instructions for unresolved cases.
-      overrides: {}
+      overrides:
+        test_construct_from_greece:
+          country: ALB
+          start: "2020-01-01"
+          end: "2020-02-01"
+          scope: fill_gaps_within_period
+          method: construct_from_sources
+          sources:
+            - country: GRC
+              start: "2020-01-01"
+              end: "2020-02-01"
+              weight: 1

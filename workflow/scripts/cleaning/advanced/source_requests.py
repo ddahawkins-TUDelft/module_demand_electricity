@@ -16,7 +16,7 @@ SOURCE_REQUEST_COLUMNS = [
 SUPPORTED_SOURCES = {
     "entsoe_api",
     "neso",
-    "opsd",
+    "opsd_api",
 }
 
 
@@ -68,7 +68,7 @@ def _source_supports_country(
 
     if source_name in {
         "entsoe_api",
-        "opsd",
+        "opsd_api",
     }:
         return True
 

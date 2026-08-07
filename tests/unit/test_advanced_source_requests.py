@@ -36,7 +36,7 @@ def test_build_source_requests_uses_all_applicable_sources() -> None:
         source_names=[
             "entsoe_api",
             "neso",
-            "opsd",
+            "opsd_api",
         ],
     )
 
@@ -49,8 +49,8 @@ def test_build_source_requests_uses_all_applicable_sources() -> None:
         ("entsoe_api", "GBR"),
         ("entsoe_api", "GRC"),
         ("neso", "GBR"),
-        ("opsd", "GBR"),
-        ("opsd", "GRC"),
+        ("opsd_api", "GBR"),
+        ("opsd_api", "GRC"),
     ]
 
 
@@ -96,7 +96,7 @@ def test_empty_requirements_return_empty_source_request_schema() -> None:
         source_names=[
             "entsoe_api",
             "neso",
-            "opsd",
+            "opsd_api",
         ],
     )
 
@@ -283,7 +283,7 @@ def test_build_source_batches_keeps_sources_separate() -> None:
         {
             "source": [
                 "entsoe_api",
-                "opsd",
+                "opsd_api",
             ],
             "country": [
                 "GBR",
@@ -311,7 +311,7 @@ def test_build_source_batches_keeps_sources_separate() -> None:
         for batch in result
     ] == [
         "entsoe_api",
-        "opsd",
+        "opsd_api",
     ]
 
     assert [
@@ -325,7 +325,7 @@ def test_build_source_batches_keeps_sources_separate() -> None:
             "GBR"
         ),
         (
-            "opsd__"
+            "opsd_api__"
             "20200101T0000__"
             "20200201T0000__"
             "GBR"

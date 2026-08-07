@@ -32,7 +32,7 @@ def test_plan_is_empty_outside_advanced_mode() -> None:
         source_names=[
             "entsoe_api",
             "neso",
-            "opsd",
+            "opsd_api",
         ],
     )
 
@@ -65,7 +65,7 @@ def test_advanced_plan_with_no_overrides_is_empty() -> None:
         source_names=[
             "entsoe_api",
             "neso",
-            "opsd",
+            "opsd_api",
         ],
     )
 
@@ -118,7 +118,7 @@ def test_advanced_plan_builds_serializable_source_batches() -> None:
         gap_filling_config=config,
         source_names=[
             "entsoe_api",
-            "opsd",
+            "opsd_api",
         ],
     )
 
@@ -138,12 +138,12 @@ def test_advanced_plan_builds_serializable_source_batches() -> None:
             },
             {
                 "batch_id": (
-                    "opsd__"
+                    "opsd_api__"
                     "20200101T0000__"
                     "20200201T0000__"
                     "GRC"
                 ),
-                "source": "opsd",
+                "source": "opsd_api",
                 "start": "2020-01-01T00:00:00+00:00",
                 "end": "2020-02-01T00:00:00+00:00",
                 "countries": ["GRC"],
