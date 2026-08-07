@@ -39,15 +39,13 @@ def clean_demand(
         priority=source_priority,
     )
 
-    basic_config = {
-        "mode": gap_filling_config["mode"],
-        "rules": gap_filling_config["basic"]["rules"],
-    }
+    basic_rules = gap_filling_config["basic"]["rules"]
 
     cleaned, cleaning_method = fill_basic_gaps(
-        combined,
+        load=combined,
         cleaning_method=cleaning_method,
-        config=basic_config,
+        rules=basic_rules,
+        enabled=gap_filling_config["mode"] != "off",
     )
 
     basic_rules = gap_filling_config["basic"]["rules"]

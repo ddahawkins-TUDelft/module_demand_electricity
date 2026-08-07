@@ -23,7 +23,8 @@ def fill_basic_gaps(
     load: pd.DataFrame,
     *,
     cleaning_method: pd.DataFrame,
-    config: Mapping[str, Any],
+    rules: Sequence[Mapping[str, Any]],
+    enabled: bool = True,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Apply configured gap-filling rules and record method provenance.
 
@@ -34,8 +35,10 @@ def fill_basic_gaps(
     cleaning_method:
         Per-cell cleaning-method provenance for the observed input values.
         Missing input values should contain ``pd.NA``.
-    config:
-        Gap-filling configuration containing ``mode`` and ``rules``.
+    rules:
+        Ordered basic gap-filling rules.
+    enabled:
+        Whether basic gap filling should be applied.
 
     Returns
     -------
@@ -46,30 +49,24 @@ def fill_basic_gaps(
         Per-cell provenance containing the observed-source identifier,
         configured gap-filling rule name, or ``missing``.
     """
+    _validate_settings(
+        enabled=enabled,
+        rules=rules
+    )
     validate_load(load)
     _validate_cleaning_method(
         load=load,
         cleaning_method=cleaning_method,
     )
-    _validate_config(config)
 
     filled = load.copy()
     cleaning_method = cleaning_method.copy()
 
-    mode = config["mode"]
+    if not enabled:
+            logger.info("Basic gap filling is disabled.")
+            cleaning_method = cleaning_method.fillna("missing")
+            return filled, cleaning_method
 
-    if mode == "off":
-        logger.info(
-            "Gap filling is disabled because mode is 'off'."
-        )
-
-        cleaning_method = cleaning_method.fillna(
-            "missing"
-        )
-
-        return filled, cleaning_method
-
-    rules = config["rules"]
     original_gap_duration = calculate_missing_run_durations(
         load
     )
@@ -311,54 +308,23 @@ def _log_rule_results(
             )
 
 
-def _validate_config(config: Mapping[str, Any]) -> None:
-    if not isinstance(config, Mapping):
+def _validate_settings(
+    *,
+    enabled: bool,
+    rules: Sequence[Mapping[str, Any]],
+) -> None:
+    """Validate basic gap-filling settings."""
+    if not isinstance(enabled, bool):
         raise TypeError(
-            "Gap-filling configuration must be a mapping."
+            "Basic gap-filling 'enabled' must be a boolean."
         )
 
-    if "mode" not in config:
-        raise ValueError(
-            "Gap-filling configuration must define 'mode'."
-        )
-
-    mode = config["mode"]
-
-    if not isinstance(mode, str):
-        raise TypeError(
-            "Gap-filling configuration 'mode' must be a string."
-        )
-
-    supported_modes = {
-        "off",
-        "basic",
-        "advanced",
-    }
-
-    if mode not in supported_modes:
-        raise ValueError(
-            "Unsupported gap-filling mode "
-            f"{mode!r}. Expected one of "
-            f"{sorted(supported_modes)}."
-        )
-
-    if "rules" not in config:
-        raise ValueError(
-            "Gap-filling configuration must define 'rules'."
-        )
-
-    if not isinstance(config["rules"], Sequence) or isinstance(
-        config["rules"],
+    if not isinstance(rules, Sequence) or isinstance(
+        rules,
         (str, bytes),
     ):
         raise TypeError(
-            "Gap-filling configuration 'rules' must be an ordered sequence."
-        )
-
-    if mode == "basic" and not config["rules"]:
-        raise ValueError(
-            "At least one gap-filling rule is required when "
-            f"gap-filling mode is {mode!r}."
+            "Basic gap-filling 'rules' must be an ordered sequence."
         )
 
 
