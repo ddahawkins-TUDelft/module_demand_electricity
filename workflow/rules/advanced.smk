@@ -1,5 +1,12 @@
 import json
-import pandas as pd
+
+from cleaning.advanced.planning.selection import (
+    get_auxiliary_batch,
+    get_auxiliary_group_batches,
+    get_auxiliary_group_ids,
+    get_required_auxiliary_group_ids,
+    get_source_batch_ids,
+)
 
 
 def _read_plan_file(plan_path):
@@ -31,31 +38,6 @@ def auxiliary_acquisition_plan(_wildcards):
     )
 
 
-def get_auxiliary_batch(
-    plan: dict,
-    *,
-    batch_id: str,
-    source: str,
-) -> dict:
-    """Return one source batch from the acquisition plan."""
-    matches = [
-        batch
-        for batch in plan["batches"]
-        if (
-            batch["batch_id"] == batch_id
-            and batch["source"] == source
-        )
-    ]
-
-    if len(matches) != 1:
-        raise ValueError(
-            "Expected exactly one auxiliary batch for "
-            f"{source=} and {batch_id=}, found {len(matches)}."
-        )
-
-    return matches[0]
-
-
 def get_auxiliary_entsoe_batch(
     wildcards,
     input,
@@ -72,11 +54,10 @@ def auxiliary_entsoe_outputs(wildcards):
     """Return all ENTSO-E outputs required by the acquisition plan."""
     plan = _read_auxiliary_plan(wildcards)
 
-    batch_ids = [
-        batch["batch_id"]
-        for batch in plan["batches"]
-        if batch["source"] == "entsoe_api"
-    ]
+    batch_ids = get_source_batch_ids(
+        plan,
+        source="entsoe_api",
+    )
 
     return [
         (
@@ -104,11 +85,10 @@ def auxiliary_opsd_outputs(wildcards):
     """Return all OPSD outputs required by the acquisition plan."""
     plan = _read_auxiliary_plan(wildcards)
 
-    batch_ids = [
-        batch["batch_id"]
-        for batch in plan["batches"]
-        if batch["source"] == "opsd_api"
-    ]
+    batch_ids = get_source_batch_ids(
+        plan,
+        source="opsd_api",
+    )
 
     return [
         (
@@ -126,7 +106,7 @@ def get_auxiliary_neso_batch(
 ) -> dict:
     """Return the NESO batch for this job."""
     return get_auxiliary_batch(
-        _read_auxiliary_plan(input.plan),
+        _read_plan_file(input.plan),
         batch_id=wildcards.batch_id,
         source="neso",
     )
@@ -160,11 +140,10 @@ def auxiliary_neso_outputs(wildcards):
     """Return all NESO outputs required by the acquisition plan."""
     plan = _read_auxiliary_plan(wildcards)
 
-    batch_ids = [
-        batch["batch_id"]
-        for batch in plan["batches"]
-        if batch["source"] == "neso"
-    ]
+    batch_ids = get_source_batch_ids(
+        plan,
+        source="neso",
+    )
 
     return [
         (
@@ -174,26 +153,6 @@ def auxiliary_neso_outputs(wildcards):
         )
         for batch_id in batch_ids
     ]
-
-
-def get_auxiliary_group_batches(
-    plan: dict,
-    *,
-    group_id: str,
-) -> list[dict]:
-    """Return all acquisition batches belonging to one auxiliary group."""
-    batches = [
-        batch
-        for batch in plan["batches"]
-        if batch["group_id"] == group_id
-    ]
-
-    if not batches:
-        raise ValueError(
-            f"No auxiliary batches found for group {group_id!r}."
-        )
-
-    return batches
 
 
 def auxiliary_group_source_files(wildcards):
@@ -219,12 +178,7 @@ def auxiliary_combined_outputs(wildcards):
     """Return all combined auxiliary group outputs."""
     plan = _read_auxiliary_plan(wildcards)
 
-    group_ids = sorted(
-        {
-            batch["group_id"]
-            for batch in plan["batches"]
-        }
-    )
+    group_ids = get_auxiliary_group_ids(plan)
 
     return [
         (
@@ -240,56 +194,14 @@ def auxiliary_rule_cleaned_files(wildcards):
     """Return cleaned auxiliary files required by one advanced override."""
     plan = _read_auxiliary_plan(wildcards)
 
-    override = (
-        config["gap_filling"]
-        ["advanced"]
-        ["overrides"]
-        [wildcards.rule_name]
+    override = config["gap_filling"]["advanced"]["overrides"][
+        wildcards.rule_name
+    ]
+
+    group_ids = get_required_auxiliary_group_ids(
+        plan,
+        override=override,
     )
-
-    required_sources = list(override["sources"])
-
-    scaling = override.get("scaling")
-    if scaling is not None:
-        required_sources.extend(
-            scaling.get("target_sources", [])
-        )
-
-    group_ids = set()
-
-    for source in required_sources:
-        country = source["country"]
-        start = pd.Timestamp(source["start"])
-        end = pd.Timestamp(source["end"])
-
-        if start.tzinfo is None:
-            start = start.tz_localize("UTC")
-        else:
-            start = start.tz_convert("UTC")
-
-        if end.tzinfo is None:
-            end = end.tz_localize("UTC")
-        else:
-            end = end.tz_convert("UTC")
-
-        matching_groups = {
-            batch["group_id"]
-            for batch in plan["batches"]
-            if (
-                country in batch["countries"]
-                and pd.Timestamp(batch["start"]) <= start
-                and pd.Timestamp(batch["end"]) >= end
-            )
-        }
-
-        if len(matching_groups) != 1:
-            raise ValueError(
-                "Expected exactly one cleaned auxiliary group "
-                f"covering {country!r} from {start} to {end}, "
-                f"found {sorted(matching_groups)}."
-            )
-
-        group_ids.update(matching_groups)
 
     return [
         (
@@ -297,7 +209,7 @@ def auxiliary_rule_cleaned_files(wildcards):
             "auxiliary/cleaned/"
             f"{group_id}.parquet"
         )
-        for group_id in sorted(group_ids)
+        for group_id in group_ids
     ]
 
 
