@@ -472,3 +472,44 @@ rule combine_auxiliary_sources:
         "Combine auxiliary electricity-demand sources."
     script:
         "../scripts/combine_auxiliary_sources.py"
+
+
+rule clean_auxiliary_data:
+    input:
+        demand=(
+            "<resources>/automatic/"
+            "auxiliary/combined/"
+            "{group_id}.parquet"
+        ),
+        cleaning_method=(
+            "<resources>/automatic/"
+            "auxiliary/combined/"
+            "{group_id}_cleaning_method.parquet"
+        ),
+    output:
+        demand=(
+            "<resources>/automatic/"
+            "auxiliary/cleaned/"
+            "{group_id}.parquet"
+        ),
+        cleaning_method=(
+            "<resources>/automatic/"
+            "auxiliary/cleaned/"
+            "{group_id}_cleaning_method.parquet"
+        ),
+    params:
+        basic_rules=config["gap_filling"]["basic"]["rules"],
+        enabled=(
+            config["gap_filling"]
+            ["advanced"]
+            ["auxiliary_data"]
+            ["basic_cleaning"]
+            ["enabled"]
+        ),
+    conda:
+        "../envs/module.yaml"
+    message:
+        "Apply basic cleaning to auxiliary electricity demand."
+    script:
+        "../scripts/clean_auxiliary_data.py"
+
