@@ -1,21 +1,68 @@
 """Construct an auxiliary demand profile from configured source periods."""
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Any
 
 import pandas as pd
-
-METHOD_NAME = "construct_from_sources"
+from _time import as_utc_timestamp
 
 
 def construct_from_sources(
-    load: pd.DataFrame,
+    auxiliary: pd.DataFrame,
     *,
-    rule_name: str,
-    rule: Mapping[str, Any],
-) -> pd.DataFrame:
-    """Construct a target profile from configured country-period sources."""
-    raise NotImplementedError(
-        "Advanced-fill method 'construct_from_sources' "
-        "has not yet been implemented."
+    target_index: pd.DatetimeIndex,
+    sources: Sequence[Mapping[str, Any]],
+) -> pd.Series:
+    """Construct a target demand profile from weighted auxiliary sources."""
+    weighted_sources: list[pd.Series] = []
+    weights: list[float] = []
+
+    for source in sources:
+        country = source["country"]
+        start = as_utc_timestamp(
+            source["start"]
+        )
+        end = as_utc_timestamp(
+            source["end"]
+        )
+        weight = float(
+            source.get("weight", 1)
+        )
+
+        source_values = auxiliary.loc[
+            (auxiliary.index >= start)
+            & (auxiliary.index < end),
+            country,
+        ]
+
+        if len(source_values) != len(target_index):
+            raise ValueError(
+                "Auxiliary source period must contain "
+                "the same number of values as the target "
+                f"period. Source {country!r} contains "
+                f"{len(source_values)} values; target "
+                f"contains {len(target_index)}."
+            )
+
+        remapped = pd.Series(
+            source_values.to_numpy(),
+            index=target_index,
+            dtype=float,
+        )
+
+        weighted_sources.append(
+            remapped * weight
+        )
+        weights.append(weight)
+
+    if not weighted_sources:
+        raise ValueError(
+            "At least one auxiliary source is required."
+        )
+
+    weighted_sum = sum(
+        weighted_sources[1:],
+        weighted_sources[0].copy(),
     )
+
+    return weighted_sum / sum(weights)
