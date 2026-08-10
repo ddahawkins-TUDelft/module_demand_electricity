@@ -347,6 +347,14 @@ def build_auxiliary_fill_plan(
 
     records: list[dict[str, Any]] = []
 
+    # TODO: Support reusable libraries of advanced overrides.
+    # Before planning auxiliary acquisition, filter configured overrides
+    # against the current model countries and temporal scope. Overrides
+    # that do not intersect the current target scope should be ignored,
+    # while applicable overrides should continue to be validated strictly.
+    # This allows users to have a general overrides file for which they
+    # need not retune the dates for each new run/horizon.
+
     for rule_name, rule in rules.items():
         validate_auxiliary_fill_rule(
             rule_name,

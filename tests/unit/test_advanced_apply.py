@@ -2,9 +2,9 @@
 
 import pandas as pd
 import pytest
-
 from cleaning.advanced.apply import (
     apply_auxiliary_fill_rule,
+    apply_auxiliary_fill_rules,
 )
 
 
@@ -224,3 +224,90 @@ def test_rejects_unsupported_method() -> None:
                 "method": "unknown",
             },
         )
+
+
+def test_apply_auxiliary_fill_rules_applies_rules_in_order() -> None:
+    load = _load()
+    cleaning_method = _cleaning_method()
+
+    first_profile = pd.Series(
+        [
+            10.0,
+            20.0,
+            30.0,
+        ],
+        index=load.index,
+    )
+
+    second_profile = pd.Series(
+        [
+            100.0,
+            200.0,
+            300.0,
+        ],
+        index=load.index,
+    )
+
+    overrides = {
+        "fill_gaps": {
+            "method": "construct_from_sources",
+            "country": "ALB",
+            "start": "2021-01-01T00:00:00+00:00",
+            "end": "2021-01-01T03:00:00+00:00",
+            "scope": "fill_gaps_within_period",
+        },
+        "overwrite": {
+            "method": "construct_from_sources",
+            "country": "ALB",
+            "start": "2021-01-01T00:00:00+00:00",
+            "end": "2021-01-01T03:00:00+00:00",
+            "scope": "overwrite_entire_period",
+        },
+    }
+
+    profiles = {
+        "fill_gaps": first_profile,
+        "overwrite": second_profile,
+    }
+
+    filled, methods = apply_auxiliary_fill_rules(
+        load,
+        cleaning_method,
+        overrides=overrides,
+        profiles=profiles,
+    )
+
+    assert filled["ALB"].tolist() == [
+        100.0,
+        200.0,
+        300.0,
+    ]
+
+    assert methods["ALB"].tolist() == [
+        "overwrite",
+        "overwrite",
+        "overwrite",
+    ]
+
+def test_apply_auxiliary_fill_rules_with_no_overrides_returns_copies() -> None:
+    load = _load()
+    cleaning_method = _cleaning_method()
+
+    filled, methods = apply_auxiliary_fill_rules(
+        load,
+        cleaning_method,
+        overrides={},
+        profiles={},
+    )
+
+    pd.testing.assert_frame_equal(
+        filled,
+        load,
+    )
+    pd.testing.assert_frame_equal(
+        methods,
+        cleaning_method,
+    )
+
+    assert filled is not load
+    assert methods is not cleaning_method

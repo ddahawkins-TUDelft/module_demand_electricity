@@ -131,3 +131,26 @@ def apply_constructed_profile(
 
     return filled, methods
 
+def apply_auxiliary_fill_rules(
+    load: pd.DataFrame,
+    cleaning_method: pd.DataFrame,
+    *,
+    overrides: Mapping[str, Mapping[str, Any]],
+    profiles: Mapping[str, pd.Series],
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Apply validated advanced-fill rules in configuration order."""
+    filled = load.copy()
+    methods = cleaning_method.copy()
+
+    for rule_name, rule in overrides.items():
+        profile = profiles.get(rule_name)
+
+        filled, methods = apply_auxiliary_fill_rule(
+            filled,
+            methods,
+            rule_name=rule_name,
+            rule=rule,
+            profile=profile,
+        )
+
+    return filled, methods

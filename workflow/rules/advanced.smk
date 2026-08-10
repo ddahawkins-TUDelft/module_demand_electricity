@@ -343,6 +343,23 @@ def auxiliary_rule_cleaned_files(wildcards):
     ]
 
 
+def advanced_constructed_profiles(_wildcards):
+    """Return constructed profiles required by advanced overrides."""
+    overrides = (
+        config["gap_filling"]
+        ["advanced"]
+        ["overrides"]
+    )
+
+    return [
+        (
+            "<resources>/automatic/"
+            "auxiliary/constructed/"
+            f"{rule_name}.parquet"
+        )
+        for rule_name, override in overrides.items()
+        if override["method"] == "construct_from_sources"
+    ]
 
 
 checkpoint plan_auxiliary_data:
@@ -597,3 +614,37 @@ rule construct_auxiliary_profile:
         "Construct auxiliary demand profile for {wildcards.rule_name}."
     script:
         "../scripts/construct_auxiliary_profile.py"
+
+
+rule apply_advanced_overrides:
+    input:
+        demand=(
+            "<resources>/automatic/"
+            "load_basic_cleaned.parquet"
+        ),
+        cleaning_method=(
+            "<resources>/automatic/"
+            "load_cleaning_method.parquet"
+        ),
+        profiles=advanced_constructed_profiles,
+    output:
+        demand=(
+            "<resources>/automatic/"
+            "load_advanced_cleaned.parquet"
+        ),
+        cleaning_method=(
+            "<resources>/automatic/"
+            "load_advanced_cleaning_method.parquet"
+        ),
+    params:
+        overrides=(
+            config["gap_filling"]
+            ["advanced"]
+            ["overrides"]
+        ),
+    conda:
+        "../envs/module.yaml"
+    message:
+        "Apply advanced electricity-demand overrides."
+    script:
+        "../scripts/apply_advanced_overrides.py"
