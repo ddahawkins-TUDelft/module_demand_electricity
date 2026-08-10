@@ -308,12 +308,12 @@ def _build_rank_colours(
 
     if not imputed.empty:
         colourtheme = Colormap(
-            "bids:plasma"
+            "bids:viridis"
         ).to_mpl()
 
         positions = np.linspace(
-            0.0,
-            0.9,
+            0.05,
+            0.95,
             len(imputed),
         )
 
