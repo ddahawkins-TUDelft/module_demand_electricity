@@ -1,7 +1,11 @@
 import shutil
 
 import pandas as pd
-from cleaning.provenance import build_cleaning_method_ranks, derive_cleaning_method_rank
+from cleaning.provenance import (
+    build_cleaning_method_ranks,
+    build_final_cleaning_rules,
+    derive_cleaning_method_rank,
+)
 
 shutil.copyfile(
     snakemake.input.demand,
@@ -14,20 +18,9 @@ cleaning_method = pd.read_parquet(
 
 gap_filling = snakemake.params.gap_filling
 
-rules = list(
-    gap_filling["basic"]["rules"]
+rules = build_final_cleaning_rules(
+    gap_filling
 )
-
-if gap_filling["mode"] == "advanced":
-    rules.extend(
-        {
-            "name": rule_name,
-            **override,
-        }
-        for rule_name, override in (
-            gap_filling["advanced"]["overrides"].items()
-        )
-    )
 
 ranks = build_cleaning_method_ranks(
     source_priority=snakemake.params.source_names,

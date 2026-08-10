@@ -104,3 +104,27 @@ def derive_cleaning_method_rank(
     )
 
     return cleaning_method_rank.astype("int16")
+
+
+def build_final_cleaning_rules(
+    gap_filling_config: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    """Return configured cleaning rules in final provenance order."""
+    rules = [
+        dict(rule)
+        for rule in gap_filling_config["basic"]["rules"]
+    ]
+
+    if gap_filling_config["mode"] == "advanced":
+        rules.extend(
+            {
+                "name": rule_name,
+                **override,
+            }
+            for rule_name, override in (
+                gap_filling_config["advanced"]["overrides"].items()
+            )
+        )
+
+    return rules
+

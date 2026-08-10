@@ -48,8 +48,6 @@ def clean_demand(
         enabled=gap_filling_config["mode"] != "off",
     )
 
-    basic_rules = gap_filling_config["basic"]["rules"]
-
     cleaning_method_ranks = build_cleaning_method_ranks(
         source_priority=source_priority,
         rules=basic_rules,

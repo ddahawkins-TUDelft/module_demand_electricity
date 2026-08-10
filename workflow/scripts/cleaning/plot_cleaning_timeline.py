@@ -13,6 +13,8 @@ from cmap import Colormap
 from matplotlib.colors import ListedColormap, to_rgba
 from matplotlib.patches import Patch
 
+from cleaning.provenance import build_final_cleaning_rules
+
 if TYPE_CHECKING:
     snakemake: Any
 
@@ -670,20 +672,9 @@ def _build_cleaning_method_metadata(
         )
         rank += 1
 
-    rules = list(
-        gap_filling_config["basic"]["rules"]
+    rules = build_final_cleaning_rules(
+        gap_filling_config
     )
-
-    if gap_filling_config["mode"] == "advanced":
-        rules.extend(
-            {
-                "name": rule_name,
-                **override,
-            }
-            for rule_name, override in (
-                gap_filling_config["advanced"]["overrides"].items()
-            )
-        )
 
     for rule in rules:
         rule_name = rule["name"]

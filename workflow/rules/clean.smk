@@ -125,7 +125,7 @@ rule plot_cleaning_timeline:
     input:
         demand=(
             "<resources>/automatic/"
-            "load_basic_cleaned.parquet"
+            "load_cleaned.parquet"
         ),
         cleaning_method=(
             "<resources>/automatic/"
