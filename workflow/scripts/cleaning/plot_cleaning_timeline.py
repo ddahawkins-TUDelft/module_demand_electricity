@@ -670,7 +670,22 @@ def _build_cleaning_method_metadata(
         )
         rank += 1
 
-    for rule in gap_filling_config["rules"]:
+    rules = list(
+        gap_filling_config["basic"]["rules"]
+    )
+
+    if gap_filling_config["mode"] == "advanced":
+        rules.extend(
+            {
+                "name": rule_name,
+                **override,
+            }
+            for rule_name, override in (
+                gap_filling_config["advanced"]["overrides"].items()
+            )
+        )
+
+    for rule in rules:
         rule_name = rule["name"]
 
         rows.append(

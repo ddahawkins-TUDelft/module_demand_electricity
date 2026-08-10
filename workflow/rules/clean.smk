@@ -129,11 +129,11 @@ rule plot_cleaning_timeline:
         ),
         cleaning_method=(
             "<resources>/automatic/"
-            "load_cleaning_method.parquet"
+            "load_final_cleaning_method.parquet"
         ),
         cleaning_method_rank=(
             "<resources>/automatic/"
-            "load_cleaning_method_rank.parquet"
+            "load_final_cleaning_method_rank.parquet"
         ),
     output:
         plot=(

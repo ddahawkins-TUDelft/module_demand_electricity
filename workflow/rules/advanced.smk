@@ -373,6 +373,17 @@ def final_clean_demand_input(_wildcards):
     return rules.clean_demand.output.demand
 
 
+def final_cleaning_method_input(_wildcards):
+    """Return cleaning provenance appropriate for the configured mode."""
+    if config["gap_filling"]["mode"] == "advanced":
+        return (
+            "<resources>/automatic/"
+            "load_advanced_cleaning_method.parquet"
+        )
+
+    return rules.clean_demand.output.cleaning_method
+
+
 checkpoint plan_auxiliary_data:
     input:
         fill_plan=rules.clean_demand.output.auxiliary_fill_plan,
@@ -395,15 +406,27 @@ checkpoint plan_auxiliary_data:
 rule finalise_clean_demand:
     input:
         demand=final_clean_demand_input,
+        cleaning_method=final_cleaning_method_input,
     output:
         demand=(
             "<resources>/automatic/"
             "load_cleaned.parquet"
         ),
+        cleaning_method=(
+            "<resources>/automatic/"
+            "load_final_cleaning_method.parquet"
+        ),
+        cleaning_method_rank=(
+            "<resources>/automatic/"
+            "load_final_cleaning_method_rank.parquet"
+        ),
+    params:
+        source_names=config["load_sources"],
+        gap_filling=config["gap_filling"],
     conda:
         "../envs/module.yaml"
     message:
-        "Finalise cleaned electricity demand."
+        "Finalise cleaned electricity demand and provenance."
     script:
         "../scripts/finalise_clean_demand.py"
 
