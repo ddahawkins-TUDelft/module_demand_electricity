@@ -1,6 +1,6 @@
 import pandas as pd
-from _time import build_hourly_index
 from cleaning.advanced.construct_from_sources import construct_from_sources
+from common.time import build_hourly_index
 
 loads = [
     pd.read_parquet(path)

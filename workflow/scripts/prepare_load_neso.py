@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable
 
 import pandas as pd
-from _time import build_hourly_index
 from cleaning.neso import add_utc_timestamps
+from common.time import build_hourly_index
 
 if TYPE_CHECKING:
     snakemake: Any

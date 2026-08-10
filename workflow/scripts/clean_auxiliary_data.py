@@ -1,6 +1,6 @@
 import pandas as pd
 
-from cleaning.basic.pipeline import fill_basic_gaps
+from cleaning.basic.apply import fill_basic_gaps
 
 
 load = pd.read_parquet(

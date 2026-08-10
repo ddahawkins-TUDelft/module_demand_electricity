@@ -6,8 +6,8 @@ from warnings import warn
 
 import pandas as pd
 import pycountry
-from _schemas import LoadENTSOE
-from _time import as_utc_timestamp, build_hourly_index
+from common.schemas import LoadENTSOE
+from common.time import as_utc_timestamp, build_hourly_index
 
 if TYPE_CHECKING:
     snakemake: Any

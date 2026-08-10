@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from typing import Any
 
 import pandas as pd
-from _time import as_utc_timestamp
+from common.time import as_utc_timestamp
 
 from cleaning.advanced.construct_from_sources import (
     METHOD_NAME as CONSTRUCT_FROM_SOURCES,

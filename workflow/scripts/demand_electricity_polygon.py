@@ -9,8 +9,8 @@ import gregor
 import matplotlib.pyplot as plt
 import pandas as pd
 import rioxarray as rxr
-from _plots import map_polygon
-from _schemas import Shapes
+from common.plots import map_polygon
+from common.schemas import Shapes
 
 if TYPE_CHECKING:
     snakemake: Any

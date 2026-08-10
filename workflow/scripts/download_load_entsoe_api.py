@@ -7,7 +7,7 @@ from warnings import warn
 import pandas as pd
 import pycountry
 import yaml
-from _time import as_utc_timestamp, build_hourly_index
+from common.time import as_utc_timestamp, build_hourly_index
 from entsoe import EntsoePandasClient
 from entsoe.exceptions import NoMatchingDataError
 
