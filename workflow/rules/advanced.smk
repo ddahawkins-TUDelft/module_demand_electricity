@@ -362,6 +362,17 @@ def advanced_constructed_profiles(_wildcards):
     ]
 
 
+def final_clean_demand_input(_wildcards):
+    """Return the cleaned demand appropriate for the configured mode."""
+    if config["gap_filling"]["mode"] == "advanced":
+        return (
+            "<resources>/automatic/"
+            "load_advanced_cleaned.parquet"
+        )
+
+    return rules.clean_demand.output.demand
+
+
 checkpoint plan_auxiliary_data:
     input:
         fill_plan=rules.clean_demand.output.auxiliary_fill_plan,
@@ -383,7 +394,7 @@ checkpoint plan_auxiliary_data:
 
 rule finalise_clean_demand:
     input:
-        demand=rules.clean_demand.output.demand,
+        demand=final_clean_demand_input,
     output:
         demand=(
             "<resources>/automatic/"
