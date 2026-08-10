@@ -59,6 +59,13 @@ integration_test:
               start: "2020-01-01"
               end: "2020-02-01"
               weight: 1
+          scaling:
+            method: match_energy
+            target_sources:
+              - country: ALB
+                start: "2024-01-01"
+                end: "2024-03-01"
+                weight: 1
         test_construct_second:
           country: ALB
           start: "2021-02-01"

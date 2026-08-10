@@ -223,3 +223,133 @@ def test_construct_from_sources_interpolates_february_29() -> None:
     assert len(result) == 696
     assert (result.loc[target_feb_29] == 30.0).all()
 
+def test_construct_from_sources_matches_reference_energy() -> None:
+    auxiliary_index = pd.date_range(
+        "2019-01-01",
+        periods=6,
+        freq="h",
+        tz="UTC",
+    )
+
+    auxiliary = pd.DataFrame(
+        {
+            "GBR": [
+                10.0,
+                20.0,
+                30.0,
+                100.0,
+                100.0,
+                100.0,
+            ],
+            "ALB": [
+                0.0,
+                0.0,
+                0.0,
+                20.0,
+                40.0,
+                60.0,
+            ],
+        },
+        index=auxiliary_index,
+    )
+
+    target_index = pd.date_range(
+        "2020-01-01",
+        periods=3,
+        freq="h",
+        tz="UTC",
+    )
+
+    result = construct_from_sources(
+        auxiliary,
+        target_index=target_index,
+        sources=[
+            {
+                "country": "GBR",
+                "start": "2019-01-01T00:00:00+00:00",
+                "end": "2019-01-01T03:00:00+00:00",
+            }
+        ],
+        scaling={
+            "method": "match_energy",
+            "target_sources": [
+                {
+                    "country": "ALB",
+                    "start": "2019-01-01T03:00:00+00:00",
+                    "end": "2019-01-01T06:00:00+00:00",
+                }
+            ],
+        },
+    )
+
+    expected = pd.Series(
+        [
+            20.0,
+            40.0,
+            60.0,
+        ],
+        index=target_index,
+        dtype=float,
+    )
+
+    pd.testing.assert_series_equal(
+        result,
+        expected,
+    )
+
+def test_match_energy_uses_weighted_target_energy() -> None:
+    auxiliary_index = pd.date_range(
+        "2019-01-01",
+        periods=6,
+        freq="h",
+        tz="UTC",
+    )
+
+    auxiliary = pd.DataFrame(
+        {
+            "GBR": [10, 20, 30, 0, 0, 0],
+            "ALB": [0, 0, 0, 20, 20, 20],
+            "GRC": [0, 0, 0, 60, 60, 60],
+        },
+        index=auxiliary_index,
+        dtype=float,
+    )
+
+    target_index = pd.date_range(
+        "2020-01-01",
+        periods=3,
+        freq="h",
+        tz="UTC",
+    )
+
+    result = construct_from_sources(
+        auxiliary,
+        target_index=target_index,
+        sources=[
+            {
+                "country": "GBR",
+                "start": "2019-01-01T00:00:00+00:00",
+                "end": "2019-01-01T03:00:00+00:00",
+            }
+        ],
+        scaling={
+            "method": "match_energy",
+            "target_sources": [
+                {
+                    "country": "ALB",
+                    "start": "2019-01-01T03:00:00+00:00",
+                    "end": "2019-01-01T06:00:00+00:00",
+                    "weight": 1,
+                },
+                {
+                    "country": "GRC",
+                    "start": "2019-01-01T03:00:00+00:00",
+                    "end": "2019-01-01T06:00:00+00:00",
+                    "weight": 3,
+                },
+            ],
+        },
+    )
+
+    assert result.sum() == 150.0
+

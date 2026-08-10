@@ -237,6 +237,7 @@ def auxiliary_combined_outputs(wildcards):
 
 
 def auxiliary_rule_cleaned_files(wildcards):
+    """Return cleaned auxiliary files required by one advanced override."""
     plan = _read_auxiliary_plan(wildcards)
 
     override = (
@@ -246,18 +247,25 @@ def auxiliary_rule_cleaned_files(wildcards):
         [wildcards.rule_name]
     )
 
+    required_sources = list(override["sources"])
+
+    scaling = override.get("scaling")
+    if scaling is not None:
+        required_sources.extend(
+            scaling.get("target_sources", [])
+        )
+
     group_ids = set()
 
-    for source in override["sources"]:
+    for source in required_sources:
         country = source["country"]
         start = pd.Timestamp(source["start"])
+        end = pd.Timestamp(source["end"])
 
         if start.tzinfo is None:
             start = start.tz_localize("UTC")
         else:
             start = start.tz_convert("UTC")
-
-        end = pd.Timestamp(source["end"])
 
         if end.tzinfo is None:
             end = end.tz_localize("UTC")

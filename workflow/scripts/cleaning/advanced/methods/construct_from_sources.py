@@ -83,11 +83,97 @@ def _align_leap_day(
     return source_values
 
 
+def _match_energy(
+    profile: pd.Series,
+    *,
+    auxiliary: pd.DataFrame,
+    target_sources: Sequence[Mapping[str, Any]],
+) -> pd.Series:
+    """Scale a profile to the weighted-mean energy of reference periods."""
+    weighted_energy = 0.0
+    total_weight = 0.0
+
+    for source in target_sources:
+        country = source["country"]
+        start = as_utc_timestamp(
+            source["start"]
+        )
+        end = as_utc_timestamp(
+            source["end"]
+        )
+        weight = float(
+            source.get("weight", 1)
+        )
+
+        source_values = auxiliary.loc[
+            (auxiliary.index >= start)
+            & (auxiliary.index < end),
+            country,
+        ]
+
+        if source_values.empty:
+            raise ValueError(
+                "Scaling source period contains no values. "
+                f"Source {country!r}: {start} to {end}."
+            )
+
+        if source_values.isna().any():
+            raise ValueError(
+                "Scaling source period contains missing values. "
+                f"Source {country!r}: {start} to {end}."
+            )
+
+        weighted_energy += (
+            float(source_values.sum()) * weight
+        )
+        total_weight += weight
+
+    if total_weight == 0:
+        raise ValueError(
+            "Scaling source weights must sum to more than zero."
+        )
+
+    target_energy = weighted_energy / total_weight
+    profile_energy = float(profile.sum())
+
+    if profile_energy == 0:
+        raise ValueError(
+            "Cannot match energy for a constructed profile "
+            "with zero total energy."
+        )
+
+    return profile * (
+        target_energy / profile_energy
+    )
+
+
+def _apply_scaling(
+    profile: pd.Series,
+    *,
+    auxiliary: pd.DataFrame,
+    scaling: Mapping[str, Any],
+) -> pd.Series:
+    """Scale a constructed profile according to its configured method."""
+    method = scaling["method"]
+
+    if method != "match_energy":
+        raise ValueError(
+            f"Unsupported auxiliary scaling method: {method!r}."
+        )
+
+    return _match_energy(
+        profile,
+        auxiliary=auxiliary,
+        target_sources=scaling["target_sources"],
+    )
+
+
 def construct_from_sources(
     auxiliary: pd.DataFrame,
     *,
     target_index: pd.DatetimeIndex,
     sources: Sequence[Mapping[str, Any]],
+    scaling: Mapping[str, Any] | None = None,
 ) -> pd.Series:
     """Construct a target demand profile from weighted auxiliary sources."""
     weighted_sources: list[pd.Series] = []
@@ -142,4 +228,13 @@ def construct_from_sources(
         weighted_sources[0].copy(),
     )
 
-    return weighted_sum / sum(weights)
+    profile = weighted_sum / sum(weights)
+
+    if scaling is not None:
+        profile = _apply_scaling(
+            profile,
+            auxiliary=auxiliary,
+            scaling=scaling,
+        )
+
+    return profile

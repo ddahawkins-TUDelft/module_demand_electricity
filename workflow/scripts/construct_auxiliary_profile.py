@@ -28,6 +28,7 @@ profile = construct_from_sources(
     auxiliary,
     target_index=target_index,
     sources=override["sources"],
+    scaling=override.get("scaling"),
 )
 
 profile.to_frame(

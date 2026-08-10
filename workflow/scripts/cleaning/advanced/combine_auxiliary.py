@@ -14,10 +14,24 @@ def combine_auxiliary_sources(
     pd.DataFrame,
     pd.DataFrame,
 ]:
-    """Combine prepared auxiliary sources using configured source priority."""
+    """Combine available auxiliary sources using configured source priority."""
     if not loads:
         empty = pd.DataFrame()
         return empty, empty.copy(), empty.copy()
+
+    unexpected_sources = set(loads) - set(priority)
+
+    if unexpected_sources:
+        raise ValueError(
+            "Auxiliary sources were supplied but are not configured in "
+            f"source priority: {sorted(unexpected_sources)}."
+        )
+
+    available_priority = [
+        source
+        for source in priority
+        if source in loads
+    ]
 
     columns = sorted(
         {
@@ -34,5 +48,5 @@ def combine_auxiliary_sources(
 
     return combine_sources(
         aligned,
-        priority=priority,
+        priority=available_priority,
     )
