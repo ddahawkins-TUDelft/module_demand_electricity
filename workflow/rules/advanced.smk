@@ -1,4 +1,5 @@
 import json
+import pandas as pd
 
 def auxiliary_acquisition_plan(_wildcards):
     """Return the acquisition plan after the checkpoint completes."""
@@ -282,6 +283,67 @@ def auxiliary_combined_outputs(_wildcards):
     ]
 
 
+def auxiliary_rule_cleaned_files(wildcards):
+    plan_path = checkpoints.plan_auxiliary_data.get().output.plan
+
+    with open(plan_path, encoding="utf-8") as file:
+        plan = json.load(file)
+
+    override = (
+        config["gap_filling"]
+        ["advanced"]
+        ["overrides"]
+        [wildcards.rule_name]
+    )
+
+    group_ids = set()
+
+    for source in override["sources"]:
+        country = source["country"]
+        start = pd.Timestamp(source["start"])
+
+        if start.tzinfo is None:
+            start = start.tz_localize("UTC")
+        else:
+            start = start.tz_convert("UTC")
+
+        end = pd.Timestamp(source["end"])
+
+        if end.tzinfo is None:
+            end = end.tz_localize("UTC")
+        else:
+            end = end.tz_convert("UTC")
+
+        matching_groups = {
+            batch["group_id"]
+            for batch in plan["batches"]
+            if (
+                country in batch["countries"]
+                and pd.Timestamp(batch["start"]) <= start
+                and pd.Timestamp(batch["end"]) >= end
+            )
+        }
+
+        if len(matching_groups) != 1:
+            raise ValueError(
+                "Expected exactly one cleaned auxiliary group "
+                f"covering {country!r} from {start} to {end}, "
+                f"found {sorted(matching_groups)}."
+            )
+
+        group_ids.update(matching_groups)
+
+    return [
+        (
+            "<resources>/automatic/"
+            "auxiliary/cleaned/"
+            f"{group_id}.parquet"
+        )
+        for group_id in sorted(group_ids)
+    ]
+
+
+
 
 checkpoint plan_auxiliary_data:
     input:
@@ -513,3 +575,25 @@ rule clean_auxiliary_data:
     script:
         "../scripts/clean_auxiliary_data.py"
 
+rule construct_auxiliary_profile:
+    input:
+        sources=auxiliary_rule_cleaned_files,
+    output:
+        profile=(
+            "<resources>/automatic/"
+            "auxiliary/constructed/"
+            "{rule_name}.parquet"
+        ),
+    params:
+        override=lambda wildcards: (
+            config["gap_filling"]
+            ["advanced"]
+            ["overrides"]
+            [wildcards.rule_name]
+        ),
+    conda:
+        "../envs/module.yaml"
+    message:
+        "Construct auxiliary demand profile for {wildcards.rule_name}."
+    script:
+        "../scripts/construct_auxiliary_profile.py"
