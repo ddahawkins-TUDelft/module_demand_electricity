@@ -29,8 +29,8 @@ with open(workflow.source_path("internal/settings.yaml"), "r") as f:
 
 # Load python files in scripts that are used in other scripts, but not run itself.
 # This is necessary for integrating the snakemake module via reference to GitHub.
-workflow.source_path("scripts/_plots.py")
-workflow.source_path("scripts/_schemas.py")
+workflow.source_path("scripts/common/plots.py")
+workflow.source_path("scripts/common/schemas.py")
 
 
 # Add all your includes here.

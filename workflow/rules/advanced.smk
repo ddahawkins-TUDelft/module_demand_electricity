@@ -1,6 +1,25 @@
 import json
 import pandas as pd
 
+
+def _read_plan_file(plan_path):
+    with open(plan_path, encoding="utf-8") as file:
+        return json.load(file)
+
+
+def _read_auxiliary_plan(_wildcards=None):
+    """Read the resolved auxiliary acquisition plan."""
+    plan_path = (
+        checkpoints
+        .plan_auxiliary_data
+        .get()
+        .output
+        .plan
+    )
+
+    return _read_plan_file(plan_path)
+
+
 def auxiliary_acquisition_plan(_wildcards):
     """Return the acquisition plan after the checkpoint completes."""
     return (
@@ -13,18 +32,12 @@ def auxiliary_acquisition_plan(_wildcards):
 
 
 def get_auxiliary_batch(
-    plan_path,
+    plan: dict,
     *,
     batch_id: str,
     source: str,
 ) -> dict:
     """Return one source batch from the acquisition plan."""
-    with open(
-        plan_path,
-        encoding="utf-8",
-    ) as file:
-        plan = json.load(file)
-
     matches = [
         batch
         for batch in plan["batches"]
@@ -49,27 +62,15 @@ def get_auxiliary_entsoe_batch(
 ) -> dict:
     """Return the ENTSO-E batch for this job."""
     return get_auxiliary_batch(
-        input.plan,
+        _read_plan_file(input.plan),
         batch_id=wildcards.batch_id,
         source="entsoe_api",
     )
 
 
-def auxiliary_entsoe_outputs(_wildcards):
+def auxiliary_entsoe_outputs(wildcards):
     """Return all ENTSO-E outputs required by the acquisition plan."""
-    plan_path = (
-        checkpoints
-        .plan_auxiliary_data
-        .get()
-        .output
-        .plan
-    )
-
-    with open(
-        plan_path,
-        encoding="utf-8",
-    ) as file:
-        plan = json.load(file)
+    plan = _read_auxiliary_plan(wildcards)
 
     batch_ids = [
         batch["batch_id"]
@@ -93,27 +94,15 @@ def get_auxiliary_opsd_batch(
 ) -> dict:
     """Return the OPSD batch for this job."""
     return get_auxiliary_batch(
-        input.plan,
+        _read_plan_file(input.plan),
         batch_id=wildcards.batch_id,
         source="opsd_api",
     )
 
 
-def auxiliary_opsd_outputs(_wildcards):
+def auxiliary_opsd_outputs(wildcards):
     """Return all OPSD outputs required by the acquisition plan."""
-    plan_path = (
-        checkpoints
-        .plan_auxiliary_data
-        .get()
-        .output
-        .plan
-    )
-
-    with open(
-        plan_path,
-        encoding="utf-8",
-    ) as file:
-        plan = json.load(file)
+    plan = _read_auxiliary_plan(wildcards)
 
     batch_ids = [
         batch["batch_id"]
@@ -137,7 +126,7 @@ def get_auxiliary_neso_batch(
 ) -> dict:
     """Return the NESO batch for this job."""
     return get_auxiliary_batch(
-        input.plan,
+        _read_auxiliary_plan(input.plan),
         batch_id=wildcards.batch_id,
         source="neso",
     )
@@ -145,16 +134,10 @@ def get_auxiliary_neso_batch(
 
 def auxiliary_neso_raw_files(wildcards):
     """Return annual NESO files required by one auxiliary batch."""
-    plan_path = (
-        checkpoints
-        .plan_auxiliary_data
-        .get()
-        .output
-        .plan
-    )
+    plan = _read_auxiliary_plan(wildcards)
 
     batch = get_auxiliary_batch(
-        plan_path,
+        plan,
         batch_id=wildcards.batch_id,
         source="neso",
     )
@@ -173,21 +156,9 @@ def auxiliary_neso_raw_files(wildcards):
     ]
 
 
-def auxiliary_neso_outputs(_wildcards):
+def auxiliary_neso_outputs(wildcards):
     """Return all NESO outputs required by the acquisition plan."""
-    plan_path = (
-        checkpoints
-        .plan_auxiliary_data
-        .get()
-        .output
-        .plan
-    )
-
-    with open(
-        plan_path,
-        encoding="utf-8",
-    ) as file:
-        plan = json.load(file)
+    plan = _read_auxiliary_plan(wildcards)
 
     batch_ids = [
         batch["batch_id"]
@@ -206,14 +177,11 @@ def auxiliary_neso_outputs(_wildcards):
 
 
 def get_auxiliary_group_batches(
-    plan_path,
+    plan: dict,
     *,
     group_id: str,
 ) -> list[dict]:
     """Return all acquisition batches belonging to one auxiliary group."""
-    with open(plan_path, encoding="utf-8") as file:
-        plan = json.load(file)
-
     batches = [
         batch
         for batch in plan["batches"]
@@ -230,16 +198,10 @@ def get_auxiliary_group_batches(
 
 def auxiliary_group_source_files(wildcards):
     """Return prepared source files for one auxiliary group."""
-    plan_path = (
-        checkpoints
-        .plan_auxiliary_data
-        .get()
-        .output
-        .plan
-    )
+    plan = _read_auxiliary_plan(wildcards)
 
     batches = get_auxiliary_group_batches(
-        plan_path,
+        plan,
         group_id=wildcards.group_id,
     )
 
@@ -253,18 +215,9 @@ def auxiliary_group_source_files(wildcards):
     ]
 
 
-def auxiliary_combined_outputs(_wildcards):
+def auxiliary_combined_outputs(wildcards):
     """Return all combined auxiliary group outputs."""
-    plan_path = (
-        checkpoints
-        .plan_auxiliary_data
-        .get()
-        .output
-        .plan
-    )
-
-    with open(plan_path, encoding="utf-8") as file:
-        plan = json.load(file)
+    plan = _read_auxiliary_plan(wildcards)
 
     group_ids = sorted(
         {
@@ -284,10 +237,7 @@ def auxiliary_combined_outputs(_wildcards):
 
 
 def auxiliary_rule_cleaned_files(wildcards):
-    plan_path = checkpoints.plan_auxiliary_data.get().output.plan
-
-    with open(plan_path, encoding="utf-8") as file:
-        plan = json.load(file)
+    plan = _read_auxiliary_plan(wildcards)
 
     override = (
         config["gap_filling"]

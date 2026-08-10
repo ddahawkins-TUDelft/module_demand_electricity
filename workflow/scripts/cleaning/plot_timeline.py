@@ -1,9 +1,8 @@
 """Plot electricity demand and cleaning-method provenance through time."""
 
 import logging
-import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -14,9 +13,6 @@ from matplotlib.colors import ListedColormap, to_rgba
 from matplotlib.patches import Patch
 
 from cleaning.provenance import build_final_cleaning_rules
-
-if TYPE_CHECKING:
-    snakemake: Any
 
 logger = logging.getLogger(__name__)
 
@@ -715,25 +711,3 @@ def _format_source_name(source_name: str) -> str:
 
 def _format_rule_name(name: str) -> str:
     return name.replace("_", " ").capitalize()
-
-
-if __name__ == "__main__":
-    sys.stderr = open(
-        snakemake.log[0],
-        "w",
-        buffering=1,
-    )
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(levelname)s: %(message)s",
-    )
-
-    main(
-        demand_path=snakemake.input.demand,
-        cleaning_method_path=snakemake.input.cleaning_method,
-        cleaning_method_rank_path=snakemake.input.cleaning_method_rank,
-        output_path=snakemake.output.plot,
-        source_names=snakemake.params.source_names,
-        gap_filling_config=snakemake.params.gap_filling,
-    )

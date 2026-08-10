@@ -150,7 +150,7 @@ rule plot_cleaning_timeline:
     message:
         "Plot electricity-demand cleaning provenance."
     script:
-        "../scripts/cleaning/plot_cleaning_timeline.py"
+        "../scripts/plot_cleaning_timeline.py"
 
 rule clean_population:
     input:
