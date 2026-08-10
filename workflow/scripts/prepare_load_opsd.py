@@ -9,6 +9,8 @@ import pycountry
 from common.schemas import LoadENTSOE
 from common.time import as_utc_timestamp, build_hourly_index
 
+from time import perf_counter
+
 if TYPE_CHECKING:
     snakemake: Any
 

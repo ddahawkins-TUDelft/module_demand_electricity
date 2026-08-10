@@ -1,7 +1,7 @@
 integration_test:
   temporal_scope:
     start: "2022-01-01"
-    end: "2023-01-01"
+    end: "2025-01-01"
   # provide a list of sources and set their priority order. Options include: entsoe_api, opsd_api
   load_sources: 
     - entsoe_api
