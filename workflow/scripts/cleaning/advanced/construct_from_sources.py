@@ -6,6 +6,8 @@ from typing import Any
 import pandas as pd
 from _time import as_utc_timestamp
 
+METHOD_NAME = "construct_from_sources"
+
 
 def construct_from_sources(
     auxiliary: pd.DataFrame,
