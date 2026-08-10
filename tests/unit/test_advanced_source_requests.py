@@ -2,7 +2,7 @@
 
 import pandas as pd
 import pytest
-from cleaning.advanced.source_requests import (
+from cleaning.advanced.planning.source_requests import (
     SOURCE_REQUEST_COLUMNS,
     _build_batch_id,
     _build_group_id,

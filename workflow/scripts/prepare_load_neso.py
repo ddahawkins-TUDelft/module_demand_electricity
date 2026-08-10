@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable
 
 import pandas as pd
-from cleaning.neso import add_utc_timestamps
+from cleaning.sources.neso import add_utc_timestamps
 from common.time import build_hourly_index
 
 if TYPE_CHECKING:

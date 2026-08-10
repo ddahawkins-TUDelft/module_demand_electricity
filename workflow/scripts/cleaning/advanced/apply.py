@@ -6,12 +6,10 @@ from typing import Any
 import pandas as pd
 from common.time import as_utc_timestamp
 
-from workflow.scripts.cleaning.advanced.methods.construct_from_sources import (
+from cleaning.advanced.methods.construct_from_sources import (
     METHOD_NAME as CONSTRUCT_FROM_SOURCES,
 )
-from workflow.scripts.cleaning.advanced.methods.external_profile import (
-    METHOD_NAME as EXTERNAL_PROFILE,
-)
+from cleaning.advanced.methods.external_profile import METHOD_NAME as EXTERNAL_PROFILE
 
 MANUAL_REVIEW = "manual_review"
 LEAVE_MISSING = "leave_missing"

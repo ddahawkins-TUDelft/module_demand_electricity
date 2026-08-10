@@ -1,7 +1,7 @@
 """Tests for auxiliary acquisition planning."""
 
 import pandas as pd
-from cleaning.advanced.source_requests import (
+from cleaning.advanced.planning.source_requests import (
     _build_batch_id,
     _build_group_id,
 )

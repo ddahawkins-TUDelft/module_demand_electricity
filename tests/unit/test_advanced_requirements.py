@@ -1,7 +1,7 @@
 """Tests for compiling auxiliary-data requirements."""
 
 import pandas as pd
-from cleaning.advanced.requirements import (
+from cleaning.advanced.planning.requirements import (
     REQUIREMENT_COLUMNS,
     build_auxiliary_acquisition_requirements,
     compile_auxiliary_requirements,

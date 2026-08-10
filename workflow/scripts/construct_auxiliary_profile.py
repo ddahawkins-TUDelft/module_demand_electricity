@@ -1,9 +1,6 @@
 import pandas as pd
+from cleaning.advanced.methods.construct_from_sources import construct_from_sources
 from common.time import build_hourly_index
-
-from workflow.scripts.cleaning.advanced.methods.construct_from_sources import (
-    construct_from_sources,
-)
 
 loads = [
     pd.read_parquet(path)

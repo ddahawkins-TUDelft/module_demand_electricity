@@ -5,12 +5,10 @@ from typing import Any
 
 import pandas as pd
 
-from workflow.scripts.cleaning.advanced.methods.construct_from_sources import (
+from cleaning.advanced.methods.construct_from_sources import (
     METHOD_NAME as CONSTRUCT_FROM_SOURCES,
 )
-from workflow.scripts.cleaning.advanced.methods.external_profile import (
-    METHOD_NAME as EXTERNAL_PROFILE,
-)
+from cleaning.advanced.methods.external_profile import METHOD_NAME as EXTERNAL_PROFILE
 
 FILL_GAPS_WITHIN_PERIOD = "fill_gaps_within_period"
 OVERWRITE_ENTIRE_PERIOD = "overwrite_entire_period"

@@ -6,13 +6,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
-from workflow.scripts.cleaning.advanced.planning.source_requests import (
+from cleaning.advanced.planning.requirements import (
+    build_auxiliary_acquisition_requirements,
+)
+from cleaning.advanced.planning.source_requests import (
     build_auxiliary_source_batches,
     build_auxiliary_source_requests,
-)
-
-from workflow.scripts.cleaning.advanced.planning.requirements import (
-    build_auxiliary_acquisition_requirements,
 )
 
 if TYPE_CHECKING:

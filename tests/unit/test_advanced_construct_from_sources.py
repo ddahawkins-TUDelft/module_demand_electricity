@@ -1,7 +1,7 @@
 """Tests for source-based advanced profile construction."""
 
 import pandas as pd
-from cleaning.advanced.construct_from_sources import construct_from_sources
+from cleaning.advanced.methods.construct_from_sources import construct_from_sources
 
 
 def test_construct_from_single_source() -> None:

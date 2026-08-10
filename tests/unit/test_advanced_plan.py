@@ -1,7 +1,7 @@
 """Tests for advanced auxiliary-fill planning."""
 import pandas as pd
 import pytest
-from cleaning.advanced.plan import (
+from cleaning.advanced.planning.plan import (
     build_auxiliary_fill_plan,
     validate_auxiliary_fill_rule,
 )
