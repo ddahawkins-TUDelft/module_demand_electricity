@@ -8,7 +8,9 @@ from typing import Any
 import pandas as pd
 from common.time import as_utc_timestamp
 
-from cleaning.advanced.construct_from_sources import METHOD_NAME
+from workflow.scripts.cleaning.advanced.methods.construct_from_sources import (
+    METHOD_NAME,
+)
 
 REQUIREMENT_COLUMNS = [
     "country",

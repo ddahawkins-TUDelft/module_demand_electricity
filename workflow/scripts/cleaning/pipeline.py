@@ -8,10 +8,10 @@ from typing import Any
 import pandas as pd
 
 from cleaning.advanced.gap_report import build_gap_report
-from cleaning.advanced.plan import build_auxiliary_fill_plan
 from cleaning.basic.apply import fill_basic_gaps
 from cleaning.combine_sources import combine_sources
 from cleaning.provenance import build_cleaning_method_ranks, derive_cleaning_method_rank
+from workflow.scripts.cleaning.advanced.planning.plan import build_auxiliary_fill_plan
 
 logger = logging.getLogger(__name__)
 
