@@ -33,8 +33,29 @@ def build_auxiliary_acquisition_plan(
 
     advanced = gap_filling_config["advanced"]
 
+    active_rule_names = set(
+        fill_plan["rule_name"]
+    )
+
+    unknown_rule_names = (
+        active_rule_names
+        - set(advanced["overrides"])
+    )
+
+    if unknown_rule_names:
+        raise ValueError(
+            "Auxiliary fill plan references unknown advanced "
+            f"overrides: {sorted(unknown_rule_names)}."
+        )
+
+    active_overrides = {
+        rule_name: override
+        for rule_name, override in advanced["overrides"].items()
+        if rule_name in active_rule_names
+    }
+
     requirements = build_auxiliary_acquisition_requirements(
-        overrides=advanced["overrides"],
+        overrides=active_overrides,
         basic_rules=gap_filling_config["basic"]["rules"],
         basic_cleaning_enabled=(
             advanced["auxiliary_data"]

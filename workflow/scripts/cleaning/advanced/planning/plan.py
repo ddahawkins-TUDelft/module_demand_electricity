@@ -336,8 +336,62 @@ def _validate_scaling(
             context="scaling target source",
         )
 
+
+def override_intersects_target_scope(
+    rule: Mapping[str, Any],
+    *,
+    rule_name: str,
+    target_countries: Sequence[str],
+    target_start: pd.Timestamp,
+    target_end: pd.Timestamp,
+) -> bool:
+    """Return whether an advanced override intersects the model scope."""
+    rule_start = _get_required_timestamp(
+        rule,
+        key="start",
+        rule_name=rule_name,
+    )
+    rule_end = _get_required_timestamp(
+        rule,
+        key="end",
+        rule_name=rule_name,
+    )
+
+    target_start = pd.Timestamp(target_start)
+
+    if target_start.tzinfo is None:
+        target_start = target_start.tz_localize("UTC")
+    else:
+        target_start = target_start.tz_convert("UTC")
+
+    target_end = pd.Timestamp(target_end)
+
+    if target_end.tzinfo is None:
+        target_end = target_end.tz_localize("UTC")
+    else:
+        target_end = target_end.tz_convert("UTC")
+
+    country_intersects = (
+        rule["country"] in target_countries
+    )
+
+    period_intersects = (
+        rule_start < target_end
+        and rule_end > target_start
+    )
+
+    return (
+        country_intersects
+        and period_intersects
+    )
+
+
 def build_auxiliary_fill_plan(
     rules: Mapping[str, Mapping[str, Any]],
+    *,
+    target_countries: Sequence[str],
+    target_start: pd.Timestamp,
+    target_end: pd.Timestamp,
 ) -> pd.DataFrame:
     """Validate and normalize configured advanced-fill rules."""
     if not isinstance(rules, Mapping):
@@ -347,19 +401,20 @@ def build_auxiliary_fill_plan(
 
     records: list[dict[str, Any]] = []
 
-    # TODO: Support reusable libraries of advanced overrides.
-    # Before planning auxiliary acquisition, filter configured overrides
-    # against the current model countries and temporal scope. Overrides
-    # that do not intersect the current target scope should be ignored,
-    # while applicable overrides should continue to be validated strictly.
-    # This allows users to have a general overrides file for which they
-    # need not retune the dates for each new run/horizon.
-
     for rule_name, rule in rules.items():
         validate_auxiliary_fill_rule(
             rule_name,
             rule,
         )
+
+        if not override_intersects_target_scope(
+            rule,
+            rule_name=rule_name,
+            target_countries=target_countries,
+            target_start=target_start,
+            target_end=target_end,
+        ):
+            continue
 
         method = rule["method"]
 

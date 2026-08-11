@@ -1,10 +1,8 @@
 """Tests for auxiliary acquisition planning."""
 
 import pandas as pd
-from cleaning.advanced.planning.source_requests import (
-    _build_batch_id,
-    _build_group_id,
-)
+import pytest
+from cleaning.advanced.planning.source_requests import _build_batch_id, _build_group_id
 from plan_auxiliary_data import build_auxiliary_acquisition_plan
 
 
@@ -214,3 +212,110 @@ def test_empty_fill_plan_produces_no_acquisition_batches() -> None:
     assert result == {
         "batches": [],
     }
+
+
+def test_acquisition_plan_uses_only_overrides_in_fill_plan() -> None:
+    config = {
+        "mode": "advanced",
+        "basic": {
+            "rules": [],
+        },
+        "advanced": {
+            "auxiliary_data": {
+                "basic_cleaning": {
+                    "enabled": False,
+                }
+            },
+            "overrides": {
+                "active": {
+                    "country": "ALB",
+                    "start": "2020-01-01",
+                    "end": "2020-02-01",
+                    "scope": "fill_gaps_within_period",
+                    "method": "construct_from_sources",
+                    "sources": [
+                        {
+                            "country": "GRC",
+                            "start": "2020-01-01",
+                            "end": "2020-02-01",
+                            "weight": 1,
+                        }
+                    ],
+                },
+                "inactive": {
+                    "country": "MNE",
+                    "start": "2020-01-01",
+                    "end": "2020-02-01",
+                    "scope": "fill_gaps_within_period",
+                    "method": "construct_from_sources",
+                    "sources": [
+                        {
+                            "country": "SRB",
+                            "start": "2020-01-01",
+                            "end": "2020-02-01",
+                            "weight": 1,
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+    fill_plan = pd.DataFrame(
+        {
+            "rule_name": ["active"],
+            "method": ["construct_from_sources"],
+            "status": ["ready"],
+        }
+    )
+
+    result = build_auxiliary_acquisition_plan(
+        fill_plan=fill_plan,
+        gap_filling_config=config,
+        source_names=["entsoe_api"],
+    )
+
+    assert all(
+        "GRC" in batch["countries"]
+        for batch in result["batches"]
+    )
+
+    assert all(
+        "SRB" not in batch["countries"]
+        for batch in result["batches"]
+    )
+
+
+def test_acquisition_plan_rejects_unknown_fill_plan_rule() -> None:
+    config = {
+        "mode": "advanced",
+        "basic": {
+            "rules": [],
+        },
+        "advanced": {
+            "auxiliary_data": {
+                "basic_cleaning": {
+                    "enabled": False,
+                }
+            },
+            "overrides": {},
+        },
+    }
+
+    fill_plan = pd.DataFrame(
+        {
+            "rule_name": ["missing_rule"],
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="references unknown advanced overrides",
+    ):
+        build_auxiliary_acquisition_plan(
+            fill_plan=fill_plan,
+            gap_filling_config=config,
+            source_names=["entsoe_api"],
+        )
+
+

@@ -1,9 +1,22 @@
 """Tests for advanced auxiliary-fill planning."""
+
 import pandas as pd
 import pytest
 from cleaning.advanced.planning.plan import (
     build_auxiliary_fill_plan,
     validate_auxiliary_fill_rule,
+)
+
+TARGET_COUNTRIES = ["ALB"]
+
+TARGET_START = pd.Timestamp(
+    "2022-01-01",
+    tz="UTC",
+)
+
+TARGET_END = pd.Timestamp(
+    "2025-01-01",
+    tz="UTC",
 )
 
 
@@ -34,6 +47,7 @@ def test_validate_construct_from_sources_rule() -> None:
         rule,
     )
 
+
 def test_validate_external_profile_rule() -> None:
     rule = {
         "country": "ALB",
@@ -47,6 +61,7 @@ def test_validate_external_profile_rule() -> None:
         "external_albania_2023",
         rule,
     )
+
 
 def test_construct_from_sources_requires_sources() -> None:
     rule = {
@@ -65,6 +80,7 @@ def test_construct_from_sources_requires_sources() -> None:
             "replace_albania_2023",
             rule,
         )
+
 
 def test_source_weight_must_be_positive() -> None:
     rule = {
@@ -91,6 +107,7 @@ def test_source_weight_must_be_positive() -> None:
             "replace_albania_2023",
             rule,
         )
+
 
 def test_validate_construct_from_sources_with_scaling() -> None:
     rule = {
@@ -129,6 +146,7 @@ def test_validate_construct_from_sources_with_scaling() -> None:
         rule,
     )
 
+
 def test_match_energy_scaling_requires_target_sources() -> None:
     rule = {
         "country": "ALB",
@@ -156,6 +174,7 @@ def test_match_energy_scaling_requires_target_sources() -> None:
             "replace_albania_2023",
             rule,
         )
+
 
 def test_rejects_unsupported_scaling_method() -> None:
     rule = {
@@ -191,6 +210,7 @@ def test_rejects_unsupported_scaling_method() -> None:
             "replace_albania_2023",
             rule,
         )
+
 
 def test_build_auxiliary_fill_plan_normalizes_rules() -> None:
     rules = {
@@ -233,7 +253,12 @@ def test_build_auxiliary_fill_plan_normalizes_rules() -> None:
         },
     }
 
-    result = build_auxiliary_fill_plan(rules)
+    result = build_auxiliary_fill_plan(
+        rules,
+        target_countries=TARGET_COUNTRIES,
+        target_start=TARGET_START,
+        target_end=TARGET_END,
+    )
 
     expected = pd.DataFrame(
         {
@@ -293,8 +318,14 @@ def test_build_auxiliary_fill_plan_normalizes_rules() -> None:
         expected,
     )
 
+
 def test_build_auxiliary_fill_plan_returns_empty_schema() -> None:
-    result = build_auxiliary_fill_plan({})
+    result = build_auxiliary_fill_plan(
+        {},
+        target_countries=TARGET_COUNTRIES,
+        target_start=TARGET_START,
+        target_end=TARGET_END,
+    )
 
     expected = pd.DataFrame(
         columns=[
@@ -314,3 +345,191 @@ def test_build_auxiliary_fill_plan_returns_empty_schema() -> None:
         result,
         expected,
     )
+
+
+def test_build_auxiliary_fill_plan_ignores_wrong_country() -> None:
+    rules = {
+        "albania": {
+            "country": "ALB",
+            "start": "2023-01-01",
+            "end": "2023-02-01",
+            "scope": "overwrite_entire_period",
+            "method": "construct_from_sources",
+            "sources": [
+                {
+                    "country": "GBR",
+                    "start": "2023-01-01",
+                    "end": "2023-02-01",
+                }
+            ],
+        },
+        "montenegro": {
+            "country": "MNE",
+            "start": "2023-01-01",
+            "end": "2023-02-01",
+            "scope": "overwrite_entire_period",
+            "method": "construct_from_sources",
+            "sources": [
+                {
+                    "country": "GBR",
+                    "start": "2023-01-01",
+                    "end": "2023-02-01",
+                }
+            ],
+        },
+    }
+
+    result = build_auxiliary_fill_plan(
+        rules,
+        target_countries=["ALB"],
+        target_start=TARGET_START,
+        target_end=TARGET_END,
+    )
+
+    assert result["rule_name"].tolist() == [
+        "albania"
+    ]
+
+
+def test_build_auxiliary_fill_plan_ignores_non_overlapping_periods() -> None:
+    rules = {
+        "before": {
+            "country": "ALB",
+            "start": "2020-01-01",
+            "end": "2020-02-01",
+            "scope": "overwrite_entire_period",
+            "method": "construct_from_sources",
+            "sources": [
+                {
+                    "country": "GBR",
+                    "start": "2020-01-01",
+                    "end": "2020-02-01",
+                }
+            ],
+        },
+        "after": {
+            "country": "ALB",
+            "start": "2026-01-01",
+            "end": "2026-02-01",
+            "scope": "overwrite_entire_period",
+            "method": "construct_from_sources",
+            "sources": [
+                {
+                    "country": "GBR",
+                    "start": "2026-01-01",
+                    "end": "2026-02-01",
+                }
+            ],
+        },
+    }
+
+    result = build_auxiliary_fill_plan(
+        rules,
+        target_countries=TARGET_COUNTRIES,
+        target_start=TARGET_START,
+        target_end=TARGET_END,
+    )
+
+    assert result.empty
+
+
+def test_build_auxiliary_fill_plan_keeps_partial_overlap() -> None:
+    rules = {
+        "partial": {
+            "country": "ALB",
+            "start": "2021-12-01",
+            "end": "2022-02-01",
+            "scope": "overwrite_entire_period",
+            "method": "construct_from_sources",
+            "sources": [
+                {
+                    "country": "GBR",
+                    "start": "2021-12-01",
+                    "end": "2022-02-01",
+                }
+            ],
+        },
+    }
+
+    result = build_auxiliary_fill_plan(
+        rules,
+        target_countries=TARGET_COUNTRIES,
+        target_start=TARGET_START,
+        target_end=TARGET_END,
+    )
+
+    assert result["rule_name"].tolist() == [
+        "partial"
+    ]
+
+
+def test_build_auxiliary_fill_plan_validates_inactive_rule() -> None:
+    rules = {
+        "invalid_montenegro": {
+            "country": "MNE",
+            "start": "2020-01-01",
+            "end": "2020-02-01",
+            "scope": "not_a_scope",
+            "method": "construct_from_sources",
+            "sources": [
+                {
+                    "country": "GBR",
+                    "start": "2020-01-01",
+                    "end": "2020-02-01",
+                }
+            ],
+        },
+    }
+
+    with pytest.raises(
+        ValueError,
+        match="Unsupported scope",
+    ):
+        build_auxiliary_fill_plan(
+            rules,
+            target_countries=TARGET_COUNTRIES,
+            target_start=TARGET_START,
+            target_end=TARGET_END,
+        )
+
+
+def test_build_auxiliary_fill_plan_excludes_touching_periods() -> None:
+    rules = {
+        "ends_at_start": {
+            "country": "ALB",
+            "start": "2021-12-01",
+            "end": "2022-01-01",
+            "scope": "overwrite_entire_period",
+            "method": "construct_from_sources",
+            "sources": [
+                {
+                    "country": "GBR",
+                    "start": "2021-12-01",
+                    "end": "2022-01-01",
+                }
+            ],
+        },
+        "starts_at_end": {
+            "country": "ALB",
+            "start": "2025-01-01",
+            "end": "2025-02-01",
+            "scope": "overwrite_entire_period",
+            "method": "construct_from_sources",
+            "sources": [
+                {
+                    "country": "GBR",
+                    "start": "2025-01-01",
+                    "end": "2025-02-01",
+                }
+            ],
+        },
+    }
+
+    result = build_auxiliary_fill_plan(
+        rules,
+        target_countries=TARGET_COUNTRIES,
+        target_start=TARGET_START,
+        target_end=TARGET_END,
+    )
+
+    assert result.empty

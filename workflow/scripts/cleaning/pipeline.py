@@ -63,10 +63,18 @@ def clean_demand(
         enabled=gap_filling_config["mode"] == "advanced",
     )
 
+    target_countries = list(cleaned.columns)
+    target_start = cleaned.index.min()
+    target_end = cleaned.index.max() + pd.Timedelta(hours=1)
+
     if gap_filling_config["mode"] == "advanced":
         advanced_overrides = gap_filling_config["advanced"]["overrides"]
+
         auxiliary_fill_plan = build_auxiliary_fill_plan(
-            advanced_overrides
+            advanced_overrides,
+            target_countries=target_countries,
+            target_start=target_start,
+            target_end=target_end,
         )
 
         logger.info(
@@ -77,12 +85,17 @@ def clean_demand(
         )
 
         logger.info(
-            "Advanced auxiliary-fill plan contains %s configured "
+            "Advanced auxiliary-fill plan contains %s active "
             "instructions.",
             len(auxiliary_fill_plan),
         )
     else:
-        auxiliary_fill_plan = build_auxiliary_fill_plan({})
+        auxiliary_fill_plan = build_auxiliary_fill_plan(
+            {},
+            target_countries=target_countries,
+            target_start=target_start,
+            target_end=target_end,
+        )
 
     return (
         cleaned,
@@ -92,4 +105,3 @@ def clean_demand(
         gap_report,
         auxiliary_fill_plan,
     )
-
