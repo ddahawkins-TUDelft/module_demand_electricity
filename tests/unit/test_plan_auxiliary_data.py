@@ -2,43 +2,33 @@
 
 import pandas as pd
 import pytest
-from cleaning.advanced.planning.source_requests import _build_batch_id, _build_group_id
+from cleaning.advanced.planning.source_requests import (
+    _build_batch_id,
+    _build_group_id,
+)
 from plan_auxiliary_data import build_auxiliary_acquisition_plan
 
 
 def test_plan_is_empty_outside_advanced_mode() -> None:
     config = {
         "mode": "basic",
-        "basic": {
-            "rules": [],
-        },
+        "basic": {"rules": []},
         "advanced": {
-            "auxiliary_data": {
-                "basic_cleaning": {
-                    "enabled": True,
-                }
-            },
+            "auxiliary_data": {"basic_cleaning": {"enabled": True}},
             "overrides": {},
         },
     }
 
-    fill_plan = pd.DataFrame(
-        {
-            "rule_name": ["example"],
-        }
-    )
+    fill_plan = pd.DataFrame({"rule_name": ["example"]})
 
     result = build_auxiliary_acquisition_plan(
         fill_plan=fill_plan,
         gap_filling_config=config,
-        source_names=[
-            "entsoe_api",
-            "neso",
-            "opsd_api",
-        ],
+        source_names=["entsoe_api", "neso", "opsd_api"],
     )
 
     assert result == {
+        "active_rule_names": [],
         "batches": [],
     }
 
@@ -46,32 +36,21 @@ def test_plan_is_empty_outside_advanced_mode() -> None:
 def test_advanced_plan_with_no_overrides_is_empty() -> None:
     config = {
         "mode": "advanced",
-        "basic": {
-            "rules": [],
-        },
+        "basic": {"rules": []},
         "advanced": {
-            "auxiliary_data": {
-                "basic_cleaning": {
-                    "enabled": True,
-                }
-            },
+            "auxiliary_data": {"basic_cleaning": {"enabled": True}},
             "overrides": {},
         },
     }
 
-    fill_plan = pd.DataFrame()
-
     result = build_auxiliary_acquisition_plan(
-        fill_plan=fill_plan,
+        fill_plan=pd.DataFrame(),
         gap_filling_config=config,
-        source_names=[
-            "entsoe_api",
-            "neso",
-            "opsd_api",
-        ],
+        source_names=["entsoe_api", "neso", "opsd_api"],
     )
 
     assert result == {
+        "active_rule_names": [],
         "batches": [],
     }
 
@@ -79,15 +58,9 @@ def test_advanced_plan_with_no_overrides_is_empty() -> None:
 def test_advanced_plan_builds_serializable_source_batches() -> None:
     config = {
         "mode": "advanced",
-        "basic": {
-            "rules": [],
-        },
+        "basic": {"rules": []},
         "advanced": {
-            "auxiliary_data": {
-                "basic_cleaning": {
-                    "enabled": False,
-                }
-            },
+            "auxiliary_data": {"basic_cleaning": {"enabled": False}},
             "overrides": {
                 "fill_albania": {
                     "country": "ALB",
@@ -119,27 +92,15 @@ def test_advanced_plan_builds_serializable_source_batches() -> None:
     result = build_auxiliary_acquisition_plan(
         fill_plan=fill_plan,
         gap_filling_config=config,
-        source_names=[
-            "entsoe_api",
-            "opsd_api",
-        ],
+        source_names=["entsoe_api", "opsd_api"],
     )
 
-    start = pd.Timestamp(
-        "2020-01-01",
-        tz="UTC",
-    )
-    end = pd.Timestamp(
-        "2020-02-01",
-        tz="UTC",
-    )
-
-    group_id = _build_group_id(
-        start=start,
-        end=end,
-    )
+    start = pd.Timestamp("2020-01-01", tz="UTC")
+    end = pd.Timestamp("2020-02-01", tz="UTC")
+    group_id = _build_group_id(start=start, end=end)
 
     assert result == {
+        "active_rule_names": ["fill_albania"],
         "batches": [
             {
                 "group_id": group_id,
@@ -167,22 +128,16 @@ def test_advanced_plan_builds_serializable_source_batches() -> None:
                 "end": "2020-02-01T00:00:00+00:00",
                 "countries": ["GRC"],
             },
-        ]
+        ],
     }
 
 
 def test_empty_fill_plan_produces_no_acquisition_batches() -> None:
     config = {
         "mode": "advanced",
-        "basic": {
-            "rules": [],
-        },
+        "basic": {"rules": []},
         "advanced": {
-            "auxiliary_data": {
-                "basic_cleaning": {
-                    "enabled": False,
-                }
-            },
+            "auxiliary_data": {"basic_cleaning": {"enabled": False}},
             "overrides": {
                 "fill_albania": {
                     "country": "ALB",
@@ -210,6 +165,7 @@ def test_empty_fill_plan_produces_no_acquisition_batches() -> None:
     )
 
     assert result == {
+        "active_rule_names": [],
         "batches": [],
     }
 
@@ -217,15 +173,9 @@ def test_empty_fill_plan_produces_no_acquisition_batches() -> None:
 def test_acquisition_plan_uses_only_overrides_in_fill_plan() -> None:
     config = {
         "mode": "advanced",
-        "basic": {
-            "rules": [],
-        },
+        "basic": {"rules": []},
         "advanced": {
-            "auxiliary_data": {
-                "basic_cleaning": {
-                    "enabled": False,
-                }
-            },
+            "auxiliary_data": {"basic_cleaning": {"enabled": False}},
             "overrides": {
                 "active": {
                     "country": "ALB",
@@ -275,6 +225,8 @@ def test_acquisition_plan_uses_only_overrides_in_fill_plan() -> None:
         source_names=["entsoe_api"],
     )
 
+    assert result["active_rule_names"] == ["active"]
+
     assert all(
         "GRC" in batch["countries"]
         for batch in result["batches"]
@@ -289,24 +241,14 @@ def test_acquisition_plan_uses_only_overrides_in_fill_plan() -> None:
 def test_acquisition_plan_rejects_unknown_fill_plan_rule() -> None:
     config = {
         "mode": "advanced",
-        "basic": {
-            "rules": [],
-        },
+        "basic": {"rules": []},
         "advanced": {
-            "auxiliary_data": {
-                "basic_cleaning": {
-                    "enabled": False,
-                }
-            },
+            "auxiliary_data": {"basic_cleaning": {"enabled": False}},
             "overrides": {},
         },
     }
 
-    fill_plan = pd.DataFrame(
-        {
-            "rule_name": ["missing_rule"],
-        }
-    )
+    fill_plan = pd.DataFrame({"rule_name": ["missing_rule"]})
 
     with pytest.raises(
         ValueError,
@@ -317,5 +259,3 @@ def test_acquisition_plan_rejects_unknown_fill_plan_rule() -> None:
             gap_filling_config=config,
             source_names=["entsoe_api"],
         )
-
-

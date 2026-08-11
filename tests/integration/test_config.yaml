@@ -66,6 +66,7 @@ integration_test:
                 start: "2024-01-01"
                 end: "2024-02-01"
                 weight: 1
+
         build_ALB_from_GBR_summer:
           country: ALB
           start: "2022-05-01"
@@ -84,3 +85,15 @@ integration_test:
                 start: "2024-05-01"
                 end: "2024-06-01"
                 weight: 1
+        
+        example_inactive_MNE_override:
+          country: MNE
+          start: "2020-03-01"
+          end: "2020-04-01"
+          scope: fill_gaps_within_period
+          method: construct_from_sources
+          sources:
+            - country: SRB
+              start: "2022-03-01"
+              end: "2022-04-01"
+              weight: 1

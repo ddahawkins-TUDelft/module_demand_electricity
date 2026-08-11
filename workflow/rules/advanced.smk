@@ -213,8 +213,14 @@ def auxiliary_rule_cleaned_files(wildcards):
     ]
 
 
-def advanced_constructed_profiles(_wildcards):
-    """Return constructed profiles required by advanced overrides."""
+def advanced_constructed_profiles(wildcards):
+    """Return constructed profiles required by active advanced overrides."""
+    plan = _read_auxiliary_plan(wildcards)
+
+    active_rule_names = set(
+        plan["active_rule_names"]
+    )
+
     overrides = (
         config["gap_filling"]
         ["advanced"]
@@ -228,7 +234,10 @@ def advanced_constructed_profiles(_wildcards):
             f"{rule_name}.parquet"
         )
         for rule_name, override in overrides.items()
-        if override["method"] == "construct_from_sources"
+        if (
+            rule_name in active_rule_names
+            and override["method"] == "construct_from_sources"
+        )
     ]
 
 
@@ -530,6 +539,7 @@ rule apply_advanced_overrides:
             "<resources>/automatic/"
             "load_cleaning_method.parquet"
         ),
+        plan=auxiliary_acquisition_plan,
         profiles=advanced_constructed_profiles,
     output:
         demand=(

@@ -23,13 +23,19 @@ def build_auxiliary_acquisition_plan(
     fill_plan: pd.DataFrame,
     gap_filling_config: Mapping[str, Any],
     source_names: Sequence[str],
-) -> dict[str, list[dict[str, object]]]:
+) -> dict[str, object]:
     """Build a JSON-serializable auxiliary acquisition plan."""
     if gap_filling_config["mode"] != "advanced":
-        return {"batches": []}
+        return {
+            "active_rule_names": [],
+            "batches": [],
+        }
 
     if fill_plan.empty:
-        return {"batches": []}
+        return {
+            "active_rule_names": [],
+            "batches": [],
+        }
 
     advanced = gap_filling_config["advanced"]
 
@@ -48,10 +54,15 @@ def build_auxiliary_acquisition_plan(
             f"overrides: {sorted(unknown_rule_names)}."
         )
 
-    active_overrides = {
-        rule_name: override
-        for rule_name, override in advanced["overrides"].items()
+    ordered_active_rule_names = [
+        rule_name
+        for rule_name in advanced["overrides"]
         if rule_name in active_rule_names
+    ]
+
+    active_overrides = {
+        rule_name: advanced["overrides"][rule_name]
+        for rule_name in ordered_active_rule_names
     }
 
     requirements = build_auxiliary_acquisition_requirements(
@@ -74,6 +85,7 @@ def build_auxiliary_acquisition_plan(
     )
 
     return {
+        "active_rule_names": ordered_active_rule_names,
         "batches": [
             {
                 **batch,
@@ -81,7 +93,7 @@ def build_auxiliary_acquisition_plan(
                 "end": batch["end"].isoformat(),
             }
             for batch in batches
-        ]
+        ],
     }
 
 

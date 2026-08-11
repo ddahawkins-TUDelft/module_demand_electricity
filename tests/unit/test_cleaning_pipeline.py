@@ -658,3 +658,102 @@ def test_advanced_mode_builds_auxiliary_fill_plan() -> None:
     assert row["method"] == "construct_from_sources"
     assert row["status"] == "ready"
     assert row["source_count"] == 1
+
+
+def test_clean_demand_filters_advanced_overrides_to_model_scope() -> None:
+    index = pd.date_range(
+        start="2022-01-01",
+        end="2022-01-03 23:00",
+        freq="h",
+        tz="UTC",
+    )
+
+    source = pd.DataFrame(
+        {
+            "ALB": range(len(index)),
+        },
+        index=index,
+        dtype=float,
+    )
+
+    sources = {
+        "primary": source,
+    }
+
+    gap_filling_config = {
+        "mode": "advanced",
+        "basic": {
+            "rules": [],
+        },
+        "advanced": {
+            "auxiliary_data": {
+                "basic_cleaning": {
+                    "enabled": False,
+                }
+            },
+            "overrides": {
+                "active_albania": {
+                    "country": "ALB",
+                    "start": "2022-01-02",
+                    "end": "2022-01-03",
+                    "scope": "fill_gaps_within_period",
+                    "method": "construct_from_sources",
+                    "sources": [
+                        {
+                            "country": "GBR",
+                            "start": "2022-01-02",
+                            "end": "2022-01-03",
+                            "weight": 1,
+                        }
+                    ],
+                },
+                "inactive_country": {
+                    "country": "MNE",
+                    "start": "2022-01-02",
+                    "end": "2022-01-03",
+                    "scope": "fill_gaps_within_period",
+                    "method": "construct_from_sources",
+                    "sources": [
+                        {
+                            "country": "GBR",
+                            "start": "2022-01-02",
+                            "end": "2022-01-03",
+                            "weight": 1,
+                        }
+                    ],
+                },
+                "inactive_period": {
+                    "country": "ALB",
+                    "start": "2021-01-01",
+                    "end": "2021-02-01",
+                    "scope": "fill_gaps_within_period",
+                    "method": "construct_from_sources",
+                    "sources": [
+                        {
+                            "country": "GBR",
+                            "start": "2021-01-01",
+                            "end": "2021-02-01",
+                            "weight": 1,
+                        }
+                    ],
+                },
+            },
+        },
+    }
+
+    (
+        _cleaned,
+        _data_source,
+        _cleaning_method,
+        _cleaning_method_rank,
+        _gap_report,
+        auxiliary_fill_plan,
+    ) = clean_demand(
+        sources,
+        source_priority=["primary"],
+        gap_filling_config=gap_filling_config,
+    )
+
+    assert auxiliary_fill_plan["rule_name"].tolist() == [
+        "active_albania"
+    ]
