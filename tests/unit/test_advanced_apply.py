@@ -311,3 +311,149 @@ def test_apply_auxiliary_fill_rules_with_no_overrides_returns_copies() -> None:
 
     assert filled is not load
     assert methods is not cleaning_method
+
+
+def test_overwrite_entire_period_replaces_existing_values() -> None:
+    index = pd.date_range(
+        "2022-01-01",
+        periods=4,
+        freq="h",
+        tz="UTC",
+    )
+
+    load = pd.DataFrame(
+        {
+            "ALB": [10.0, 20.0, 30.0, 40.0],
+        },
+        index=index,
+    )
+
+    cleaning_method = pd.DataFrame(
+        {
+            "ALB": ["observed_entsoe_api"] * 4,
+        },
+        index=index,
+    )
+
+    profile = pd.Series(
+        [100.0, 200.0],
+        index=index[1:3],
+        name="ALB",
+    )
+
+    overrides = {
+        "replace_albania": {
+            "country": "ALB",
+            "start": index[1],
+            "end": index[3],
+            "scope": "overwrite_entire_period",
+            "method": "construct_from_sources",
+            "sources": [
+                {
+                    "country": "GBR",
+                    "start": "2024-01-01",
+                    "end": "2024-01-01 02:00",
+                    "weight": 1,
+                }
+            ],
+        }
+    }
+
+    filled, methods = apply_auxiliary_fill_rules(
+        load,
+        cleaning_method,
+        overrides=overrides,
+        profiles={
+            "replace_albania": profile,
+        },
+    )
+
+    assert filled["ALB"].tolist() == [
+        10.0,
+        100.0,
+        200.0,
+        40.0,
+    ]
+
+    assert methods["ALB"].tolist() == [
+        "observed_entsoe_api",
+        "replace_albania",
+        "replace_albania",
+        "observed_entsoe_api",
+    ]
+
+def test_fill_gaps_within_period_preserves_existing_values() -> None:
+    index = pd.date_range(
+        "2022-01-01",
+        periods=4,
+        freq="h",
+        tz="UTC",
+    )
+
+    load = pd.DataFrame(
+        {
+            "ALB": [10.0, float("nan"), 30.0, 40.0],
+        },
+        index=index,
+    )
+
+    cleaning_method = pd.DataFrame(
+        {
+            "ALB": [
+                "observed_entsoe_api",
+                "missing",
+                "observed_entsoe_api",
+                "observed_entsoe_api",
+            ],
+        },
+        index=index,
+    )
+
+    profile = pd.Series(
+        [100.0, 200.0],
+        index=index[1:3],
+        name="ALB",
+    )
+
+    overrides = {
+        "fill_albania": {
+            "country": "ALB",
+            "start": index[1],
+            "end": index[3],
+            "scope": "fill_gaps_within_period",
+            "method": "construct_from_sources",
+            "sources": [
+                {
+                    "country": "GBR",
+                    "start": "2024-01-01",
+                    "end": "2024-01-01 02:00",
+                    "weight": 1,
+                }
+            ],
+        }
+    }
+
+    filled, methods = apply_auxiliary_fill_rules(
+        load,
+        cleaning_method,
+        overrides=overrides,
+        profiles={
+            "fill_albania": profile,
+        },
+    )
+
+    assert filled["ALB"].tolist() == [
+        10.0,
+        100.0,
+        30.0,
+        40.0,
+    ]
+
+    assert methods["ALB"].tolist() == [
+        "observed_entsoe_api",
+        "fill_albania",
+        "observed_entsoe_api",
+        "observed_entsoe_api",
+    ]
+
+
