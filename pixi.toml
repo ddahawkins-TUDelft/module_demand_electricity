@@ -42,9 +42,11 @@ pyyaml = ">=6.0.3"
 
 [environments]
 module = { features = ["module"], no-default-feature = true }
+test = { features = ["module"] }
 
 [tasks]
 test-integration = {cmd = "pytest tests/integration_test.py"}
+test-unit = { cmd = "pytest tests/unit" }
 
 
 [tasks.export-snakemake-env]

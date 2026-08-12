@@ -35,7 +35,6 @@ workflow.source_path("scripts/common/schemas.py")
 
 
 # Add all your includes here.
-#important tha automatic.smk is included first, because clean.smk uses parameters defined within automatic.smk
 include: "rules/automatic.smk"
 include: "rules/clean.smk"
 include: "rules/prepare_demand.smk"

@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 import pycountry
-import yaml
 from cleaning.advanced.planning.manifest import get_batch, load_execution_plan
 from common.time import as_utc_timestamp, build_hourly_index
 from entsoe.entsoe import EntsoePandasClient
@@ -49,12 +48,6 @@ def load_txt(filepath):
         data = file.read()
 
     return data
-
-
-def load_yaml(path):
-    """Load a YAML file."""
-    with open(path) as file:
-        return yaml.safe_load(file)
 
 
 def download_country(

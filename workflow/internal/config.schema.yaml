@@ -411,7 +411,8 @@ properties:
             description: >
               Named country-period instructions that override general
               advanced gap-handling decisions.
-
+            propertyNames:
+              pattern: '^[a-z0-9_]+$'
             additionalProperties:
               $ref: "#/$defs/auxiliary_fill_rule"
 

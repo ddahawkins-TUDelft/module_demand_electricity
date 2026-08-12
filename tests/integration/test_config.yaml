@@ -48,7 +48,7 @@ integration_test:
       # Explicit country-period instructions for unresolved cases.
       overrides:
 
-        build_ALB_from_GBR_ALB_winter:
+        build_alb_from_gbr_alb_winter:
           country: ALB
           start: "2022-01-01"
           end: "2022-02-01"
@@ -67,7 +67,7 @@ integration_test:
                 end: "2024-02-01"
                 weight: 1
 
-        build_ALB_from_GBR_summer:
+        build_alb_from_gbr_summer:
           country: ALB
           start: "2022-05-01"
           end: "2022-06-01"
@@ -86,7 +86,7 @@ integration_test:
                 end: "2024-06-01"
                 weight: 1
         
-        example_inactive_MNE_override:
+        example_inactive_mne_override:
           country: MNE
           start: "2020-03-01"
           end: "2020-04-01"

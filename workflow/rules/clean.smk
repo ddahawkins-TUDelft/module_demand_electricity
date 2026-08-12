@@ -1,3 +1,37 @@
+from datetime import datetime, timedelta
+
+def neso_raw_files(_wildcards):
+    """Return annual NESO input files for the configured period."""
+    start = datetime.fromisoformat(
+        config["temporal_scope"]["start"]
+    )
+    end = datetime.fromisoformat(
+        config["temporal_scope"]["end"]
+    )
+
+    if end <= start:
+        raise ValueError(
+            "Period end must be later than period start."
+        )
+
+    final_included_time = end - timedelta(
+        microseconds=1
+    )
+
+    years = range(
+        start.year,
+        final_included_time.year + 1,
+    )
+
+    return [
+        (
+            "<resources>/automatic/neso/"
+            f"historic_demand_{year}.csv"
+        )
+        for year in years
+    ]
+
+
 rule prepare_load_opsd:
     input:
         load="<resources>/automatic/load_entsoe_opsd.csv",
@@ -19,7 +53,7 @@ rule prepare_load_opsd:
 
 rule prepare_load_neso:
     input:
-        annual_files=NESO_RAW_FILES,
+        annual_files=neso_raw_files,
     output:
         load="<resources>/automatic/load_neso.parquet",
     params:
@@ -34,27 +68,6 @@ rule prepare_load_neso:
         "Prepare electricity-demand data from NESO."
     script:
         "../scripts/prepare_load_neso.py"
-
-rule prepare_synthetic_electricity_demand:
-    input:
-        csv=rules.download_synthetic_electricity_demand.output.csv,
-    output:
-        load=(
-            "<resources>/automatic/"
-            "load_synthetic_electricity_demand.parquet"
-        ),
-    params:
-        start=config["temporal_scope"]["start"],
-        end=config["temporal_scope"]["end"],
-        country_codes=internal["load_entsoe_api"]["countries"],
-    log:
-        "<logs>/prepare_load_synthetic.log",
-    conda:
-        "../envs/module.yaml"
-    message:
-        "Prepare electricity-demand data from PyPSA synthetic profile."
-    script:
-        "../scripts/prepare_load_synthetic.py"
         
 
 LOAD_SOURCE_PATHS = {

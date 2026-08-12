@@ -207,6 +207,12 @@ def construct_from_sources(
                 f"contains {len(target_index)}."
             )
 
+        if source_values.isna().any():
+            raise ValueError(
+                "Auxiliary source period contains missing values. "
+                f"Source {country!r}: {start} to {end}."
+            )
+
         remapped = pd.Series(
             source_values.to_numpy(),
             index=target_index,

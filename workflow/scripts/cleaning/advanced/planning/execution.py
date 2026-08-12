@@ -4,21 +4,20 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 import pandas as pd
+from common.time import as_utc_timestamp
 
 from cleaning.advanced.methods.construct_from_sources import (
     METHOD_NAME as CONSTRUCT_FROM_SOURCES,
 )
 from cleaning.advanced.methods.external_profile import METHOD_NAME as EXTERNAL_PROFILE
+from cleaning.advanced.planning.manifest import EXECUTION_PLAN_VERSION
 from cleaning.advanced.planning.requirements import (
     build_auxiliary_acquisition_requirements,
 )
-from cleaning.advanced.planning.selection import get_required_auxiliary_group_ids
 from cleaning.advanced.planning.source_requests import (
     build_auxiliary_source_batches,
     build_auxiliary_source_requests,
 )
-
-EXECUTION_PLAN_VERSION = 1
 
 
 def build_advanced_execution_plan(
@@ -70,7 +69,7 @@ def build_advanced_execution_plan(
         required_group_ids: list[str] = []
 
         if override["method"] == CONSTRUCT_FROM_SOURCES:
-            required_group_ids = get_required_auxiliary_group_ids(
+            required_group_ids = _get_required_auxiliary_group_ids(
                 batch_plan,
                 override=override,
             )
@@ -207,3 +206,54 @@ def _index_batch_ids_by_group(
         ).append(str(batch["batch_id"]))
 
     return result
+
+
+
+def _get_required_auxiliary_sources(
+    override: Mapping,
+) -> list[Mapping]:
+    """Return all auxiliary sources consumed by an override."""
+    sources = list(override["sources"])
+
+    scaling = override.get("scaling")
+    if scaling is not None:
+        sources.extend(
+            scaling.get("target_sources", [])
+        )
+
+    return sources
+
+
+def _get_required_auxiliary_group_ids(
+    plan: Mapping,
+    *,
+    override: Mapping,
+) -> list[str]:
+    """Return auxiliary groups required to execute one override."""
+    group_ids: set[str] = set()
+
+    for source in _get_required_auxiliary_sources(override):
+        country = source["country"]
+        start = as_utc_timestamp(source["start"])
+        end = as_utc_timestamp(source["end"])
+
+        matching_groups = {
+            batch["group_id"]
+            for batch in plan["batches"]
+            if (
+                country in batch["countries"]
+                and as_utc_timestamp(batch["start"]) <= start
+                and as_utc_timestamp(batch["end"]) >= end
+            )
+        }
+
+        if len(matching_groups) != 1:
+            raise ValueError(
+                "Expected exactly one auxiliary group covering "
+                f"{country!r} from {start} to {end}, "
+                f"found {sorted(matching_groups)}."
+            )
+
+        group_ids.update(matching_groups)
+
+    return sorted(group_ids)

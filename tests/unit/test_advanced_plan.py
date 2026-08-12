@@ -300,7 +300,7 @@ def test_build_auxiliary_fill_plan_normalizes_rules() -> None:
             ],
             "status": [
                 "ready",
-                "not_implemented",
+                "ready",
             ],
             "source_count": [
                 2,

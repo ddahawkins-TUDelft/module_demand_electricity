@@ -51,9 +51,13 @@ def apply_profiles(demand_polygon, shapes, demand_profiles):
     demand_polygon_covered = demand_polygon.loc[
         ~demand_polygon.index.isin(regions_not_covered)
     ]
-    warn(
-        f"Regions {regions_not_covered} are not covered by any demand profile and have been dropped."
-    )
+    if regions_not_covered:
+        warn(
+            "Regions "
+            f"{regions_not_covered} "
+            "are not covered by any demand profile "
+            "and have been dropped."
+        )
 
     # assign profiles to regions
     demand_profiles_mapped = pd.DataFrame(

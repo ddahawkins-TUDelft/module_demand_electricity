@@ -99,24 +99,6 @@ rule download_load_neso_year:
         "../scripts/download_load_neso.py"
 
 
-rule download_synthetic_electricity_demand:
-    output:
-        csv=(
-            "<resources>/automatic/"
-            "synthetic_electricity_demand/"
-            "demand_hourly.csv"
-        ),
-    params:
-        url=...,
-        md5="a9b59e5a32ad422bcd9e12fea5dc291a",
-    log:
-        "<logs>/download_synthetic_electricity_demand.log",
-    conda:
-        "../envs/module.yaml"
-    script:
-        "../scripts/download_synthetic_electricity_demand.py"
-
-
 rule download_population:
     output:
         population="<resources>/automatic/population.zip",

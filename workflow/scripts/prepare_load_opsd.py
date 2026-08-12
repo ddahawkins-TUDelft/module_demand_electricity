@@ -7,7 +7,7 @@ from warnings import warn
 import pandas as pd
 import pycountry
 from cleaning.advanced.planning.manifest import get_batch, load_execution_plan
-from common.schemas import LoadENTSOE
+from common.schemas import OPSDLoad
 from common.time import as_utc_timestamp, build_hourly_index
 
 if TYPE_CHECKING:
@@ -43,7 +43,7 @@ def main(
 ):
     """Prepare OPSD demand for the configured scope."""
     load = pd.read_csv(path_raw_load)
-    load = LoadENTSOE.validate(load)
+    load = OPSDLoad.validate(load)
 
     load = load.loc[load["variable"] == "load"]
     load = load.loc[

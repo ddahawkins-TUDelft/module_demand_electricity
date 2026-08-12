@@ -10,8 +10,8 @@ from cleaning.advanced.methods.construct_from_sources import (
 )
 from cleaning.advanced.methods.external_profile import METHOD_NAME as EXTERNAL_PROFILE
 
-FILL_GAPS_WITHIN_PERIOD = "fill_gaps"
-OVERWRITE_ENTIRE_PERIOD = "overwrite"
+FILL_GAPS= "fill_gaps"
+OVERWRITE = "overwrite"
 
 MANUAL_REVIEW = "manual_review"
 LEAVE_MISSING = "leave_missing"
@@ -71,8 +71,8 @@ def validate_auxiliary_fill_rule(
     )
 
     supported_scopes = {
-        FILL_GAPS_WITHIN_PERIOD,
-        OVERWRITE_ENTIRE_PERIOD,
+        FILL_GAPS,
+        OVERWRITE,
     }
 
     if scope not in supported_scopes:
@@ -118,8 +118,7 @@ def validate_auxiliary_fill_rule(
                 f"{method!r} and must not define 'sources'."
             )
 
-    # External-profile-specific configuration will be added when
-    # acquisition of external profiles is implemented.
+
 
 def _validate_sources(
     rule: Mapping[str, Any],
@@ -421,7 +420,7 @@ def build_auxiliary_fill_plan(
         if method == CONSTRUCT_FROM_SOURCES:
             status = "ready"
         elif method == EXTERNAL_PROFILE:
-            status = "not_implemented"
+            status = "ready"
         elif method == MANUAL_REVIEW:
             status = "manual_review"
         elif method == LEAVE_MISSING:

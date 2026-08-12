@@ -58,7 +58,7 @@ def build_gap_report(
                 {
                     "country": country,
                     "gap_start": timestamps[0],
-                    "gap_end": timestamps[-1],
+                    "gap_end": timestamps[-1] + pd.Timedelta(hours=1),
                     "gap_hours": len(timestamps),
                     "touches_start_boundary": (
                         timestamps[0] == first_timestamp

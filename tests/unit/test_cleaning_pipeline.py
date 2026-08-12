@@ -428,7 +428,7 @@ def test_advanced_mode_reports_unresolved_gaps() -> None:
 
     assert row["country"] == "AAA"
     assert row["gap_start"] == index[0]
-    assert row["gap_end"] == index[3]
+    assert row["gap_end"] == index[4]
     assert row["gap_hours"] == 4
     assert bool(row["touches_start_boundary"])
     assert not bool(row["touches_end_boundary"])
@@ -499,10 +499,10 @@ def test_build_gap_report_identifies_contiguous_gaps_and_boundaries() -> None:
                 index[0],
             ],
             "gap_end": [
-                index[0],
-                index[4],
-                index[7],
-                index[7],
+                index[1],
+                index[5],
+                index[7] + pd.Timedelta(hours=1),
+                index[7] + pd.Timedelta(hours=1),
             ],
             "gap_hours": [
                 1,

@@ -2,19 +2,12 @@
 
 # ruff: noqa: UP007
 import pandas as pd
-import yaml
 from pandera.pandas import DataFrameModel, Field
 from pandera.typing.geopandas import GeoSeries
 from pandera.typing.pandas import Series
 
 
-def read_yaml(path):
-    """Read a YAML file."""
-    with open(path) as file:
-        return yaml.safe_load(file)
-
-
-class LoadENTSOE(DataFrameModel):
+class OPSDLoad(DataFrameModel):
     class Config:
         coerce = True
         strict = False

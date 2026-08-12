@@ -352,4 +352,3 @@ def test_match_energy_uses_weighted_target_energy() -> None:
     )
 
     assert result.sum() == 150.0
-

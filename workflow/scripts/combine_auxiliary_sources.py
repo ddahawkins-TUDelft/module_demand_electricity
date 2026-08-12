@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
-from cleaning.advanced.combine_auxiliary import combine_auxiliary_sources
+from cleaning.combine_sources import combine_auxiliary_sources
 
 
 def _source_name(path: str | Path) -> str:

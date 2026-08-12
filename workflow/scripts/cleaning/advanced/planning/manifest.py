@@ -7,6 +7,52 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+EXECUTION_PLAN_VERSION = 1
+
+def write_execution_plan(
+    plan: Mapping[str, Any],
+    path: str | Path,
+) -> None:
+    """Write one compiled advanced execution plan."""
+    path = Path(path)
+    path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with path.open(
+        "w",
+        encoding="utf-8",
+    ) as file:
+        json.dump(
+            plan,
+            file,
+            indent=2,
+        )
+
+
+def write_advanced_execution_plan(
+    *,
+    plan: dict[str, object],
+    output_path: str | Path,
+) -> None:
+    """Write the advanced execution plan as JSON."""
+    output_path = Path(output_path)
+    output_path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with output_path.open(
+        "w",
+        encoding="utf-8",
+    ) as file:
+        json.dump(
+            plan,
+            file,
+            indent=2,
+        )
+
 
 def load_execution_plan(
     path: str | Path,
@@ -18,6 +64,14 @@ def load_execution_plan(
     if not isinstance(plan, dict):
         raise TypeError(
             "Advanced execution plan must contain a JSON object."
+        )
+
+    version = plan.get("version")
+
+    if version != EXECUTION_PLAN_VERSION:
+        raise ValueError(
+            "Unsupported advanced execution plan version: "
+            f"{version!r}. Expected {EXECUTION_PLAN_VERSION}."
         )
 
     return plan

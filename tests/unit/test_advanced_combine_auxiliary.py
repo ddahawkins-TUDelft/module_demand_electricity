@@ -1,5 +1,5 @@
 import pandas as pd
-from cleaning.advanced.combine_auxiliary import combine_auxiliary_sources
+from cleaning.combine_sources import combine_auxiliary_sources
 
 
 def test_combine_auxiliary_sources_aligns_country_columns() -> None:
