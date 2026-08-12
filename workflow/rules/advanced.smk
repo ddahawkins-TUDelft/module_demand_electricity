@@ -104,21 +104,18 @@ def auxiliary_group_source_files(wildcards):
         wildcards.group_id
     ]
 
-    batches = [
-        _get_batch(
-            plan,
-            batch_id=batch_id,
-        )
-        for batch_id in batch_ids
-    ]
+    batches_by_id = {
+        batch["batch_id"]: batch
+        for batch in plan["batches"]
+    }
 
     return [
         (
             "<resources>/automatic/"
-            f"auxiliary/{batch['source']}/"
-            f"{batch['batch_id']}.parquet"
+            f"auxiliary/{batches_by_id[batch_id]['source']}/"
+            f"{batch_id}.parquet"
         )
-        for batch in batches
+        for batch_id in batch_ids
     ]
 
 
