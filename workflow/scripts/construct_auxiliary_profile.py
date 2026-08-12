@@ -1,5 +1,6 @@
 import pandas as pd
 from cleaning.advanced.methods.construct_from_sources import construct_from_sources
+from cleaning.advanced.planning.manifest import get_rule_override, load_execution_plan
 from common.time import build_hourly_index
 
 loads = [
@@ -17,7 +18,14 @@ auxiliary = loads[0].copy()
 for load in loads[1:]:
     auxiliary = auxiliary.combine_first(load)
 
-override = snakemake.params.override
+plan = load_execution_plan(
+    snakemake.input.plan
+)
+
+override = get_rule_override(
+    plan,
+    rule_name=snakemake.wildcards.rule_name,
+)
 
 target_index = build_hourly_index(
     start=override["start"],

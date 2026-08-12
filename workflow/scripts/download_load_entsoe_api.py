@@ -1,7 +1,7 @@
 """Download electricity load data from ENTSO-E using the entsoe-py library."""
 
 import sys
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed #TODO: Check this isnt overruled by snakemake assigning one thread
 from time import perf_counter
 from typing import TYPE_CHECKING, Any
 from warnings import warn
@@ -9,6 +9,7 @@ from warnings import warn
 import pandas as pd
 import pycountry
 import yaml
+from cleaning.advanced.planning.manifest import get_batch, load_execution_plan
 from common.time import as_utc_timestamp, build_hourly_index
 from entsoe import EntsoePandasClient
 from entsoe.exceptions import NoMatchingDataError
@@ -238,10 +239,31 @@ if __name__ == "__main__":
         buffering=1,
     )
 
+    plan_path = getattr(
+        snakemake.input,
+        "plan",
+        None,
+    )
+
+    if plan_path is not None:
+        plan = load_execution_plan(plan_path)
+        batch = get_batch(
+            plan,
+            batch_id=snakemake.wildcards.batch_id,
+            source="entsoe_api",
+        )
+        start = batch["start"]
+        end = batch["end"]
+        country_codes = batch["countries"]
+    else:
+        start = snakemake.params.temporal_start
+        end = snakemake.params.temporal_end
+        country_codes = snakemake.params.country_codes
+
     main(
-        start=snakemake.params.temporal_start,
-        end=snakemake.params.temporal_end,
-        country_codes=snakemake.params.country_codes,
+        start=start,
+        end=end,
+        country_codes=country_codes,
         token=snakemake.input.token_entsoe,
         output_load=snakemake.output.load,
     )

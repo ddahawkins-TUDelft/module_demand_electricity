@@ -3,6 +3,10 @@ from pathlib import Path
 
 import pandas as pd
 from cleaning.advanced.apply import apply_auxiliary_fill_rules
+from cleaning.advanced.planning.manifest import (
+    get_active_overrides,
+    load_execution_plan,
+)
 
 load = pd.read_parquet(
     snakemake.input.demand
@@ -12,32 +16,13 @@ cleaning_method = pd.read_parquet(
     snakemake.input.cleaning_method
 )
 
-with open(
-    snakemake.input.plan,
-    encoding="utf-8",
-) as file:
-    plan = json.load(file)
-
-active_rule_names = set(
-    plan["active_rule_names"]
+plan = load_execution_plan(
+    snakemake.input.plan
 )
 
-unknown_rule_names = (
-    active_rule_names
-    - set(snakemake.params.overrides)
+active_overrides = get_active_overrides(
+    plan
 )
-
-if unknown_rule_names:
-    raise ValueError(
-        "Auxiliary acquisition plan references unknown advanced "
-        f"overrides: {sorted(unknown_rule_names)}."
-    )
-
-active_overrides = {
-    rule_name: override
-    for rule_name, override in snakemake.params.overrides.items()
-    if rule_name in active_rule_names
-}
 
 profiles = {
     Path(path).stem: pd.read_parquet(path).iloc[:, 0]

@@ -1,11 +1,6 @@
 import json
 
 
-def _read_plan_file(plan_path):
-    with open(plan_path, encoding="utf-8") as file:
-        return json.load(file)
-
-
 def _read_auxiliary_plan(_wildcards=None):
     """Read the resolved advanced execution plan."""
     plan_file = (
@@ -31,51 +26,6 @@ def auxiliary_acquisition_plan(_wildcards):
     )
 
 
-def _get_batch(
-    plan,
-    *,
-    batch_id,
-    source=None,
-):
-    """Return one batch from the compiled execution plan."""
-    matches = [
-        batch
-        for batch in plan["batches"]
-        if (
-            batch["batch_id"] == batch_id
-            and (
-                source is None
-                or batch["source"] == source
-            )
-        )
-    ]
-
-    if len(matches) != 1:
-        source_text = (
-            f" for source {source!r}"
-            if source is not None
-            else ""
-        )
-        raise ValueError(
-            "Expected exactly one auxiliary batch "
-            f"{batch_id!r}{source_text}, found {len(matches)}."
-        )
-
-    return matches[0]
-
-
-def get_auxiliary_entsoe_batch(
-    wildcards,
-    input,
-) -> dict:
-    """Return the ENTSO-E batch for this job."""
-    return _get_batch(
-        _read_plan_file(input.plan),
-        batch_id=wildcards.batch_id,
-        source="entsoe_api",
-    )
-
-
 def auxiliary_entsoe_outputs(_wildcards):
     """Return all ENTSO-E outputs required by the execution plan."""
     plan = _read_auxiliary_plan()
@@ -90,18 +40,6 @@ def auxiliary_entsoe_outputs(_wildcards):
             "batch_ids_by_source"
         ].get("entsoe_api", [])
     ]
-
-
-def get_auxiliary_opsd_batch(
-    wildcards,
-    input,
-) -> dict:
-    """Return the OPSD batch for this job."""
-    return _get_batch(
-        _read_plan_file(input.plan),
-        batch_id=wildcards.batch_id,
-        source="opsd_api",
-    )
 
 
 def auxiliary_opsd_outputs(_wildcards):
@@ -120,26 +58,17 @@ def auxiliary_opsd_outputs(_wildcards):
     ]
 
 
-def get_auxiliary_neso_batch(
-    wildcards,
-    input,
-) -> dict:
-    """Return the NESO batch for this job."""
-    return _get_batch(
-        _read_plan_file(input.plan),
-        batch_id=wildcards.batch_id,
-        source="neso",
-    )
-
-
 def auxiliary_neso_raw_files(wildcards):
     """Return annual NESO files required by one auxiliary batch."""
     plan = _read_auxiliary_plan()
 
-    batch = _get_batch(
-        plan,
-        batch_id=wildcards.batch_id,
-        source="neso",
+    batch = next(
+        batch
+        for batch in plan["batches"]
+        if (
+            batch["batch_id"] == wildcards.batch_id
+            and batch["source"] == "neso"
+        )
     )
 
     return [
@@ -320,25 +249,6 @@ rule download_auxiliary_load_entsoe_api:
             "auxiliary/entsoe_api/"
             "{batch_id}.parquet"
         ),
-    params:
-        temporal_start=lambda wildcards, input: (
-            get_auxiliary_entsoe_batch(
-                wildcards,
-                input,
-            )["start"]
-        ),
-        temporal_end=lambda wildcards, input: (
-            get_auxiliary_entsoe_batch(
-                wildcards,
-                input,
-            )["end"]
-        ),
-        country_codes=lambda wildcards, input: (
-            get_auxiliary_entsoe_batch(
-                wildcards,
-                input,
-            )["countries"]
-        ),
     log:
         (
             "<logs>/auxiliary/"
@@ -363,25 +273,6 @@ rule prepare_auxiliary_load_opsd:
             "auxiliary/opsd_api/"
             "{batch_id}.parquet"
         ),
-    params:
-        start=lambda wildcards, input: (
-            get_auxiliary_opsd_batch(
-                wildcards,
-                input,
-            )["start"]
-        ),
-        end=lambda wildcards, input: (
-            get_auxiliary_opsd_batch(
-                wildcards,
-                input,
-            )["end"]
-        ),
-        country_codes=lambda wildcards, input: (
-            get_auxiliary_opsd_batch(
-                wildcards,
-                input,
-            )["countries"]
-        ),
     log:
         (
             "<logs>/auxiliary/"
@@ -404,25 +295,6 @@ rule prepare_auxiliary_load_neso:
             "<resources>/automatic/"
             "auxiliary/neso/"
             "{batch_id}.parquet"
-        ),
-    params:
-        start=lambda wildcards, input: (
-            get_auxiliary_neso_batch(
-                wildcards,
-                input,
-            )["start"]
-        ),
-        end=lambda wildcards, input: (
-            get_auxiliary_neso_batch(
-                wildcards,
-                input,
-            )["end"]
-        ),
-        country_codes=lambda wildcards, input: (
-            get_auxiliary_neso_batch(
-                wildcards,
-                input,
-            )["countries"]
         ),
     log:
         (
@@ -509,19 +381,13 @@ rule clean_auxiliary_data:
 
 rule construct_auxiliary_profile:
     input:
+        plan=auxiliary_acquisition_plan,
         sources=auxiliary_rule_cleaned_files,
     output:
         profile=(
             "<resources>/automatic/"
             "auxiliary/constructed/"
             "{rule_name}.parquet"
-        ),
-    params:
-        override=lambda wildcards: (
-            config["gap_filling"]
-            ["advanced"]
-            ["overrides"]
-            [wildcards.rule_name]
         ),
     conda:
         "../envs/module.yaml"
@@ -551,12 +417,6 @@ rule apply_advanced_overrides:
         cleaning_method=(
             "<resources>/automatic/"
             "load_advanced_cleaning_method.parquet"
-        ),
-    params:
-        overrides=(
-            config["gap_filling"]
-            ["advanced"]
-            ["overrides"]
         ),
     conda:
         "../envs/module.yaml"

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable
 
 import pandas as pd
+from cleaning.advanced.planning.manifest import get_batch, load_execution_plan
 from cleaning.sources.neso import add_utc_timestamps
 from common.time import build_hourly_index
 
@@ -240,13 +241,34 @@ if __name__ == "__main__":
         format="%(levelname)s: %(message)s",
     )
 
+    plan_path = getattr(
+        snakemake.input,
+        "plan",
+        None,
+    )
+
+    if plan_path is not None:
+        plan = load_execution_plan(plan_path)
+        batch = get_batch(
+            plan,
+            batch_id=snakemake.wildcards.batch_id,
+            source="neso",
+        )
+        temporal_start = batch["start"]
+        temporal_end = batch["end"]
+        countries = batch["countries"]
+    else:
+        temporal_start = snakemake.params.start
+        temporal_end = snakemake.params.end
+        countries = snakemake.params.country_codes
+
     prepare_load_neso(
         input_paths=[
             Path(path)
             for path in snakemake.input.annual_files
         ],
         output_path=snakemake.output.load,
-        temporal_start=snakemake.params.start,
-        temporal_end=snakemake.params.end,
-        countries=snakemake.params.country_codes,
+        temporal_start=temporal_start,
+        temporal_end=temporal_end,
+        countries=countries,
     )

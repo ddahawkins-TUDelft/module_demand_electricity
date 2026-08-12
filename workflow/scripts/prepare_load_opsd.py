@@ -1,15 +1,15 @@
 """Prepare electricity-demand data downloaded from OPSD."""
 
 import sys
+from time import perf_counter
 from typing import TYPE_CHECKING, Any
 from warnings import warn
 
 import pandas as pd
 import pycountry
+from cleaning.advanced.planning.manifest import get_batch, load_execution_plan
 from common.schemas import LoadENTSOE
 from common.time import as_utc_timestamp, build_hourly_index
-
-from time import perf_counter
 
 if TYPE_CHECKING:
     snakemake: Any
@@ -116,10 +116,33 @@ if __name__ == "__main__":
         buffering=1,
     )
 
+    plan_path = getattr(
+        snakemake.input,
+        "plan",
+        None,
+    )
+
+    if plan_path is not None:
+        plan = load_execution_plan(plan_path)
+        batch = get_batch(
+            plan,
+            batch_id=snakemake.wildcards.batch_id,
+            source="opsd_api",
+        )
+        start = batch["start"]
+        end = batch["end"]
+        country_codes = batch["countries"]
+    else:
+        start = snakemake.params.start
+        end = snakemake.params.end
+        country_codes = list(
+            snakemake.params.country_codes
+        )
+
     main(
         path_raw_load=snakemake.input.load,
         output_load=snakemake.output.load,
-        start=snakemake.params.start,
-        end=snakemake.params.end,
-        country_codes=list(snakemake.params.country_codes),
+        start=start,
+        end=end,
+        country_codes=country_codes,
     )
