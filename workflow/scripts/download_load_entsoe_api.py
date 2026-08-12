@@ -1,5 +1,6 @@
 """Download electricity load data from ENTSO-E using the entsoe-py library."""
 
+import logging
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from time import perf_counter
@@ -14,8 +15,33 @@ from common.time import as_utc_timestamp, build_hourly_index
 from entsoe import EntsoePandasClient
 from entsoe.exceptions import NoMatchingDataError
 
+logger = logging.getLogger(__name__)
+
 if TYPE_CHECKING:
     snakemake: Any
+
+
+def configure_logging(log_path) -> None:
+    """Log downloader progress to both the console and rule log."""
+    logger.setLevel(logging.INFO)
+    logger.handlers.clear()
+
+    formatter = logging.Formatter(
+        "%(asctime)s | %(levelname)s | %(message)s"
+    )
+
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+
+    file_handler = logging.FileHandler(
+        log_path,
+        mode="w",
+        encoding="utf-8",
+    )
+    file_handler.setFormatter(formatter)
+
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
 
 
 def load_txt(filepath):
@@ -108,11 +134,13 @@ def main(
 
     download_start = perf_counter()
 
-    print(
-        f"Downloading ENTSO-E load for {total_countries} countries "
-        f"from {start} to {end} using "
-        f"{workers} parallel workers...",
-        flush=True,
+    logger.info(
+        "Downloading ENTSO-E load for %s countries "
+        "from %s to %s using %s parallel workers.",
+        total_countries,
+        start,
+        end,
+        workers,
     )
 
     data_by_country = {}
@@ -154,17 +182,17 @@ def main(
                 country_alpha_3
             ] = df_country
 
-            print(
-                f"[{completed}/{total_countries}] "
-                f"Finished {country_alpha_3} "
-                f"in {elapsed:.1f}s.",
-                flush=True,
+            logger.info(
+                "[%s/%s] Finished %s in %.1fs.",
+                completed,
+                total_countries,
+                country_alpha_3,
+                elapsed,
             )
 
-    print(
-        f"Finished ENTSO-E downloads in "
-        f"{perf_counter() - download_start:.1f}s.",
-        flush=True,
+    logger.info(
+        "Finished ENTSO-E downloads in %.1fs.",
+        perf_counter() - download_start,
     )
 
     # Restore configured country order because futures complete
@@ -221,18 +249,15 @@ def main(
 
     df.to_parquet(output_load)
 
-    print(
-        f"ENTSO-E processing and write completed in "
-        f"{perf_counter() - processing_start:.1f}s.",
-        flush=True,
+    logger.info(
+        "ENTSO-E processing and write completed in %.1fs.",
+        perf_counter() - processing_start,
     )
 
 
 if __name__ == "__main__":
-    sys.stderr = open(
-        snakemake.log[0],
-        "w",
-        buffering=1,
+    configure_logging(
+        snakemake.log[0]
     )
 
     plan_path = getattr(
