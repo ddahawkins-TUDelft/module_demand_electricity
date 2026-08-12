@@ -46,7 +46,7 @@ def read_external_profile(
         )
 
     values = pd.to_numeric(
-        profile["value"],
+        profile["demand"],
         errors="raise",
     )
 
