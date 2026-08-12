@@ -189,6 +189,16 @@ def final_cleaning_method_input(_wildcards):
     return rules.clean_demand.output.cleaning_method
 
 
+def advanced_external_profile_files(_wildcards):
+    plan = _read_auxiliary_plan()
+
+    return list(
+        dict.fromkeys(
+            plan["external_profile_files"].values()
+        )
+    )
+
+
 checkpoint plan_auxiliary_data:
     input:
         fill_plan=rules.clean_demand.output.auxiliary_fill_plan,
@@ -405,7 +415,8 @@ rule apply_advanced_overrides:
             "load_cleaning_method.parquet"
         ),
         plan=auxiliary_acquisition_plan,
-        profiles=advanced_constructed_profiles,
+        constructed_profiles=advanced_constructed_profiles,
+        external_profiles=advanced_external_profile_files,
     output:
         demand=(
             "<resources>/automatic/"

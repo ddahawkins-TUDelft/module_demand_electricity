@@ -168,6 +168,16 @@ $defs:
           method:
             const: external_profile
 
+          path:
+            type: string
+            minLength: 1
+            description: >
+              Path to a local CSV containing timestamp and value
+              columns for the external series.
+
+        required:
+          - path
+
     unevaluatedProperties: false
 
 

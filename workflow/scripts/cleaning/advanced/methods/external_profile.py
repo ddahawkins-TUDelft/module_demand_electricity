@@ -1,36 +1,64 @@
-"""A gap-filling method using an aligned external profile."""
+"""Load and validate locally supplied external demand profiles."""
+
+from pathlib import Path
 
 import pandas as pd
 
 METHOD_NAME = "external_profile"
 
+EXPECTED_COLUMNS = {
+    "timestamp",
+    "demand",
+}
 
-def apply_external_profile(
-    load: pd.DataFrame,
-    *,
-    profile: pd.DataFrame,
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Fill remaining missing cells from an aligned external profile."""
-    if not profile.index.equals(load.index):
+
+def read_external_profile(
+    path: str | Path,
+) -> pd.Series:
+    """Read a timestamped external demand series from CSV."""
+    profile = pd.read_csv(path)
+
+    if set(profile.columns) != EXPECTED_COLUMNS:
         raise ValueError(
-            "External profile must use the same index as load."
+            "External profile must contain exactly the columns "
+            "'timestamp' and 'demand'."
         )
 
-    if not profile.columns.equals(load.columns):
+    timestamps = pd.to_datetime(
+        profile["timestamp"],
+        utc=True,
+        errors="raise",
+    )
+
+    if timestamps.duplicated().any():
         raise ValueError(
-            "External profile must use the same columns as load."
+            "External profile timestamps must be unique."
         )
 
-    eligible = load.isna() & profile.notna()
+    if (
+        (timestamps.dt.minute != 0).any()
+        or (timestamps.dt.second != 0).any()
+        or (timestamps.dt.microsecond != 0).any()
+    ):
+        raise ValueError(
+            "External profile timestamps must be aligned "
+            "to whole hours."
+        )
 
-    filled = load.mask(
-        eligible,
-        profile,
+    values = pd.to_numeric(
+        profile["value"],
+        errors="raise",
     )
 
-    newly_filled = (
-        load.isna()
-        & filled.notna()
+    if values.isna().any():
+        raise ValueError(
+            "External profile demand values must not be missing."
+        )
+
+    result = pd.Series(
+        values.to_numpy(),
+        index=pd.DatetimeIndex(timestamps),
+        dtype=float,
     )
 
-    return filled, newly_filled
+    return result.sort_index()

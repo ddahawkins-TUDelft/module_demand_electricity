@@ -45,9 +45,21 @@ def apply_auxiliary_fill_rule(
         )
 
     if method == EXTERNAL_PROFILE:
-        raise NotImplementedError(
-            "Advanced-fill method 'external_profile' is recognized "
-            "but has not yet been implemented."
+        if profile is None:
+            raise ValueError(
+                f"Advanced-fill rule {rule_name!r} requires "
+                "an external profile."
+            )
+
+        return apply_external_profile(
+            load,
+            cleaning_method,
+            profile,
+            country=rule["country"],
+            start=as_utc_timestamp(rule["start"]),
+            end=as_utc_timestamp(rule["end"]),
+            scope=rule["scope"],
+            rule_name=rule_name,
         )
 
     if method == MANUAL_REVIEW:
@@ -136,14 +148,24 @@ def apply_auxiliary_fill_rules(
     cleaning_method: pd.DataFrame,
     *,
     overrides: Mapping[str, Mapping[str, Any]],
-    profiles: Mapping[str, pd.Series],
+    constructed_profiles: Mapping[str, pd.Series],
+    external_profiles: Mapping[str, pd.Series],
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Apply validated advanced-fill rules in configuration order."""
     filled = load.copy()
     methods = cleaning_method.copy()
 
     for rule_name, rule in overrides.items():
-        profile = profiles.get(rule_name)
+        method = rule["method"]
+
+        if method == CONSTRUCT_FROM_SOURCES:
+            profile = constructed_profiles.get(rule_name)
+
+        elif method == EXTERNAL_PROFILE:
+            profile = external_profiles.get(rule_name)
+
+        else:
+            profile = None
 
         filled, methods = apply_auxiliary_fill_rule(
             filled,
@@ -152,5 +174,63 @@ def apply_auxiliary_fill_rules(
             rule=rule,
             profile=profile,
         )
+
+    return filled, methods
+
+
+def apply_external_profile(
+    load: pd.DataFrame,
+    cleaning_method: pd.DataFrame,
+    profile: pd.Series,
+    *,
+    country: str,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+    scope: str,
+    rule_name: str,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Apply supplied external values to target demand."""
+    filled = load.copy()
+    methods = cleaning_method.copy()
+
+    if country not in filled.columns:
+        raise ValueError(
+            f"Target country {country!r} is not present in load data."
+        )
+
+    candidate = profile.loc[
+        (profile.index >= start)
+        & (profile.index < end)
+    ]
+
+    candidate = candidate.loc[
+        candidate.index.intersection(filled.index)
+    ]
+
+    if scope == "fill_gaps":
+        replace_index = candidate.index[
+            filled.loc[
+                candidate.index,
+                country,
+            ].isna()
+        ]
+
+    elif scope == "overwrite":
+        replace_index = candidate.index
+
+    else:
+        raise ValueError(
+            f"Unsupported advanced fill scope: {scope!r}"
+        )
+
+    filled.loc[
+        replace_index,
+        country,
+    ] = candidate.loc[replace_index]
+
+    methods.loc[
+        replace_index,
+        country,
+    ] = rule_name
 
     return filled, methods
