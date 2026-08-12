@@ -102,7 +102,7 @@ def test_construct_from_sources_fills_gaps() -> None:
         "country": "ALB",
         "start": "2021-01-01T00:00:00+00:00",
         "end": "2021-01-01T03:00:00+00:00",
-        "scope": "fill_gaps_within_period",
+        "scope": "fill_gaps",
     }
 
     filled, methods = apply_auxiliary_fill_rule(
@@ -144,7 +144,7 @@ def test_construct_from_sources_overwrites_entire_period() -> None:
         "country": "ALB",
         "start": "2021-01-01T00:00:00+00:00",
         "end": "2021-01-01T03:00:00+00:00",
-        "scope": "overwrite_entire_period",
+        "scope": "overwrite",
     }
 
     filled, methods = apply_auxiliary_fill_rule(
@@ -254,14 +254,14 @@ def test_apply_auxiliary_fill_rules_applies_rules_in_order() -> None:
             "country": "ALB",
             "start": "2021-01-01T00:00:00+00:00",
             "end": "2021-01-01T03:00:00+00:00",
-            "scope": "fill_gaps_within_period",
+            "scope": "fill_gaps",
         },
         "overwrite": {
             "method": "construct_from_sources",
             "country": "ALB",
             "start": "2021-01-01T00:00:00+00:00",
             "end": "2021-01-01T03:00:00+00:00",
-            "scope": "overwrite_entire_period",
+            "scope": "overwrite",
         },
     }
 
@@ -313,7 +313,7 @@ def test_apply_auxiliary_fill_rules_with_no_overrides_returns_copies() -> None:
     assert methods is not cleaning_method
 
 
-def test_overwrite_entire_period_replaces_existing_values() -> None:
+def test_overwrite_replaces_existing_values() -> None:
     index = pd.date_range(
         "2022-01-01",
         periods=4,
@@ -346,7 +346,7 @@ def test_overwrite_entire_period_replaces_existing_values() -> None:
             "country": "ALB",
             "start": index[1],
             "end": index[3],
-            "scope": "overwrite_entire_period",
+            "scope": "overwrite",
             "method": "construct_from_sources",
             "sources": [
                 {
@@ -382,7 +382,7 @@ def test_overwrite_entire_period_replaces_existing_values() -> None:
         "observed_entsoe_api",
     ]
 
-def test_fill_gaps_within_period_preserves_existing_values() -> None:
+def test_fill_gaps_preserves_existing_values() -> None:
     index = pd.date_range(
         "2022-01-01",
         periods=4,
@@ -420,7 +420,7 @@ def test_fill_gaps_within_period_preserves_existing_values() -> None:
             "country": "ALB",
             "start": index[1],
             "end": index[3],
-            "scope": "fill_gaps_within_period",
+            "scope": "fill_gaps",
             "method": "construct_from_sources",
             "sources": [
                 {

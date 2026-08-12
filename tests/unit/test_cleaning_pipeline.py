@@ -622,7 +622,7 @@ def test_advanced_mode_builds_auxiliary_fill_plan() -> None:
                     "country": "ALB",
                     "start": "2021-01-01 01:00",
                     "end": "2021-01-01 01:00",
-                    "scope": "fill_gaps_within_period",
+                    "scope": "fill_gaps",
                     "method": "construct_from_sources",
                     "sources": [
                         {
@@ -696,7 +696,7 @@ def test_clean_demand_filters_advanced_overrides_to_model_scope() -> None:
                     "country": "ALB",
                     "start": "2022-01-02",
                     "end": "2022-01-03",
-                    "scope": "fill_gaps_within_period",
+                    "scope": "fill_gaps",
                     "method": "construct_from_sources",
                     "sources": [
                         {
@@ -711,7 +711,7 @@ def test_clean_demand_filters_advanced_overrides_to_model_scope() -> None:
                     "country": "MNE",
                     "start": "2022-01-02",
                     "end": "2022-01-03",
-                    "scope": "fill_gaps_within_period",
+                    "scope": "fill_gaps",
                     "method": "construct_from_sources",
                     "sources": [
                         {
@@ -726,7 +726,7 @@ def test_clean_demand_filters_advanced_overrides_to_model_scope() -> None:
                     "country": "ALB",
                     "start": "2021-01-01",
                     "end": "2021-02-01",
-                    "scope": "fill_gaps_within_period",
+                    "scope": "fill_gaps",
                     "method": "construct_from_sources",
                     "sources": [
                         {

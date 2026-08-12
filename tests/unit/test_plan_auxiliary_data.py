@@ -39,7 +39,7 @@ def _construct_override(
         "country": "ALB",
         "start": "2020-01-01",
         "end": "2020-02-01",
-        "scope": "fill_gaps_within_period",
+        "scope": "fill_gaps",
         "method": "construct_from_sources",
         "sources": [
             {
@@ -295,7 +295,7 @@ def test_non_construct_rule_requires_no_auxiliary_groups() -> None:
         "country": "ALB",
         "start": "2020-01-01",
         "end": "2020-02-01",
-        "scope": "fill_gaps_within_period",
+        "scope": "fill_gaps",
         "method": "leave_missing",
     }
 

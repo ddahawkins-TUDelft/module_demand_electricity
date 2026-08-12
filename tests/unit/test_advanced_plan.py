@@ -25,7 +25,7 @@ def test_validate_construct_from_sources_rule() -> None:
         "country": "ALB",
         "start": "2023-01-01",
         "end": "2023-12-31 23:00",
-        "scope": "overwrite_entire_period",
+        "scope": "overwrite",
         "method": "construct_from_sources",
         "sources": [
             {
@@ -53,7 +53,7 @@ def test_validate_external_profile_rule() -> None:
         "country": "ALB",
         "start": "2023-01-01",
         "end": "2023-12-31 23:00",
-        "scope": "overwrite_entire_period",
+        "scope": "overwrite",
         "method": "external_profile",
     }
 
@@ -68,7 +68,7 @@ def test_construct_from_sources_requires_sources() -> None:
         "country": "ALB",
         "start": "2023-01-01",
         "end": "2023-12-31 23:00",
-        "scope": "overwrite_entire_period",
+        "scope": "overwrite",
         "method": "construct_from_sources",
     }
 
@@ -87,7 +87,7 @@ def test_source_weight_must_be_positive() -> None:
         "country": "ALB",
         "start": "2023-01-01",
         "end": "2023-12-31 23:00",
-        "scope": "overwrite_entire_period",
+        "scope": "overwrite",
         "method": "construct_from_sources",
         "sources": [
             {
@@ -114,7 +114,7 @@ def test_validate_construct_from_sources_with_scaling() -> None:
         "country": "ALB",
         "start": "2023-01-01",
         "end": "2023-12-31 23:00",
-        "scope": "overwrite_entire_period",
+        "scope": "overwrite",
         "method": "construct_from_sources",
         "sources": [
             {
@@ -152,7 +152,7 @@ def test_match_energy_scaling_requires_target_sources() -> None:
         "country": "ALB",
         "start": "2023-01-01",
         "end": "2023-12-31 23:00",
-        "scope": "overwrite_entire_period",
+        "scope": "overwrite",
         "method": "construct_from_sources",
         "sources": [
             {
@@ -181,7 +181,7 @@ def test_rejects_unsupported_scaling_method() -> None:
         "country": "ALB",
         "start": "2023-01-01",
         "end": "2023-12-31 23:00",
-        "scope": "overwrite_entire_period",
+        "scope": "overwrite",
         "method": "construct_from_sources",
         "sources": [
             {
@@ -218,14 +218,14 @@ def test_build_auxiliary_fill_plan_normalizes_rules() -> None:
             "country": "ALB",
             "start": "2024-01-01",
             "end": "2024-12-31 23:00",
-            "scope": "overwrite_entire_period",
+            "scope": "overwrite",
             "method": "external_profile",
         },
         "construct_albania": {
             "country": "ALB",
             "start": "2023-01-01",
             "end": "2023-12-31 23:00",
-            "scope": "overwrite_entire_period",
+            "scope": "overwrite",
             "method": "construct_from_sources",
             "sources": [
                 {
@@ -291,8 +291,8 @@ def test_build_auxiliary_fill_plan_normalizes_rules() -> None:
                 ),
             ],
             "scope": [
-                "overwrite_entire_period",
-                "overwrite_entire_period",
+                "overwrite",
+                "overwrite",
             ],
             "method": [
                 "construct_from_sources",
@@ -353,7 +353,7 @@ def test_build_auxiliary_fill_plan_ignores_wrong_country() -> None:
             "country": "ALB",
             "start": "2023-01-01",
             "end": "2023-02-01",
-            "scope": "overwrite_entire_period",
+            "scope": "overwrite",
             "method": "construct_from_sources",
             "sources": [
                 {
@@ -367,7 +367,7 @@ def test_build_auxiliary_fill_plan_ignores_wrong_country() -> None:
             "country": "MNE",
             "start": "2023-01-01",
             "end": "2023-02-01",
-            "scope": "overwrite_entire_period",
+            "scope": "overwrite",
             "method": "construct_from_sources",
             "sources": [
                 {
@@ -397,7 +397,7 @@ def test_build_auxiliary_fill_plan_ignores_non_overlapping_periods() -> None:
             "country": "ALB",
             "start": "2020-01-01",
             "end": "2020-02-01",
-            "scope": "overwrite_entire_period",
+            "scope": "overwrite",
             "method": "construct_from_sources",
             "sources": [
                 {
@@ -411,7 +411,7 @@ def test_build_auxiliary_fill_plan_ignores_non_overlapping_periods() -> None:
             "country": "ALB",
             "start": "2026-01-01",
             "end": "2026-02-01",
-            "scope": "overwrite_entire_period",
+            "scope": "overwrite",
             "method": "construct_from_sources",
             "sources": [
                 {
@@ -439,7 +439,7 @@ def test_build_auxiliary_fill_plan_keeps_partial_overlap() -> None:
             "country": "ALB",
             "start": "2021-12-01",
             "end": "2022-02-01",
-            "scope": "overwrite_entire_period",
+            "scope": "overwrite",
             "method": "construct_from_sources",
             "sources": [
                 {
@@ -499,7 +499,7 @@ def test_build_auxiliary_fill_plan_excludes_touching_periods() -> None:
             "country": "ALB",
             "start": "2021-12-01",
             "end": "2022-01-01",
-            "scope": "overwrite_entire_period",
+            "scope": "overwrite",
             "method": "construct_from_sources",
             "sources": [
                 {
@@ -513,7 +513,7 @@ def test_build_auxiliary_fill_plan_excludes_touching_periods() -> None:
             "country": "ALB",
             "start": "2025-01-01",
             "end": "2025-02-01",
-            "scope": "overwrite_entire_period",
+            "scope": "overwrite",
             "method": "construct_from_sources",
             "sources": [
                 {

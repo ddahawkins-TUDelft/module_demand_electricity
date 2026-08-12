@@ -52,7 +52,7 @@ integration_test:
           country: ALB
           start: "2022-01-01"
           end: "2022-02-01"
-          scope: fill_gaps_within_period
+          scope: fill_gaps
           method: construct_from_sources
           sources:
             - country: GBR
@@ -71,7 +71,7 @@ integration_test:
           country: ALB
           start: "2022-05-01"
           end: "2022-06-01"
-          scope: fill_gaps_within_period
+          scope: fill_gaps
           method: construct_from_sources
           sources:
             - country: GBR
@@ -90,7 +90,7 @@ integration_test:
           country: MNE
           start: "2020-03-01"
           end: "2020-04-01"
-          scope: fill_gaps_within_period
+          scope: fill_gaps
           method: construct_from_sources
           sources:
             - country: SRB

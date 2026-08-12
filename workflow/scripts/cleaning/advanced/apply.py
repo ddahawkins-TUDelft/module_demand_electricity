@@ -96,13 +96,13 @@ def apply_constructed_profile(
             f"Target country {country!r} is not present in load data."
         )
 
-    if scope == "fill_gaps_within_period":
+    if scope == "fill_gaps":
         replace_mask = filled.loc[
             target_index,
             country,
         ].isna()
 
-    elif scope == "overwrite_entire_period":
+    elif scope == "overwrite":
         replace_mask = pd.Series(
             True,
             index=target_index,

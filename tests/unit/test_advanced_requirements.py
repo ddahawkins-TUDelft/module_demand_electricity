@@ -16,7 +16,7 @@ def test_compile_auxiliary_requirements_collects_sources() -> None:
             "country": "ALB",
             "start": "2021-01-01",
             "end": "2021-01-03",
-            "scope": "fill_gaps_within_period",
+            "scope": "fill_gaps",
             "method": "construct_from_sources",
             "sources": [
                 {
@@ -68,7 +68,7 @@ def test_compile_auxiliary_requirements_includes_scaling_sources() -> None:
             "country": "ALB",
             "start": "2021-01-01",
             "end": "2021-01-03",
-            "scope": "fill_gaps_within_period",
+            "scope": "fill_gaps",
             "method": "construct_from_sources",
             "sources": [
                 {

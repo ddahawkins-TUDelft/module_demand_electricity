@@ -118,11 +118,12 @@ $defs:
       scope:
         type: string
         enum:
-          - fill_gaps_within_period
-          - overwrite_entire_period
+          - fill_gaps
+          - overwrite
         description: >
           Whether the instruction fills only missing values within the
-          target period or replaces all values in that period.
+          target period (fill_gaps) or replaces all values in that period
+          (overwrite).
 
       method:
         type: string

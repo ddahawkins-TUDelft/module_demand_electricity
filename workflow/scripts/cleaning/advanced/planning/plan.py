@@ -10,8 +10,8 @@ from cleaning.advanced.methods.construct_from_sources import (
 )
 from cleaning.advanced.methods.external_profile import METHOD_NAME as EXTERNAL_PROFILE
 
-FILL_GAPS_WITHIN_PERIOD = "fill_gaps_within_period"
-OVERWRITE_ENTIRE_PERIOD = "overwrite_entire_period"
+FILL_GAPS_WITHIN_PERIOD = "fill_gaps"
+OVERWRITE_ENTIRE_PERIOD = "overwrite"
 
 MANUAL_REVIEW = "manual_review"
 LEAVE_MISSING = "leave_missing"
