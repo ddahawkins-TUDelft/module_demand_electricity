@@ -1,7 +1,6 @@
 """Prepare electricity-demand data downloaded from OPSD."""
 
 import sys
-from time import perf_counter
 from typing import TYPE_CHECKING, Any
 from warnings import warn
 

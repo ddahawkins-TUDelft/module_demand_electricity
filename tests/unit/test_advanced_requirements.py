@@ -271,35 +271,6 @@ def test_expand_requirements_can_be_disabled() -> None:
         requirements,
     )
 
-def test_expand_requirements_can_be_disabled() -> None:
-    requirements = pd.DataFrame(
-        {
-            "country": ["GRC"],
-            "start": [pd.Timestamp("2020-01-01", tz="UTC")],
-            "end": [pd.Timestamp("2020-02-01", tz="UTC")],
-        }
-    )
-
-    rules = [
-        {
-            "name": "copy_previous_week",
-            "method": "copy_period",
-            "max_gap": "168h",
-            "source_offset": "-168h",
-        }
-    ]
-
-    result = expand_auxiliary_requirements(
-        requirements,
-        rules=rules,
-        enabled=False,
-    )
-
-    pd.testing.assert_frame_equal(
-        result,
-        requirements,
-    )
-
 
 def test_basic_context_for_copy_period() -> None:
     rules = [

@@ -195,7 +195,7 @@ checkpoint plan_auxiliary_data:
     output:
         plan=(
             "<resources>/automatic/"
-            "auxiliary/acquisition_plan.json"
+            "auxiliary/advanced_execution_plan.json"
         ),
     params:
         gap_filling=config["gap_filling"],

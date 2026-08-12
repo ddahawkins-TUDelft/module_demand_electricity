@@ -1,6 +1,6 @@
-from pathlib import Path
+"""Tests for the Snakemake host/module environment boundary."""
 import re
-
+from pathlib import Path
 
 FORBIDDEN_PATTERNS = (
     r"\bsys\.path\b",
@@ -22,6 +22,7 @@ FORBIDDEN_PATTERNS = (
 
 
 def test_snakemake_host_code_has_no_module_runtime_dependencies():
+    """Ensure host-side workflow code avoids module runtime packages."""
     workflow_files = [
         Path("workflow/Snakefile"),
         *Path("workflow/rules").glob("*.smk"),

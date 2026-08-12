@@ -2,8 +2,9 @@
 
 import logging
 import sys
+from collections.abc import Iterable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 from cleaning.advanced.planning.manifest import get_batch, load_execution_plan
