@@ -48,6 +48,11 @@ rule download_load_entsoe_api:
     localrule: True
     conda:
         "../envs/module.yaml"
+    threads:
+        min(
+            internal["load_entsoe_api"]["MAX_WORKERS"],
+            len(internal["load_entsoe_api"]["countries"]),
+        )
     params:
         country_codes=internal["load_entsoe_api"]["countries"],
         temporal_start=config["temporal_scope"]["start"],

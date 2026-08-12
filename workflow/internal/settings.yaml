@@ -44,3 +44,4 @@ load_entsoe_api:
     - "SVN"
     - "SVK"
     - "TUR"
+  MAX_WORKERS: 3
