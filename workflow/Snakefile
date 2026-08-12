@@ -1,5 +1,3 @@
-import sys
-
 import yaml
 
 from snakemake.utils import min_version, validate
@@ -29,12 +27,6 @@ validate(config, workflow.source_path("internal/config.schema.yaml"))
 with open(workflow.source_path("internal/settings.yaml"), "r") as f:
     internal = yaml.safe_load(f)
 
-
-# Make reusable workflow Python packages available to rule files.
-scripts_path = workflow.source_path("scripts")
-
-if scripts_path not in sys.path:
-    sys.path.insert(0, scripts_path)
 
 # Load python files in scripts that are used in other scripts, but not run itself.
 # This is necessary for integrating the snakemake module via reference to GitHub.
