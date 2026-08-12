@@ -52,6 +52,21 @@ def _construct_override(
     }
 
 
+def _external_profile_override(
+    *,
+    country: str = "ALB",
+    path: str = "resources/user/external_profiles/alb.csv",
+) -> dict:
+    return {
+        "country": country,
+        "start": "2020-01-01",
+        "end": "2020-02-01",
+        "scope": "fill_gaps",
+        "method": "external_profile",
+        "path": path,
+    }
+
+
 def _fill_plan(rule_names: list[str]) -> pd.DataFrame:
     if not rule_names:
         return pd.DataFrame()
@@ -73,6 +88,7 @@ def _empty_execution_plan() -> dict:
         "batch_ids_by_source": {},
         "groups": {},
         "constructed_profile_rule_names": [],
+        "external_profile_files": {},
     }
 
 
@@ -162,6 +178,7 @@ def test_plan_builds_complete_execution_manifest() -> None:
             group_id: [entsoe_batch_id, opsd_batch_id],
         },
         "constructed_profile_rule_names": ["fill_albania"],
+        "external_profile_files": {},
     }
 
 
@@ -388,3 +405,84 @@ def test_plan_is_json_serializable() -> None:
     )
 
     json.dumps(result)
+
+def test_plan_records_active_external_profile_file() -> None:
+    override = _external_profile_override(
+        path="resources/user/external_profiles/alb_2020.csv",
+    )
+
+    result = build_advanced_execution_plan(
+        fill_plan=_fill_plan(["external_albania"]),
+        gap_filling_config=_config(
+            {
+                "external_albania": override,
+            }
+        ),
+        source_names=["entsoe_api"],
+    )
+
+    assert result["external_profile_files"] == {
+        "external_albania": (
+            "resources/user/external_profiles/alb_2020.csv"
+        ),
+    }
+
+    assert result["constructed_profile_rule_names"] == []
+    assert result["batches"] == []
+
+
+def test_plan_excludes_inactive_external_profile_file() -> None:
+    result = build_advanced_execution_plan(
+        fill_plan=_fill_plan(["active"]),
+        gap_filling_config=_config(
+            {
+                "active": _external_profile_override(
+                    path="resources/user/active.csv",
+                ),
+                "inactive": _external_profile_override(
+                    path="resources/user/inactive.csv",
+                ),
+            }
+        ),
+        source_names=["entsoe_api"],
+    )
+
+    assert result["external_profile_files"] == {
+        "active": "resources/user/active.csv",
+    }
+
+
+def test_plan_allows_external_profile_file_reuse() -> None:
+    shared_path = (
+        "resources/user/external_profiles/"
+        "gbr_2000_2025.csv"
+    )
+
+    result = build_advanced_execution_plan(
+        fill_plan=_fill_plan(
+            [
+                "gbr_period_one",
+                "gbr_period_two",
+            ]
+        ),
+        gap_filling_config=_config(
+            {
+                "gbr_period_one": _external_profile_override(
+                    country="GBR",
+                    path=shared_path,
+                ),
+                "gbr_period_two": _external_profile_override(
+                    country="GBR",
+                    path=shared_path,
+                ),
+            }
+        ),
+        source_names=["entsoe_api"],
+    )
+
+    assert result["external_profile_files"] == {
+        "gbr_period_one": shared_path,
+        "gbr_period_two": shared_path,
+    }
+
+

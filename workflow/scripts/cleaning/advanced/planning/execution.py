@@ -8,6 +8,7 @@ import pandas as pd
 from cleaning.advanced.methods.construct_from_sources import (
     METHOD_NAME as CONSTRUCT_FROM_SOURCES,
 )
+from cleaning.advanced.methods.external_profile import METHOD_NAME as EXTERNAL_PROFILE
 from cleaning.advanced.planning.requirements import (
     build_auxiliary_acquisition_requirements,
 )
@@ -61,6 +62,7 @@ def build_advanced_execution_plan(
 
     rules: dict[str, dict[str, object]] = {}
     constructed_profile_rule_names: list[str] = []
+    external_profile_files: dict[str, str] = {}
     batch_plan = {"batches": batches}
 
     for rule_name in ordered_active_rule_names:
@@ -73,6 +75,11 @@ def build_advanced_execution_plan(
                 override=override,
             )
             constructed_profile_rule_names.append(rule_name)
+
+        elif override["method"] == EXTERNAL_PROFILE:
+            external_profile_files[rule_name] = str(
+                override["path"]
+            )
 
         rules[rule_name] = {
             "override": override,
@@ -87,6 +94,7 @@ def build_advanced_execution_plan(
         "batch_ids_by_source": _index_batch_ids_by_source(batches),
         "groups": _index_batch_ids_by_group(batches),
         "constructed_profile_rule_names": constructed_profile_rule_names,
+        "external_profile_files": external_profile_files,
     }
 
 
@@ -100,6 +108,7 @@ def _empty_execution_plan() -> dict[str, object]:
         "batch_ids_by_source": {},
         "groups": {},
         "constructed_profile_rule_names": [],
+        "external_profile_files": {},
     }
 
 
