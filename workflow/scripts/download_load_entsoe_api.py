@@ -5,14 +5,13 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from time import perf_counter
 from typing import TYPE_CHECKING, Any
-from warnings import warn
 
 import pandas as pd
 import pycountry
 import yaml
 from cleaning.advanced.planning.manifest import get_batch, load_execution_plan
 from common.time import as_utc_timestamp, build_hourly_index
-from entsoe import EntsoePandasClient
+from entsoe.entsoe import EntsoePandasClient
 from entsoe.exceptions import NoMatchingDataError
 
 logger = logging.getLogger(__name__)
@@ -96,10 +95,12 @@ def download_country(
         df_country.name = country_alpha_3
 
     except NoMatchingDataError:
-        warn(
-            f"No data found for "
-            f"{country_alpha_2}/{country_alpha_3} "
-            f"in the given period: {start} to {end}"
+        logger.warning(
+            "No data found for %s/%s in the given period: %s to %s.",
+            country_alpha_2,
+            country_alpha_3,
+            start,
+            end,
         )
 
         df_country = pd.Series(

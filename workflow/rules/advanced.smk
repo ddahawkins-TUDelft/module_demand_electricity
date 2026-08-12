@@ -199,6 +199,25 @@ def advanced_external_profile_files(_wildcards):
     )
 
 
+def auxiliary_entsoe_threads(wildcards):
+    """Return useful ENTSO-E threads for one auxiliary batch."""
+    plan = _read_auxiliary_plan()
+
+    batch = next(
+        batch
+        for batch in plan["batches"]
+        if (
+            batch["batch_id"] == wildcards.batch_id
+            and batch["source"] == "entsoe_api"
+        )
+    )
+
+    return min(
+        internal["load_entsoe_api"]["MAX_WORKERS"],
+        len(batch["countries"]),
+    )
+
+
 checkpoint plan_auxiliary_data:
     input:
         fill_plan=rules.clean_demand.output.auxiliary_fill_plan,
@@ -264,6 +283,8 @@ rule download_auxiliary_load_entsoe_api:
     localrule: True
     conda:
         "../envs/module.yaml"
+    threads:
+        auxiliary_entsoe_threads
     message:
         "Download auxiliary electricity load from ENTSO-E."
     script:
