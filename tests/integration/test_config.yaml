@@ -104,4 +104,4 @@ integration_test:
           end: "2022-01-08 00:00"
           scope: overwrite
           method: external_profile
-          path: resources/external_profiles/alb_external_test.csv
+          path: inputs/external_profiles/alb_external_test.csv
