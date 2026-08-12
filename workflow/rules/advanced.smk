@@ -1,13 +1,5 @@
 import json
 
-from cleaning.advanced.planning.selection import (
-    get_auxiliary_batch,
-    get_auxiliary_group_batches,
-    get_auxiliary_group_ids,
-    get_required_auxiliary_group_ids,
-    get_source_batch_ids,
-)
-
 
 def _read_plan_file(plan_path):
     with open(plan_path, encoding="utf-8") as file:
@@ -15,8 +7,8 @@ def _read_plan_file(plan_path):
 
 
 def _read_auxiliary_plan(_wildcards=None):
-    """Read the resolved auxiliary acquisition plan."""
-    plan_path = (
+    """Read the resolved advanced execution plan."""
+    plan_file = (
         checkpoints
         .plan_auxiliary_data
         .get()
@@ -24,11 +16,12 @@ def _read_auxiliary_plan(_wildcards=None):
         .plan
     )
 
-    return _read_plan_file(plan_path)
+    with plan_file.open() as file:
+        return json.load(file)
 
 
 def auxiliary_acquisition_plan(_wildcards):
-    """Return the acquisition plan after the checkpoint completes."""
+    """Return the execution plan after the checkpoint completes."""
     return (
         checkpoints
         .plan_auxiliary_data
@@ -38,26 +31,54 @@ def auxiliary_acquisition_plan(_wildcards):
     )
 
 
+def _get_batch(
+    plan,
+    *,
+    batch_id,
+    source=None,
+):
+    """Return one batch from the compiled execution plan."""
+    matches = [
+        batch
+        for batch in plan["batches"]
+        if (
+            batch["batch_id"] == batch_id
+            and (
+                source is None
+                or batch["source"] == source
+            )
+        )
+    ]
+
+    if len(matches) != 1:
+        source_text = (
+            f" for source {source!r}"
+            if source is not None
+            else ""
+        )
+        raise ValueError(
+            "Expected exactly one auxiliary batch "
+            f"{batch_id!r}{source_text}, found {len(matches)}."
+        )
+
+    return matches[0]
+
+
 def get_auxiliary_entsoe_batch(
     wildcards,
     input,
 ) -> dict:
     """Return the ENTSO-E batch for this job."""
-    return get_auxiliary_batch(
+    return _get_batch(
         _read_plan_file(input.plan),
         batch_id=wildcards.batch_id,
         source="entsoe_api",
     )
 
 
-def auxiliary_entsoe_outputs(wildcards):
-    """Return all ENTSO-E outputs required by the acquisition plan."""
-    plan = _read_auxiliary_plan(wildcards)
-
-    batch_ids = get_source_batch_ids(
-        plan,
-        source="entsoe_api",
-    )
+def auxiliary_entsoe_outputs(_wildcards):
+    """Return all ENTSO-E outputs required by the execution plan."""
+    plan = _read_auxiliary_plan()
 
     return [
         (
@@ -65,7 +86,9 @@ def auxiliary_entsoe_outputs(wildcards):
             "auxiliary/entsoe_api/"
             f"{batch_id}.parquet"
         )
-        for batch_id in batch_ids
+        for batch_id in plan[
+            "batch_ids_by_source"
+        ].get("entsoe_api", [])
     ]
 
 
@@ -74,21 +97,16 @@ def get_auxiliary_opsd_batch(
     input,
 ) -> dict:
     """Return the OPSD batch for this job."""
-    return get_auxiliary_batch(
+    return _get_batch(
         _read_plan_file(input.plan),
         batch_id=wildcards.batch_id,
         source="opsd_api",
     )
 
 
-def auxiliary_opsd_outputs(wildcards):
-    """Return all OPSD outputs required by the acquisition plan."""
-    plan = _read_auxiliary_plan(wildcards)
-
-    batch_ids = get_source_batch_ids(
-        plan,
-        source="opsd_api",
-    )
+def auxiliary_opsd_outputs(_wildcards):
+    """Return all OPSD outputs required by the execution plan."""
+    plan = _read_auxiliary_plan()
 
     return [
         (
@@ -96,7 +114,9 @@ def auxiliary_opsd_outputs(wildcards):
             "auxiliary/opsd_api/"
             f"{batch_id}.parquet"
         )
-        for batch_id in batch_ids
+        for batch_id in plan[
+            "batch_ids_by_source"
+        ].get("opsd_api", [])
     ]
 
 
@@ -105,7 +125,7 @@ def get_auxiliary_neso_batch(
     input,
 ) -> dict:
     """Return the NESO batch for this job."""
-    return get_auxiliary_batch(
+    return _get_batch(
         _read_plan_file(input.plan),
         batch_id=wildcards.batch_id,
         source="neso",
@@ -114,17 +134,12 @@ def get_auxiliary_neso_batch(
 
 def auxiliary_neso_raw_files(wildcards):
     """Return annual NESO files required by one auxiliary batch."""
-    plan = _read_auxiliary_plan(wildcards)
+    plan = _read_auxiliary_plan()
 
-    batch = get_auxiliary_batch(
+    batch = _get_batch(
         plan,
         batch_id=wildcards.batch_id,
         source="neso",
-    )
-
-    years = _years_in_period(
-        batch["start"],
-        batch["end"],
     )
 
     return [
@@ -132,18 +147,13 @@ def auxiliary_neso_raw_files(wildcards):
             "<resources>/automatic/neso/"
             f"historic_demand_{year}.csv"
         )
-        for year in years
+        for year in batch["years"]
     ]
 
 
-def auxiliary_neso_outputs(wildcards):
-    """Return all NESO outputs required by the acquisition plan."""
-    plan = _read_auxiliary_plan(wildcards)
-
-    batch_ids = get_source_batch_ids(
-        plan,
-        source="neso",
-    )
+def auxiliary_neso_outputs(_wildcards):
+    """Return all NESO outputs required by the execution plan."""
+    plan = _read_auxiliary_plan()
 
     return [
         (
@@ -151,18 +161,27 @@ def auxiliary_neso_outputs(wildcards):
             "auxiliary/neso/"
             f"{batch_id}.parquet"
         )
-        for batch_id in batch_ids
+        for batch_id in plan[
+            "batch_ids_by_source"
+        ].get("neso", [])
     ]
 
 
 def auxiliary_group_source_files(wildcards):
     """Return prepared source files for one auxiliary group."""
-    plan = _read_auxiliary_plan(wildcards)
+    plan = _read_auxiliary_plan()
 
-    batches = get_auxiliary_group_batches(
-        plan,
-        group_id=wildcards.group_id,
-    )
+    batch_ids = plan["groups"][
+        wildcards.group_id
+    ]
+
+    batches = [
+        _get_batch(
+            plan,
+            batch_id=batch_id,
+        )
+        for batch_id in batch_ids
+    ]
 
     return [
         (
@@ -174,11 +193,9 @@ def auxiliary_group_source_files(wildcards):
     ]
 
 
-def auxiliary_combined_outputs(wildcards):
+def auxiliary_combined_outputs(_wildcards):
     """Return all combined auxiliary group outputs."""
-    plan = _read_auxiliary_plan(wildcards)
-
-    group_ids = get_auxiliary_group_ids(plan)
+    plan = _read_auxiliary_plan()
 
     return [
         (
@@ -186,22 +203,17 @@ def auxiliary_combined_outputs(wildcards):
             "auxiliary/combined/"
             f"{group_id}.parquet"
         )
-        for group_id in group_ids
+        for group_id in plan["groups"]
     ]
 
 
 def auxiliary_rule_cleaned_files(wildcards):
     """Return cleaned auxiliary files required by one advanced override."""
-    plan = _read_auxiliary_plan(wildcards)
+    plan = _read_auxiliary_plan()
 
-    override = config["gap_filling"]["advanced"]["overrides"][
+    group_ids = plan["rules"][
         wildcards.rule_name
-    ]
-
-    group_ids = get_required_auxiliary_group_ids(
-        plan,
-        override=override,
-    )
+    ]["required_group_ids"]
 
     return [
         (
@@ -213,19 +225,9 @@ def auxiliary_rule_cleaned_files(wildcards):
     ]
 
 
-def advanced_constructed_profiles(wildcards):
+def advanced_constructed_profiles(_wildcards):
     """Return constructed profiles required by active advanced overrides."""
-    plan = _read_auxiliary_plan(wildcards)
-
-    active_rule_names = set(
-        plan["active_rule_names"]
-    )
-
-    overrides = (
-        config["gap_filling"]
-        ["advanced"]
-        ["overrides"]
-    )
+    plan = _read_auxiliary_plan()
 
     return [
         (
@@ -233,11 +235,9 @@ def advanced_constructed_profiles(wildcards):
             "auxiliary/constructed/"
             f"{rule_name}.parquet"
         )
-        for rule_name, override in overrides.items()
-        if (
-            rule_name in active_rule_names
-            and override["method"] == "construct_from_sources"
-        )
+        for rule_name in plan[
+            "constructed_profile_rule_names"
+        ]
     ]
 
 
@@ -394,6 +394,7 @@ rule prepare_auxiliary_load_opsd:
     script:
         "../scripts/prepare_load_opsd.py"
 
+
 rule prepare_auxiliary_load_neso:
     input:
         plan=auxiliary_acquisition_plan,
@@ -504,6 +505,7 @@ rule clean_auxiliary_data:
         "Apply basic cleaning to auxiliary electricity demand."
     script:
         "../scripts/clean_auxiliary_data.py"
+
 
 rule construct_auxiliary_profile:
     input:
