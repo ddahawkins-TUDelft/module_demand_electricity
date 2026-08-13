@@ -2,9 +2,9 @@
 temporal_scope:
   start: "2016-01-01"
   end: "2026-01-01"
-# provide a list of sources and set their priority order. 
+# provide a list of sources and set their priority order.
 # Options include: entsoe_api, neso, opsd_api
-load_sources: 
+load_sources:
   - entsoe_api
   - neso
   - opsd_api
@@ -88,7 +88,7 @@ gap_filling:
               start: "2024-05-01"
               end: "2024-06-01"
               weight: 1
-      
+
       example_inactive_mne_override:
         country: MNE
         start: "2020-03-01"
@@ -100,7 +100,7 @@ gap_filling:
             start: "2022-03-01"
             end: "2022-04-01"
             weight: 1
-      
+
       test_external_profile_overwrite:
         country: ALB
         start: "2022-01-01 00:00"

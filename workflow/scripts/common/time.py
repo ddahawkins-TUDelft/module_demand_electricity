@@ -15,19 +15,13 @@ def as_utc_timestamp(value: object) -> pd.Timestamp:
     return timestamp.tz_convert("UTC")
 
 
-def build_hourly_index(
-    *,
-    start: object,
-    end: object,
-) -> pd.DatetimeIndex:
+def build_hourly_index(*, start: object, end: object) -> pd.DatetimeIndex:
     """Create an end-exclusive hourly UTC index."""
     start_timestamp = as_utc_timestamp(start)
     end_timestamp = as_utc_timestamp(end)
 
     if end_timestamp <= start_timestamp:
-        raise ValueError(
-            "The temporal end must be later than its start."
-        )
+        raise ValueError("The temporal end must be later than its start.")
 
     return pd.date_range(
         start=start_timestamp,

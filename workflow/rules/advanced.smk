@@ -3,13 +3,7 @@ import json
 
 def _read_auxiliary_plan(_wildcards=None):
     """Read the resolved advanced execution plan."""
-    plan_file = (
-        checkpoints
-        .plan_auxiliary_data
-        .get()
-        .output
-        .plan
-    )
+    plan_file = checkpoints.plan_auxiliary_data.get().output.plan
 
     with plan_file.open() as file:
         return json.load(file)
@@ -17,13 +11,7 @@ def _read_auxiliary_plan(_wildcards=None):
 
 def auxiliary_acquisition_plan(_wildcards):
     """Return the execution plan after the checkpoint completes."""
-    return (
-        checkpoints
-        .plan_auxiliary_data
-        .get()
-        .output
-        .plan
-    )
+    return checkpoints.plan_auxiliary_data.get().output.plan
 
 
 def auxiliary_entsoe_outputs(_wildcards):
@@ -31,14 +19,8 @@ def auxiliary_entsoe_outputs(_wildcards):
     plan = _read_auxiliary_plan()
 
     return [
-        (
-            "<resources>/automatic/"
-            "auxiliary/entsoe_api/"
-            f"{batch_id}.parquet"
-        )
-        for batch_id in plan[
-            "batch_ids_by_source"
-        ].get("entsoe_api", [])
+        ("<resources>/automatic/" "auxiliary/entsoe_api/" f"{batch_id}.parquet")
+        for batch_id in plan["batch_ids_by_source"].get("entsoe_api", [])
     ]
 
 
@@ -47,14 +29,8 @@ def auxiliary_opsd_outputs(_wildcards):
     plan = _read_auxiliary_plan()
 
     return [
-        (
-            "<resources>/automatic/"
-            "auxiliary/opsd_api/"
-            f"{batch_id}.parquet"
-        )
-        for batch_id in plan[
-            "batch_ids_by_source"
-        ].get("opsd_api", [])
+        ("<resources>/automatic/" "auxiliary/opsd_api/" f"{batch_id}.parquet")
+        for batch_id in plan["batch_ids_by_source"].get("opsd_api", [])
     ]
 
 
@@ -65,17 +41,11 @@ def auxiliary_neso_raw_files(wildcards):
     batch = next(
         batch
         for batch in plan["batches"]
-        if (
-            batch["batch_id"] == wildcards.batch_id
-            and batch["source"] == "neso"
-        )
+        if (batch["batch_id"] == wildcards.batch_id and batch["source"] == "neso")
     )
 
     return [
-        (
-            "<resources>/automatic/neso/"
-            f"historic_demand_{year}.csv"
-        )
+        ("<resources>/automatic/neso/" f"historic_demand_{year}.csv")
         for year in batch["years"]
     ]
 
@@ -85,14 +55,8 @@ def auxiliary_neso_outputs(_wildcards):
     plan = _read_auxiliary_plan()
 
     return [
-        (
-            "<resources>/automatic/"
-            "auxiliary/neso/"
-            f"{batch_id}.parquet"
-        )
-        for batch_id in plan[
-            "batch_ids_by_source"
-        ].get("neso", [])
+        ("<resources>/automatic/" "auxiliary/neso/" f"{batch_id}.parquet")
+        for batch_id in plan["batch_ids_by_source"].get("neso", [])
     ]
 
 
@@ -100,14 +64,9 @@ def auxiliary_group_source_files(wildcards):
     """Return prepared source files for one auxiliary group."""
     plan = _read_auxiliary_plan()
 
-    batch_ids = plan["groups"][
-        wildcards.group_id
-    ]
+    batch_ids = plan["groups"][wildcards.group_id]
 
-    batches_by_id = {
-        batch["batch_id"]: batch
-        for batch in plan["batches"]
-    }
+    batches_by_id = {batch["batch_id"]: batch for batch in plan["batches"]}
 
     return [
         (
@@ -124,11 +83,7 @@ def auxiliary_combined_outputs(_wildcards):
     plan = _read_auxiliary_plan()
 
     return [
-        (
-            "<resources>/automatic/"
-            "auxiliary/combined/"
-            f"{group_id}.parquet"
-        )
+        ("<resources>/automatic/" "auxiliary/combined/" f"{group_id}.parquet")
         for group_id in plan["groups"]
     ]
 
@@ -137,16 +92,10 @@ def auxiliary_rule_cleaned_files(wildcards):
     """Return cleaned auxiliary files required by one advanced override."""
     plan = _read_auxiliary_plan()
 
-    group_ids = plan["rules"][
-        wildcards.rule_name
-    ]["required_group_ids"]
+    group_ids = plan["rules"][wildcards.rule_name]["required_group_ids"]
 
     return [
-        (
-            "<resources>/automatic/"
-            "auxiliary/cleaned/"
-            f"{group_id}.parquet"
-        )
+        ("<resources>/automatic/" "auxiliary/cleaned/" f"{group_id}.parquet")
         for group_id in group_ids
     ]
 
@@ -156,24 +105,15 @@ def advanced_constructed_profiles(_wildcards):
     plan = _read_auxiliary_plan()
 
     return [
-        (
-            "<resources>/automatic/"
-            "auxiliary/constructed/"
-            f"{rule_name}.parquet"
-        )
-        for rule_name in plan[
-            "constructed_profile_rule_names"
-        ]
+        ("<resources>/automatic/" "auxiliary/constructed/" f"{rule_name}.parquet")
+        for rule_name in plan["constructed_profile_rule_names"]
     ]
 
 
 def final_clean_demand_input(_wildcards):
     """Return the cleaned demand appropriate for the configured mode."""
     if config["gap_filling"]["mode"] == "advanced":
-        return (
-            "<resources>/automatic/"
-            "load_advanced_cleaned.parquet"
-        )
+        return "<resources>/automatic/" "load_advanced_cleaned.parquet"
 
     return rules.clean_demand.output.demand
 
@@ -181,10 +121,7 @@ def final_clean_demand_input(_wildcards):
 def final_cleaning_method_input(_wildcards):
     """Return cleaning provenance appropriate for the configured mode."""
     if config["gap_filling"]["mode"] == "advanced":
-        return (
-            "<resources>/automatic/"
-            "load_advanced_cleaning_method.parquet"
-        )
+        return "<resources>/automatic/" "load_advanced_cleaning_method.parquet"
 
     return rules.clean_demand.output.cleaning_method
 
@@ -192,11 +129,7 @@ def final_cleaning_method_input(_wildcards):
 def advanced_external_profile_files(_wildcards):
     plan = _read_auxiliary_plan()
 
-    return list(
-        dict.fromkeys(
-            plan["external_profile_files"].values()
-        )
-    )
+    return list(dict.fromkeys(plan["external_profile_files"].values()))
 
 
 def auxiliary_entsoe_threads(wildcards):
@@ -206,10 +139,7 @@ def auxiliary_entsoe_threads(wildcards):
     batch = next(
         batch
         for batch in plan["batches"]
-        if (
-            batch["batch_id"] == wildcards.batch_id
-            and batch["source"] == "entsoe_api"
-        )
+        if (batch["batch_id"] == wildcards.batch_id and batch["source"] == "entsoe_api")
     )
 
     return min(
@@ -222,15 +152,12 @@ checkpoint plan_auxiliary_data:
     input:
         fill_plan=rules.clean_demand.output.auxiliary_fill_plan,
     output:
-        plan=(
-            "<resources>/automatic/"
-            "auxiliary/advanced_execution_plan.json"
-        ),
+        plan=("<resources>/automatic/" "auxiliary/advanced_execution_plan.json"),
+    conda:
+        "../envs/module.yaml"
     params:
         gap_filling=config["gap_filling"],
         source_names=config["load_sources"],
-    conda:
-        "../envs/module.yaml"
     message:
         "Plan auxiliary electricity-demand acquisition."
     script:
@@ -242,23 +169,16 @@ rule finalise_clean_demand:
         demand=final_clean_demand_input,
         cleaning_method=final_cleaning_method_input,
     output:
-        demand=(
-            "<resources>/automatic/"
-            "load_cleaned.parquet"
-        ),
-        cleaning_method=(
-            "<resources>/automatic/"
-            "load_final_cleaning_method.parquet"
-        ),
+        demand=("<resources>/automatic/" "load_cleaned.parquet"),
+        cleaning_method=("<resources>/automatic/" "load_final_cleaning_method.parquet"),
         cleaning_method_rank=(
-            "<resources>/automatic/"
-            "load_final_cleaning_method_rank.parquet"
+            "<resources>/automatic/" "load_final_cleaning_method_rank.parquet"
         ),
+    conda:
+        "../envs/module.yaml"
     params:
         source_names=config["load_sources"],
         gap_filling=config["gap_filling"],
-    conda:
-        "../envs/module.yaml"
     message:
         "Finalise cleaned electricity demand and provenance."
     script:
@@ -270,21 +190,13 @@ rule download_auxiliary_load_entsoe_api:
         token_entsoe="<token_entsoe>",
         plan=auxiliary_acquisition_plan,
     output:
-        load=(
-            "<resources>/automatic/"
-            "auxiliary/entsoe_api/"
-            "{batch_id}.parquet"
-        ),
+        load=("<resources>/automatic/" "auxiliary/entsoe_api/" "{batch_id}.parquet"),
     log:
-        (
-            "<logs>/auxiliary/"
-            "entsoe_api/{batch_id}.log"
-        ),
+        ("<logs>/auxiliary/" "entsoe_api/{batch_id}.log"),
     localrule: True
     conda:
         "../envs/module.yaml"
-    threads:
-        auxiliary_entsoe_threads
+    threads: auxiliary_entsoe_threads
     message:
         "Download auxiliary electricity load from ENTSO-E."
     script:
@@ -296,16 +208,9 @@ rule prepare_auxiliary_load_opsd:
         load=rules.download_load_entsoe_opsd.output.load,
         plan=auxiliary_acquisition_plan,
     output:
-        load=(
-            "<resources>/automatic/"
-            "auxiliary/opsd_api/"
-            "{batch_id}.parquet"
-        ),
+        load=("<resources>/automatic/" "auxiliary/opsd_api/" "{batch_id}.parquet"),
     log:
-        (
-            "<logs>/auxiliary/"
-            "opsd_api/{batch_id}.log"
-        ),
+        ("<logs>/auxiliary/" "opsd_api/{batch_id}.log"),
     conda:
         "../envs/module.yaml"
     message:
@@ -319,16 +224,9 @@ rule prepare_auxiliary_load_neso:
         plan=auxiliary_acquisition_plan,
         annual_files=auxiliary_neso_raw_files,
     output:
-        load=(
-            "<resources>/automatic/"
-            "auxiliary/neso/"
-            "{batch_id}.parquet"
-        ),
+        load=("<resources>/automatic/" "auxiliary/neso/" "{batch_id}.parquet"),
     log:
-        (
-            "<logs>/auxiliary/"
-            "neso/{batch_id}.log"
-        ),
+        ("<logs>/auxiliary/" "neso/{batch_id}.log"),
     conda:
         "../envs/module.yaml"
     message:
@@ -342,11 +240,7 @@ rule combine_auxiliary_sources:
         plan=auxiliary_acquisition_plan,
         sources=auxiliary_group_source_files,
     output:
-        demand=(
-            "<resources>/automatic/"
-            "auxiliary/combined/"
-            "{group_id}.parquet"
-        ),
+        demand=("<resources>/automatic/" "auxiliary/combined/" "{group_id}.parquet"),
         data_source=(
             "<resources>/automatic/"
             "auxiliary/combined/"
@@ -357,10 +251,10 @@ rule combine_auxiliary_sources:
             "auxiliary/combined/"
             "{group_id}_cleaning_method.parquet"
         ),
-    params:
-        source_priority=config["load_sources"],
     conda:
         "../envs/module.yaml"
+    params:
+        source_priority=config["load_sources"],
     message:
         "Combine auxiliary electricity-demand sources."
     script:
@@ -369,38 +263,28 @@ rule combine_auxiliary_sources:
 
 rule clean_auxiliary_data:
     input:
-        demand=(
-            "<resources>/automatic/"
-            "auxiliary/combined/"
-            "{group_id}.parquet"
-        ),
+        demand=("<resources>/automatic/" "auxiliary/combined/" "{group_id}.parquet"),
         cleaning_method=(
             "<resources>/automatic/"
             "auxiliary/combined/"
             "{group_id}_cleaning_method.parquet"
         ),
     output:
-        demand=(
-            "<resources>/automatic/"
-            "auxiliary/cleaned/"
-            "{group_id}.parquet"
-        ),
+        demand=("<resources>/automatic/" "auxiliary/cleaned/" "{group_id}.parquet"),
         cleaning_method=(
             "<resources>/automatic/"
             "auxiliary/cleaned/"
             "{group_id}_cleaning_method.parquet"
         ),
+    conda:
+        "../envs/module.yaml"
     params:
         basic_rules=config["gap_filling"]["basic"]["rules"],
         enabled=(
-            config["gap_filling"]
-            ["advanced"]
-            ["auxiliary_data"]
-            ["basic_cleaning"]
-            ["enabled"]
+            config["gap_filling"]["advanced"]["auxiliary_data"]["basic_cleaning"][
+                "enabled"
+            ]
         ),
-    conda:
-        "../envs/module.yaml"
     message:
         "Apply basic cleaning to auxiliary electricity demand."
     script:
@@ -413,9 +297,7 @@ rule construct_auxiliary_profile:
         sources=auxiliary_rule_cleaned_files,
     output:
         profile=(
-            "<resources>/automatic/"
-            "auxiliary/constructed/"
-            "{rule_name}.parquet"
+            "<resources>/automatic/" "auxiliary/constructed/" "{rule_name}.parquet"
         ),
     conda:
         "../envs/module.yaml"
@@ -427,25 +309,15 @@ rule construct_auxiliary_profile:
 
 rule apply_advanced_overrides:
     input:
-        demand=(
-            "<resources>/automatic/"
-            "load_basic_cleaned.parquet"
-        ),
-        cleaning_method=(
-            "<resources>/automatic/"
-            "load_cleaning_method.parquet"
-        ),
+        demand=("<resources>/automatic/" "load_basic_cleaned.parquet"),
+        cleaning_method=("<resources>/automatic/" "load_cleaning_method.parquet"),
         plan=auxiliary_acquisition_plan,
         constructed_profiles=advanced_constructed_profiles,
         external_profiles=advanced_external_profile_files,
     output:
-        demand=(
-            "<resources>/automatic/"
-            "load_advanced_cleaned.parquet"
-        ),
+        demand=("<resources>/automatic/" "load_advanced_cleaned.parquet"),
         cleaning_method=(
-            "<resources>/automatic/"
-            "load_advanced_cleaning_method.parquet"
+            "<resources>/automatic/" "load_advanced_cleaning_method.parquet"
         ),
     conda:
         "../envs/module.yaml"

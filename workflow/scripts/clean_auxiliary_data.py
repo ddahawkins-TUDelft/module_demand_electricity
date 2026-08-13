@@ -1,15 +1,9 @@
 import pandas as pd
-
 from cleaning.basic.apply import fill_basic_gaps
 
+load = pd.read_parquet(snakemake.input.demand)
 
-load = pd.read_parquet(
-    snakemake.input.demand
-)
-
-cleaning_method = pd.read_parquet(
-    snakemake.input.cleaning_method
-)
+cleaning_method = pd.read_parquet(snakemake.input.cleaning_method)
 
 cleaned, cleaning_method = fill_basic_gaps(
     load,
@@ -18,10 +12,6 @@ cleaned, cleaning_method = fill_basic_gaps(
     enabled=snakemake.params.enabled,
 )
 
-cleaned.to_parquet(
-    snakemake.output.demand
-)
+cleaned.to_parquet(snakemake.output.demand)
 
-cleaning_method.to_parquet(
-    snakemake.output.cleaning_method
-)
+cleaning_method.to_parquet(snakemake.output.cleaning_method)

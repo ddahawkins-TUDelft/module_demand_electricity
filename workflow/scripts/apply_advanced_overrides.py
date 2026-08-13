@@ -10,21 +10,13 @@ from cleaning.advanced.planning.manifest import (
     load_execution_plan,
 )
 
-load = pd.read_parquet(
-    snakemake.input.demand
-)
+load = pd.read_parquet(snakemake.input.demand)
 
-cleaning_method = pd.read_parquet(
-    snakemake.input.cleaning_method
-)
+cleaning_method = pd.read_parquet(snakemake.input.cleaning_method)
 
-plan = load_execution_plan(
-    snakemake.input.plan
-)
+plan = load_execution_plan(snakemake.input.plan)
 
-active_overrides = get_active_overrides(
-    plan
-)
+active_overrides = get_active_overrides(plan)
 
 
 constructed_profiles = {
@@ -40,11 +32,8 @@ external_profiles_by_path = {
 
 
 external_profiles = {
-    rule_name: external_profiles_by_path[
-        Path(path)
-    ]
-    for rule_name, path
-    in plan["external_profile_files"].items()
+    rule_name: external_profiles_by_path[Path(path)]
+    for rule_name, path in plan["external_profile_files"].items()
 }
 
 
@@ -57,10 +46,6 @@ filled, cleaning_method = apply_auxiliary_fill_rules(
 )
 
 
-filled.to_parquet(
-    snakemake.output.demand
-)
+filled.to_parquet(snakemake.output.demand)
 
-cleaning_method.to_parquet(
-    snakemake.output.cleaning_method
-)
+cleaning_method.to_parquet(snakemake.output.cleaning_method)

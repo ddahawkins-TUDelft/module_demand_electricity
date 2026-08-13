@@ -10,46 +10,25 @@ from cleaning.advanced.methods.construct_from_sources import (
 )
 from cleaning.advanced.methods.external_profile import METHOD_NAME as EXTERNAL_PROFILE
 
-FILL_GAPS= "fill_gaps"
+FILL_GAPS = "fill_gaps"
 OVERWRITE = "overwrite"
 LEAVE_MISSING = "leave_missing"
 
 
-def validate_auxiliary_fill_rule(
-    rule_name: str,
-    rule: Mapping[str, Any],
-) -> None:
+def validate_auxiliary_fill_rule(rule_name: str, rule: Mapping[str, Any]) -> None:
     """Validate one configured advanced-fill rule."""
     if not isinstance(rule_name, str):
-        raise TypeError(
-            "Advanced-fill rule name must be a string."
-        )
+        raise TypeError("Advanced-fill rule name must be a string.")
 
     if not rule_name:
-        raise ValueError(
-            "Advanced-fill rule name must not be empty."
-        )
+        raise ValueError("Advanced-fill rule name must not be empty.")
 
     if not isinstance(rule, Mapping):
-        raise TypeError(
-            f"Advanced-fill rule {rule_name!r} must be a mapping."
-        )
+        raise TypeError(f"Advanced-fill rule {rule_name!r} must be a mapping.")
 
-    country = _get_required_string(
-        rule,
-        key="country",
-        rule_name=rule_name,
-    )
-    start = _get_required_timestamp(
-        rule,
-        key="start",
-        rule_name=rule_name,
-    )
-    end = _get_required_timestamp(
-        rule,
-        key="end",
-        rule_name=rule_name,
-    )
+    country = _get_required_string(rule, key="country", rule_name=rule_name)
+    start = _get_required_timestamp(rule, key="start", rule_name=rule_name)
+    end = _get_required_timestamp(rule, key="end", rule_name=rule_name)
 
     if end < start:
         raise ValueError(
@@ -57,21 +36,10 @@ def validate_auxiliary_fill_rule(
             "timestamp before its start timestamp."
         )
 
-    scope = _get_required_string(
-        rule,
-        key="scope",
-        rule_name=rule_name,
-    )
-    method = _get_required_string(
-        rule,
-        key="method",
-        rule_name=rule_name,
-    )
+    scope = _get_required_string(rule, key="scope", rule_name=rule_name)
+    method = _get_required_string(rule, key="method", rule_name=rule_name)
 
-    supported_scopes = {
-        FILL_GAPS,
-        OVERWRITE,
-    }
+    supported_scopes = {FILL_GAPS, OVERWRITE}
 
     if scope not in supported_scopes:
         raise ValueError(
@@ -80,11 +48,7 @@ def validate_auxiliary_fill_rule(
             f"{sorted(supported_scopes)}."
         )
 
-    supported_methods = {
-        CONSTRUCT_FROM_SOURCES,
-        EXTERNAL_PROFILE,
-        LEAVE_MISSING,
-    }
+    supported_methods = {CONSTRUCT_FROM_SOURCES, EXTERNAL_PROFILE, LEAVE_MISSING}
 
     if method not in supported_methods:
         raise ValueError(
@@ -94,20 +58,12 @@ def validate_auxiliary_fill_rule(
         )
 
     if method == CONSTRUCT_FROM_SOURCES:
-        _validate_sources(
-            rule,
-            rule_name=rule_name,
-        )
+        _validate_sources(rule, rule_name=rule_name)
 
         if "scaling" in rule:
-            _validate_scaling(
-                rule["scaling"],
-                rule_name=rule_name,
-            )
+            _validate_scaling(rule["scaling"], rule_name=rule_name)
 
-    elif method in {
-        LEAVE_MISSING,
-    }:
+    elif method in {LEAVE_MISSING}:
         if "sources" in rule:
             raise ValueError(
                 f"Advanced-fill rule {rule_name!r} uses method "
@@ -115,12 +71,7 @@ def validate_auxiliary_fill_rule(
             )
 
 
-
-def _validate_sources(
-    rule: Mapping[str, Any],
-    *,
-    rule_name: str,
-) -> None:
+def _validate_sources(rule: Mapping[str, Any], *, rule_name: str) -> None:
     """Validate source references for source-based construction."""
     if "sources" not in rule:
         raise ValueError(
@@ -130,10 +81,7 @@ def _validate_sources(
 
     sources = rule["sources"]
 
-    if not isinstance(sources, Sequence) or isinstance(
-        sources,
-        (str, bytes),
-    ):
+    if not isinstance(sources, Sequence) or isinstance(sources, (str, bytes)):
         raise TypeError(
             f"'sources' in advanced-fill rule {rule_name!r} "
             "must be an ordered sequence."
@@ -146,19 +94,11 @@ def _validate_sources(
         )
 
     for position, source in enumerate(sources):
-        _validate_source(
-            source,
-            rule_name=rule_name,
-            position=position,
-        )
+        _validate_source(source, rule_name=rule_name, position=position)
 
 
 def _validate_source(
-    source: object,
-    *,
-    rule_name: str,
-    position: int,
-    context: str = "source",
+    source: object, *, rule_name: str, position: int, context: str = "source"
 ) -> None:
     """Validate one country-period source reference."""
     if not isinstance(source, Mapping):
@@ -168,23 +108,14 @@ def _validate_source(
         )
 
     _get_required_string(
-        source,
-        key="country",
-        rule_name=rule_name,
-        context=f"{context} {position}",
+        source, key="country", rule_name=rule_name, context=f"{context} {position}"
     )
 
     start = _get_required_timestamp(
-        source,
-        key="start",
-        rule_name=rule_name,
-        context=f"{context} {position}",
+        source, key="start", rule_name=rule_name, context=f"{context} {position}"
     )
     end = _get_required_timestamp(
-        source,
-        key="end",
-        rule_name=rule_name,
-        context=f"{context} {position}",
+        source, key="end", rule_name=rule_name, context=f"{context} {position}"
     )
 
     if end < start:
@@ -210,17 +141,12 @@ def _validate_source(
 
 
 def _get_required_string(
-    config: Mapping[str, Any],
-    *,
-    key: str,
-    rule_name: str,
-    context: str = "rule",
+    config: Mapping[str, Any], *, key: str, rule_name: str, context: str = "rule"
 ) -> str:
     """Return one required non-empty string field."""
     if key not in config:
         raise ValueError(
-            f"Advanced-fill {context} in rule {rule_name!r} "
-            f"must define {key!r}."
+            f"Advanced-fill {context} in rule {rule_name!r} must define {key!r}."
         )
 
     value = config[key]
@@ -241,17 +167,12 @@ def _get_required_string(
 
 
 def _get_required_timestamp(
-    config: Mapping[str, Any],
-    *,
-    key: str,
-    rule_name: str,
-    context: str = "rule",
+    config: Mapping[str, Any], *, key: str, rule_name: str, context: str = "rule"
 ) -> pd.Timestamp:
     """Return one required timestamp as a UTC pandas timestamp."""
     if key not in config:
         raise ValueError(
-            f"Advanced-fill {context} in rule {rule_name!r} "
-            f"must define {key!r}."
+            f"Advanced-fill {context} in rule {rule_name!r} must define {key!r}."
         )
 
     try:
@@ -270,28 +191,18 @@ def _get_required_timestamp(
     return timestamp
 
 
-def _validate_scaling(
-    scaling: object,
-    *,
-    rule_name: str,
-) -> None:
+def _validate_scaling(scaling: object, *, rule_name: str) -> None:
     """Validate optional scaling configuration."""
     if not isinstance(scaling, Mapping):
         raise TypeError(
-            f"'scaling' in advanced-fill rule {rule_name!r} "
-            "must be a mapping."
+            f"'scaling' in advanced-fill rule {rule_name!r} must be a mapping."
         )
 
     method = _get_required_string(
-        scaling,
-        key="method",
-        rule_name=rule_name,
-        context="scaling",
+        scaling, key="method", rule_name=rule_name, context="scaling"
     )
 
-    supported_methods = {
-        "match_energy",
-    }
+    supported_methods = {"match_energy"}
 
     if method not in supported_methods:
         raise ValueError(
@@ -309,8 +220,7 @@ def _validate_scaling(
     target_sources = scaling["target_sources"]
 
     if not isinstance(target_sources, Sequence) or isinstance(
-        target_sources,
-        (str, bytes),
+        target_sources, (str, bytes)
     ):
         raise TypeError(
             f"'target_sources' in advanced-fill rule "
@@ -341,16 +251,8 @@ def override_intersects_target_scope(
     target_end: pd.Timestamp,
 ) -> bool:
     """Return whether an advanced override intersects the model scope."""
-    rule_start = _get_required_timestamp(
-        rule,
-        key="start",
-        rule_name=rule_name,
-    )
-    rule_end = _get_required_timestamp(
-        rule,
-        key="end",
-        rule_name=rule_name,
-    )
+    rule_start = _get_required_timestamp(rule, key="start", rule_name=rule_name)
+    rule_end = _get_required_timestamp(rule, key="end", rule_name=rule_name)
 
     target_start = pd.Timestamp(target_start)
 
@@ -366,19 +268,11 @@ def override_intersects_target_scope(
     else:
         target_end = target_end.tz_convert("UTC")
 
-    country_intersects = (
-        rule["country"] in target_countries
-    )
+    country_intersects = rule["country"] in target_countries
 
-    period_intersects = (
-        rule_start < target_end
-        and rule_end > target_start
-    )
+    period_intersects = rule_start < target_end and rule_end > target_start
 
-    return (
-        country_intersects
-        and period_intersects
-    )
+    return country_intersects and period_intersects
 
 
 def build_auxiliary_fill_plan(
@@ -390,17 +284,12 @@ def build_auxiliary_fill_plan(
 ) -> pd.DataFrame:
     """Validate and normalize configured advanced-fill rules."""
     if not isinstance(rules, Mapping):
-        raise TypeError(
-            "Advanced-fill rules must be provided as a mapping."
-        )
+        raise TypeError("Advanced-fill rules must be provided as a mapping.")
 
     records: list[dict[str, Any]] = []
 
     for rule_name, rule in rules.items():
-        validate_auxiliary_fill_rule(
-            rule_name,
-            rule,
-        )
+        validate_auxiliary_fill_rule(rule_name, rule)
 
         if not override_intersects_target_scope(
             rule,
@@ -420,9 +309,7 @@ def build_auxiliary_fill_plan(
         elif method == LEAVE_MISSING:
             status = "leave_missing"
         else:
-            raise AssertionError(
-                f"Unhandled advanced-fill method: {method!r}"
-            )
+            raise AssertionError(f"Unhandled advanced-fill method: {method!r}")
 
         scaling = rule.get("scaling")
 
@@ -431,26 +318,16 @@ def build_auxiliary_fill_plan(
                 "rule_name": rule_name,
                 "country": rule["country"],
                 "target_start": _get_required_timestamp(
-                    rule,
-                    key="start",
-                    rule_name=rule_name,
+                    rule, key="start", rule_name=rule_name
                 ),
                 "target_end": _get_required_timestamp(
-                    rule,
-                    key="end",
-                    rule_name=rule_name,
+                    rule, key="end", rule_name=rule_name
                 ),
                 "scope": rule["scope"],
                 "method": method,
                 "status": status,
-                "source_count": len(
-                    rule.get("sources", [])
-                ),
-                "scaling_method": (
-                    scaling["method"]
-                    if scaling is not None
-                    else None
-                ),
+                "source_count": len(rule.get("sources", [])),
+                "scaling_method": (scaling["method"] if scaling is not None else None),
             }
         )
 
@@ -466,19 +343,11 @@ def build_auxiliary_fill_plan(
         "scaling_method",
     ]
 
-    plan = pd.DataFrame.from_records(
-        records,
-        columns=columns,
-    )
+    plan = pd.DataFrame.from_records(records, columns=columns)
 
     if plan.empty:
         return plan
 
-    return plan.sort_values(
-        [
-            "country",
-            "target_start",
-            "rule_name",
-        ]
-    ).reset_index(drop=True)
-
+    return plan.sort_values(["country", "target_start", "rule_name"]).reset_index(
+        drop=True
+    )

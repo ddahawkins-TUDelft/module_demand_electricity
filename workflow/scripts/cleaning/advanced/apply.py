@@ -46,8 +46,7 @@ def apply_auxiliary_fill_rule(
     if method == EXTERNAL_PROFILE:
         if profile is None:
             raise ValueError(
-                f"Advanced-fill rule {rule_name!r} requires "
-                "an external profile."
+                f"Advanced-fill rule {rule_name!r} requires an external profile."
             )
 
         return apply_external_profile(
@@ -64,10 +63,7 @@ def apply_auxiliary_fill_rule(
     if method == LEAVE_MISSING:
         return load.copy(), cleaning_method.copy()
 
-    raise ValueError(
-        f"Unsupported advanced-fill method {method!r}."
-    )
-
+    raise ValueError(f"Unsupported advanced-fill method {method!r}.")
 
 
 def apply_constructed_profile(
@@ -85,56 +81,33 @@ def apply_constructed_profile(
     filled = load.copy()
     methods = cleaning_method.copy()
 
-    target_index = filled.index[
-        (filled.index >= start)
-        & (filled.index < end)
-    ]
+    target_index = filled.index[(filled.index >= start) & (filled.index < end)]
 
     if not profile.index.equals(target_index):
         raise ValueError(
-            "Constructed profile index must exactly match "
-            "the target period."
+            "Constructed profile index must exactly match the target period."
         )
 
     if country not in filled.columns:
-        raise ValueError(
-            f"Target country {country!r} is not present in load data."
-        )
+        raise ValueError(f"Target country {country!r} is not present in load data.")
 
     if scope == "fill_gaps":
-        replace_mask = filled.loc[
-            target_index,
-            country,
-        ].isna()
+        replace_mask = filled.loc[target_index, country].isna()
 
     elif scope == "overwrite":
-        replace_mask = pd.Series(
-            True,
-            index=target_index,
-        )
+        replace_mask = pd.Series(True, index=target_index)
 
     else:
-        raise ValueError(
-            f"Unsupported advanced fill scope: {scope!r}"
-        )
+        raise ValueError(f"Unsupported advanced fill scope: {scope!r}")
 
-    replacement_index = target_index[
-        replace_mask.to_numpy()
-    ]
+    replacement_index = target_index[replace_mask.to_numpy()]
 
-    filled.loc[
-        replacement_index,
-        country,
-    ] = profile.loc[
-        replacement_index
-    ]
+    filled.loc[replacement_index, country] = profile.loc[replacement_index]
 
-    methods.loc[
-        replacement_index,
-        country,
-    ] = rule_name
+    methods.loc[replacement_index, country] = rule_name
 
     return filled, methods
+
 
 def apply_auxiliary_fill_rules(
     load: pd.DataFrame,
@@ -161,11 +134,7 @@ def apply_auxiliary_fill_rules(
             profile = None
 
         filled, methods = apply_auxiliary_fill_rule(
-            filled,
-            methods,
-            rule_name=rule_name,
-            rule=rule,
-            profile=profile,
+            filled, methods, rule_name=rule_name, rule=rule, profile=profile
         )
 
     return filled, methods
@@ -187,43 +156,23 @@ def apply_external_profile(
     methods = cleaning_method.copy()
 
     if country not in filled.columns:
-        raise ValueError(
-            f"Target country {country!r} is not present in load data."
-        )
+        raise ValueError(f"Target country {country!r} is not present in load data.")
 
-    candidate = profile.loc[
-        (profile.index >= start)
-        & (profile.index < end)
-    ]
+    candidate = profile.loc[(profile.index >= start) & (profile.index < end)]
 
-    candidate = candidate.loc[
-        candidate.index.intersection(filled.index)
-    ]
+    candidate = candidate.loc[candidate.index.intersection(filled.index)]
 
     if scope == "fill_gaps":
-        replace_index = candidate.index[
-            filled.loc[
-                candidate.index,
-                country,
-            ].isna()
-        ]
+        replace_index = candidate.index[filled.loc[candidate.index, country].isna()]
 
     elif scope == "overwrite":
         replace_index = candidate.index
 
     else:
-        raise ValueError(
-            f"Unsupported advanced fill scope: {scope!r}"
-        )
+        raise ValueError(f"Unsupported advanced fill scope: {scope!r}")
 
-    filled.loc[
-        replace_index,
-        country,
-    ] = candidate.loc[replace_index]
+    filled.loc[replace_index, country] = candidate.loc[replace_index]
 
-    methods.loc[
-        replace_index,
-        country,
-    ] = rule_name
+    methods.loc[replace_index, country] = rule_name
 
     return filled, methods

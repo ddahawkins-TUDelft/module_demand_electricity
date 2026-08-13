@@ -29,9 +29,7 @@ def main(
     """Create the electricity-demand cleaning diagnostic."""
     demand = pd.read_parquet(demand_path)
     cleaning_method = pd.read_parquet(cleaning_method_path)
-    cleaning_method_rank = pd.read_parquet(
-        cleaning_method_rank_path
-    )
+    cleaning_method_rank = pd.read_parquet(cleaning_method_rank_path)
 
     _validate_alignment(
         demand=demand,
@@ -40,8 +38,7 @@ def main(
     )
 
     metadata = _build_cleaning_method_metadata(
-        source_names=source_names,
-        gap_filling_config=gap_filling_config,
+        source_names=source_names, gap_filling_config=gap_filling_config
     )
 
     _validate_provenance_metadata(
@@ -52,46 +49,29 @@ def main(
 
     rank_colours = _build_rank_colours(metadata)
 
-    background, background_cmap = (
-        _encode_rank_background(
-            cleaning_method_rank=cleaning_method_rank,
-            metadata=metadata,
-            rank_colours=rank_colours,
-        )
+    background, background_cmap = _encode_rank_background(
+        cleaning_method_rank=cleaning_method_rank,
+        metadata=metadata,
+        rank_colours=rank_colours,
     )
 
     logger.info(
-        "Loaded %s timestamps for %s countries.",
-        len(demand),
-        len(demand.columns),
+        "Loaded %s timestamps for %s countries.", len(demand), len(demand.columns)
     )
 
-    logger.info(
-        "Cleaning-method ranks:\n%s",
-        metadata.to_string(index=False),
-    )
+    logger.info("Cleaning-method ranks:\n%s", metadata.to_string(index=False))
 
     figure, axis = _plot_cleaning_background(
-        demand=demand,
-        background=background,
-        background_cmap=background_cmap,
+        demand=demand, background=background, background_cmap=background_cmap
     )
 
-    mean_load_gw = _add_normalised_demand_traces(
-        axis=axis,
-        demand=demand,
-    )
+    mean_load_gw = _add_normalised_demand_traces(axis=axis, demand=demand)
 
     _add_mean_load_labels(
-        axis=axis,
-        mean_load_gw=mean_load_gw,
-        countries=demand.columns,
+        axis=axis, mean_load_gw=mean_load_gw, countries=demand.columns
     )
 
-    legend_handles = _build_legend_handles(
-        metadata,
-        rank_colours,
-    )
+    legend_handles = _build_legend_handles(metadata, rank_colours)
 
     figure.legend(
         handles=legend_handles,
@@ -101,37 +81,22 @@ def main(
     )
 
     output_path = Path(output_path)
-    output_path.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    figure.savefig(
-        output_path,
-        bbox_inches="tight",
-    )
+    figure.savefig(output_path, bbox_inches="tight")
 
     plt.close(figure)
 
-    logger.info(
-        "Saved cleaning timeline to %s.",
-        output_path,
-    )
+    logger.info("Saved cleaning timeline to %s.", output_path)
 
 
 def _build_legend_handles(
-    metadata: pd.DataFrame,
-    rank_colours: dict[
-        int,
-        tuple[float, float, float, float],
-    ],
+    metadata: pd.DataFrame, rank_colours: dict[int, tuple[float, float, float, float]]
 ) -> list[Patch]:
     """Create handles for every configured rank."""
     handles: list[Patch] = []
 
-    ordered = metadata.sort_values(
-        "cleaning_method_rank"
-    )
+    ordered = metadata.sort_values("cleaning_method_rank")
 
     for row in ordered.itertuples(index=False):
         rank = int(row.cleaning_method_rank)
@@ -160,36 +125,22 @@ def _validate_alignment(
         "cleaning_method_rank": cleaning_method_rank,
     }.items():
         if not frame.index.equals(demand.index):
-            raise ValueError(
-                f"{name} does not use the same time index "
-                "as demand."
-            )
+            raise ValueError(f"{name} does not use the same time index as demand.")
 
         if not frame.columns.equals(demand.columns):
-            raise ValueError(
-                f"{name} does not use the same country columns "
-                "as demand."
-            )
+            raise ValueError(f"{name} does not use the same country columns as demand.")
 
     if not isinstance(demand.index, pd.DatetimeIndex):
-        raise TypeError(
-            "Demand must use a pandas DatetimeIndex."
-        )
+        raise TypeError("Demand must use a pandas DatetimeIndex.")
 
     if demand.index.has_duplicates:
-        raise ValueError(
-            "Demand timestamps must not contain duplicates."
-        )
+        raise ValueError("Demand timestamps must not contain duplicates.")
 
     if not demand.index.is_monotonic_increasing:
-        raise ValueError(
-            "Demand timestamps must be sorted."
-        )
+        raise ValueError("Demand timestamps must be sorted.")
 
     if demand.columns.has_duplicates:
-        raise ValueError(
-            "Demand countries must not contain duplicates."
-        )
+        raise ValueError("Demand countries must not contain duplicates.")
 
 
 def _validate_provenance_metadata(
@@ -199,50 +150,25 @@ def _validate_provenance_metadata(
     metadata: pd.DataFrame,
 ) -> None:
     """Validate observed provenance against configured metadata."""
-    methods = cleaning_method.stack(
-        future_stack=True
-    ).rename("cleaning_method")
+    methods = cleaning_method.stack(future_stack=True).rename("cleaning_method")
 
-    ranks = cleaning_method_rank.stack(
-        future_stack=True
-    ).rename("cleaning_method_rank")
+    ranks = cleaning_method_rank.stack(future_stack=True).rename("cleaning_method_rank")
 
-    present = (
-        pd.concat(
-            [methods, ranks],
-            axis=1,
-        )
-        .dropna()
-        .drop_duplicates()
-    )
+    present = pd.concat([methods, ranks], axis=1).dropna().drop_duplicates()
 
-    present["cleaning_method_rank"] = present[
-        "cleaning_method_rank"
-    ].astype(int)
+    present["cleaning_method_rank"] = present["cleaning_method_rank"].astype(int)
 
-    configured = metadata[
-        [
-            "cleaning_method",
-            "cleaning_method_rank",
-        ]
-    ]
+    configured = metadata[["cleaning_method", "cleaning_method_rank"]]
 
     checked = present.merge(
         configured,
-        on=[
-            "cleaning_method",
-            "cleaning_method_rank",
-        ],
+        on=["cleaning_method", "cleaning_method_rank"],
         how="left",
         indicator=True,
     )
 
     unknown = checked.loc[
-        checked["_merge"] == "left_only",
-        [
-            "cleaning_method",
-            "cleaning_method_rank",
-        ],
+        checked["_merge"] == "left_only", ["cleaning_method", "cleaning_method_rank"]
     ]
 
     if not unknown.empty:
@@ -257,71 +183,35 @@ def _build_rank_colours(
     metadata: pd.DataFrame,
 ) -> dict[int, tuple[float, float, float, float]]:
     """Assign colours by provenance category."""
-    colours: dict[
-        int,
-        tuple[float, float, float, float],
-    ] = {}
+    colours: dict[int, tuple[float, float, float, float]] = {}
 
-    ordered = metadata.sort_values(
-        "cleaning_method_rank"
-    )
+    ordered = metadata.sort_values("cleaning_method_rank")
 
-    observed = ordered.loc[
-        ordered["category"] == "observed"
-    ]
+    observed = ordered.loc[ordered["category"] == "observed"]
 
-    imputed = ordered.loc[
-        ordered["category"] == "imputed"
-    ]
+    imputed = ordered.loc[ordered["category"] == "imputed"]
 
-    missing = ordered.loc[
-        ordered["category"] == "missing"
-    ]
+    missing = ordered.loc[ordered["category"] == "missing"]
 
     if observed.empty:
-        raise ValueError(
-            "At least one observed source must be configured."
-        )
+        raise ValueError("At least one observed source must be configured.")
 
     # Primary source is white. Subsequent observed sources
     # become gradually darker, but remain very light so that
     # the black demand trace stays clearly visible.
-    observed_shades = np.linspace(
-        1.0,
-        0.60,
-        len(observed),
-    )
+    observed_shades = np.linspace(1.0, 0.60, len(observed))
 
-    for (_, row), shade in zip(
-        observed.iterrows(),
-        observed_shades,
-        strict=True,
-    ):
+    for (_, row), shade in zip(observed.iterrows(), observed_shades, strict=True):
         rank = int(row["cleaning_method_rank"])
 
-        colours[rank] = (
-            float(shade),
-            float(shade),
-            float(shade),
-            1.0,
-        )
+        colours[rank] = (float(shade), float(shade), float(shade), 1.0)
 
     if not imputed.empty:
-        colourtheme = Colormap(
-            "bids:viridis"
-        ).to_mpl()
+        colourtheme = Colormap("bids:viridis").to_mpl()
 
-        positions = np.linspace(
-            0.05,
-            0.95,
-            len(imputed),
-        )
+        positions = np.linspace(0.05, 0.95, len(imputed))
 
-        for (_, row), position in zip(
-            imputed.iterrows(),
-            positions,
-            strict=True,
-        ):
+        for (_, row), position in zip(imputed.iterrows(), positions, strict=True):
             rank = int(row["cleaning_method_rank"])
             colours[rank] = colourtheme(position)
 
@@ -329,17 +219,12 @@ def _build_rank_colours(
         rank = int(row["cleaning_method_rank"])
         colours[rank] = to_rgba("#ff0000")
 
-    expected_ranks = set(
-        metadata["cleaning_method_rank"].astype(int)
-    )
+    expected_ranks = set(metadata["cleaning_method_rank"].astype(int))
 
     missing_colours = expected_ranks - set(colours)
 
     if missing_colours:
-        raise ValueError(
-            "No colour was assigned to ranks: "
-            f"{sorted(missing_colours)}"
-        )
+        raise ValueError(f"No colour was assigned to ranks: {sorted(missing_colours)}")
 
     return colours
 
@@ -348,40 +233,21 @@ def _encode_rank_background(
     *,
     cleaning_method_rank: pd.DataFrame,
     metadata: pd.DataFrame,
-    rank_colours: dict[
-        int,
-        tuple[float, float, float, float],
-    ],
+    rank_colours: dict[int, tuple[float, float, float, float]],
 ) -> tuple[np.ndarray, ListedColormap]:
     """Encode ranks as contiguous plotting codes."""
-    rank_order = (
-        metadata["cleaning_method_rank"]
-        .astype(int)
-        .tolist()
-    )
+    rank_order = metadata["cleaning_method_rank"].astype(int).tolist()
 
-    rank_to_code = {
-        rank: code
-        for code, rank in enumerate(rank_order)
-    }
+    rank_to_code = {rank: code for code, rank in enumerate(rank_order)}
 
-    encoded = cleaning_method_rank.apply(
-        lambda column: column.map(rank_to_code)
-    )
+    encoded = cleaning_method_rank.apply(lambda column: column.map(rank_to_code))
 
     if encoded.isna().any().any():
         present_ranks = set(
-            cleaning_method_rank.stack(
-                future_stack=True
-            )
-            .dropna()
-            .astype(int)
-            .unique()
+            cleaning_method_rank.stack(future_stack=True).dropna().astype(int).unique()
         )
 
-        unknown_ranks = sorted(
-            present_ranks - set(rank_to_code)
-        )
+        unknown_ranks = sorted(present_ranks - set(rank_to_code))
 
         raise ValueError(
             "Cleaning-method rank matrix contains ranks "
@@ -389,65 +255,37 @@ def _encode_rank_background(
             f"{unknown_ranks}"
         )
 
-    colour_list = [
-        rank_colours[rank]
-        for rank in rank_order
-    ]
+    colour_list = [rank_colours[rank] for rank in rank_order]
 
     # Input frames are time × country, whereas imshow expects
     # country × time for this figure orientation.
-    background = encoded.to_numpy(
-        dtype=int
-    ).T
+    background = encoded.to_numpy(dtype=int).T
 
-    return (
-        background,
-        ListedColormap(colour_list),
-    )
+    return (background, ListedColormap(colour_list))
 
 
 def _plot_cleaning_background(
-    *,
-    demand: pd.DataFrame,
-    background: np.ndarray,
-    background_cmap: ListedColormap,
+    *, demand: pd.DataFrame, background: np.ndarray, background_cmap: ListedColormap
 ) -> tuple[plt.Figure, plt.Axes]:
     """Plot cleaning-method ranks over time by country."""
     country_count = len(demand.columns)
 
     if len(demand.index) < 2:
         raise ValueError(
-            "At least two timestamps are required to plot "
-            "the cleaning timeline."
+            "At least two timestamps are required to plot the cleaning timeline."
         )
 
-    time_step = (
-        demand.index.to_series()
-        .diff()
-        .dropna()
-        .median()
-    )
+    time_step = demand.index.to_series().diff().dropna().median()
 
-    if (
-        pd.isna(time_step)
-        or time_step <= pd.Timedelta(0)
-    ):
-        raise ValueError(
-            "Could not determine a valid temporal resolution."
-        )
+    if pd.isna(time_step) or time_step <= pd.Timedelta(0):
+        raise ValueError("Could not determine a valid temporal resolution.")
 
     start = demand.index[0]
     end = demand.index[-1] + time_step
 
-    figure_height = max(
-        6.0,
-        country_count * 0.3,
-    )
+    figure_height = max(6.0, country_count * 0.3)
 
-    figure, axis = plt.subplots(
-        figsize=(16, figure_height),
-        constrained_layout=True,
-    )
+    figure, axis = plt.subplots(figsize=(16, figure_height), constrained_layout=True)
 
     axis.imshow(
         background,
@@ -470,49 +308,25 @@ def _plot_cleaning_background(
     axis.set_yticklabels(demand.columns)
 
     axis.set_xlim(start, end)
-    axis.set_ylim(
-        country_count - 0.5,
-        -0.5,
-    )
+    axis.set_ylim(country_count - 0.5, -0.5)
 
     # Light boundaries make individual country strips clear
     # without obscuring the provenance colours.
-    axis.set_yticks(
-        np.arange(-0.5, country_count, 1),
-        minor=True,
-    )
+    axis.set_yticks(np.arange(-0.5, country_count, 1), minor=True)
 
-    axis.grid(
-        axis="y",
-        which="minor",
-        linewidth=0.4,
-        alpha=0.35,
-    )
+    axis.grid(axis="y", which="minor", linewidth=0.4, alpha=0.35)
 
-    axis.tick_params(
-        axis="y",
-        which="minor",
-        left=False,
-    )
+    axis.tick_params(axis="y", which="minor", left=False)
 
     axis.set_xlabel("Time")
     axis.set_ylabel("Country")
 
-    date_locator = mdates.AutoDateLocator(
-        minticks=4,
-        maxticks=12,
-    )
+    date_locator = mdates.AutoDateLocator(minticks=4, maxticks=12)
 
     axis.xaxis.set_major_locator(date_locator)
-    axis.xaxis.set_major_formatter(
-        mdates.ConciseDateFormatter(
-            date_locator
-        )
-    )
+    axis.xaxis.set_major_formatter(mdates.ConciseDateFormatter(date_locator))
 
-    axis.set_title(
-        "Electricity demand and cleaning provenance"
-    )
+    axis.set_title("Electricity demand and cleaning provenance")
 
     return figure, axis
 
@@ -527,9 +341,7 @@ def _add_normalised_demand_traces(
     """Overlay mean-normalised hourly demand traces."""
     mean_load_gw: dict[str, float] = {}
 
-    for row_index, country in enumerate(
-        demand.columns
-    ):
+    for row_index, country in enumerate(demand.columns):
         series = demand[country].astype(float)
 
         mean_load = series.mean(skipna=True)
@@ -540,56 +352,32 @@ def _add_normalised_demand_traces(
 
         relative = (series / mean_load) - 1
 
-        scale = relative.abs().quantile(
-            quantile
-        )
+        scale = relative.abs().quantile(quantile)
 
         if pd.isna(scale) or scale == 0:
-            plotted_y = pd.Series(
-                row_index,
-                index=series.index,
-                dtype=float,
-            )
+            plotted_y = pd.Series(row_index, index=series.index, dtype=float)
         else:
-            scaled = relative.clip(
-                lower=-scale,
-                upper=scale,
-            ) / scale
+            scaled = relative.clip(lower=-scale, upper=scale) / scale
 
             # The y-axis is inverted, so subtracting makes
             # above-average demand appear visually upward.
-            plotted_y = (
-                row_index
-                - scaled * half_height
-            )
+            plotted_y = row_index - scaled * half_height
 
         axis.plot(
-            series.index,
-            plotted_y,
-            color="black",
-            linewidth=0.6,
-            alpha=0.9,
-            zorder=3,
+            series.index, plotted_y, color="black", linewidth=0.6, alpha=0.9, zorder=3
         )
 
     return mean_load_gw
 
 
 def _add_mean_load_labels(
-    *,
-    axis: plt.Axes,
-    mean_load_gw: dict[str, float],
-    countries: pd.Index,
+    *, axis: plt.Axes, mean_load_gw: dict[str, float], countries: pd.Index
 ) -> None:
     """Annotate country rows with mean load in GW."""
     for row_index, country in enumerate(countries):
         mean_value = mean_load_gw[country]
 
-        label = (
-            "—"
-            if pd.isna(mean_value)
-            else f"{mean_value:.1f}"
-        )
+        label = "—" if pd.isna(mean_value) else f"{mean_value:.1f}"
 
         axis.text(
             1.01,
@@ -613,17 +401,13 @@ def _add_mean_load_labels(
     )
 
 
-def _format_method_label(
-    method: str,
-) -> str:
+def _format_method_label(method: str) -> str:
     """Convert a method identifier into a legend label."""
     if method == "missing":
         return "Missing"
 
     if method.startswith("observed_"):
-        source = method.removeprefix(
-            "observed_"
-        )
+        source = method.removeprefix("observed_")
 
         source_labels = {
             "entsoe_api": "Observed: ENTSO-E API",
@@ -631,22 +415,14 @@ def _format_method_label(
         }
 
         return source_labels.get(
-            source,
-            (
-                "Observed: "
-                + source.replace("_", " ").upper()
-            ),
+            source, ("Observed: " + source.replace("_", " ").upper())
         )
 
-    return method.replace(
-        "_",
-        " ",
-    ).capitalize()
+    return method.replace("_", " ").capitalize()
+
 
 def _build_cleaning_method_metadata(
-    *,
-    source_names: list[str],
-    gap_filling_config: dict[str, Any],
+    *, source_names: list[str], gap_filling_config: dict[str, Any]
 ) -> pd.DataFrame:
     """Build complete method metadata in configured rank order."""
     rows: list[dict[str, Any]] = []
@@ -655,22 +431,17 @@ def _build_cleaning_method_metadata(
     for source_name in source_names:
         rows.append(
             {
-                "cleaning_method": (
-                    f"observed_{source_name}"
-                ),
+                "cleaning_method": (f"observed_{source_name}"),
                 "cleaning_method_rank": rank,
                 "label": (
-                    f"Rank {rank}: Observed "
-                    f"({_format_source_name(source_name)})"
+                    f"Rank {rank}: Observed ({_format_source_name(source_name)})"
                 ),
                 "category": "observed",
             }
         )
         rank += 1
 
-    rules = build_final_cleaning_rules(
-        gap_filling_config
-    )
+    rules = build_final_cleaning_rules(gap_filling_config)
 
     for rule in rules:
         rule_name = rule["name"]
@@ -679,10 +450,7 @@ def _build_cleaning_method_metadata(
             {
                 "cleaning_method": rule_name,
                 "cleaning_method_rank": rank,
-                "label": (
-                    f"Rank {rank}: "
-                    f"{_format_rule_name(rule_name)}"
-                ),
+                "label": (f"Rank {rank}: {_format_rule_name(rule_name)}"),
                 "category": "imputed",
             }
         )
@@ -701,11 +469,7 @@ def _build_cleaning_method_metadata(
 
 
 def _format_source_name(source_name: str) -> str:
-    mapping = {
-        "entsoe_api": "ENTSO-E",
-        "neso": "NESO",
-        "opsd_api": "OPSD",
-    }
+    mapping = {"entsoe_api": "ENTSO-E", "neso": "NESO", "opsd_api": "OPSD"}
     return mapping.get(source_name, source_name)
 
 

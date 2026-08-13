@@ -1,22 +1,15 @@
 from datetime import datetime, timedelta
 
+
 def neso_raw_files(_wildcards):
     """Return annual NESO input files for the configured period."""
-    start = datetime.fromisoformat(
-        config["temporal_scope"]["start"]
-    )
-    end = datetime.fromisoformat(
-        config["temporal_scope"]["end"]
-    )
+    start = datetime.fromisoformat(config["temporal_scope"]["start"])
+    end = datetime.fromisoformat(config["temporal_scope"]["end"])
 
     if end <= start:
-        raise ValueError(
-            "Period end must be later than period start."
-        )
+        raise ValueError("Period end must be later than period start.")
 
-    final_included_time = end - timedelta(
-        microseconds=1
-    )
+    final_included_time = end - timedelta(microseconds=1)
 
     years = range(
         start.year,
@@ -24,11 +17,7 @@ def neso_raw_files(_wildcards):
     )
 
     return [
-        (
-            "<resources>/automatic/neso/"
-            f"historic_demand_{year}.csv"
-        )
-        for year in years
+        ("<resources>/automatic/neso/" f"historic_demand_{year}.csv") for year in years
     ]
 
 
@@ -37,14 +26,14 @@ rule prepare_load_opsd:
         load="<resources>/automatic/load_entsoe_opsd.csv",
     output:
         load="<resources>/automatic/load_opsd_api.parquet",
-    params:
-        start=config["temporal_scope"]["start"],
-        end=config["temporal_scope"]["end"],
-        country_codes=internal["load_entsoe_api"]["countries"],
     log:
         "<logs>/prepare_load_opsd.log",
     conda:
         "../envs/module.yaml"
+    params:
+        start=config["temporal_scope"]["start"],
+        end=config["temporal_scope"]["end"],
+        country_codes=internal["load_entsoe_api"]["countries"],
     message:
         "Prepare electricity-demand data from OPSD."
     script:
@@ -56,78 +45,52 @@ rule prepare_load_neso:
         annual_files=neso_raw_files,
     output:
         load="<resources>/automatic/load_neso.parquet",
-    params:
-        start=config["temporal_scope"]["start"],
-        end=config["temporal_scope"]["end"],
-        country_codes=internal["load_entsoe_api"]["countries"],
     log:
         "<logs>/prepare_load_neso.log",
     conda:
         "../envs/module.yaml"
+    params:
+        start=config["temporal_scope"]["start"],
+        end=config["temporal_scope"]["end"],
+        country_codes=internal["load_entsoe_api"]["countries"],
     message:
         "Prepare electricity-demand data from NESO."
     script:
         "../scripts/prepare_load_neso.py"
-        
+
 
 LOAD_SOURCE_PATHS = {
-    "entsoe_api": (
-        "<resources>/automatic/"
-        "load_entsoe_api.parquet"
-    ),
-    "neso": (
-        "<resources>/automatic/"
-        "load_neso.parquet"
-    ),
-    "opsd_api": (
-        "<resources>/automatic/"
-        "load_opsd_api.parquet"
-    ),
+    "entsoe_api": ("<resources>/automatic/" "load_entsoe_api.parquet"),
+    "neso": ("<resources>/automatic/" "load_neso.parquet"),
+    "opsd_api": ("<resources>/automatic/" "load_opsd_api.parquet"),
 }
 
 
 def configured_load_inputs(_wildcards):
-    return [
-        LOAD_SOURCE_PATHS[source_name]
-        for source_name in config["load_sources"]
-    ]
+    return [LOAD_SOURCE_PATHS[source_name] for source_name in config["load_sources"]]
 
 
 rule clean_demand:
     input:
-        configured_load_inputs
+        configured_load_inputs,
     output:
-        demand=(
-            "<resources>/automatic/"
-            "load_basic_cleaned.parquet"
-        ),
-        data_source=(
-            "<resources>/automatic/"
-            "load_data_source.parquet"
-        ),
-        cleaning_method=(
-            "<resources>/automatic/"
-            "load_cleaning_method.parquet"
-        ),
+        demand=("<resources>/automatic/" "load_basic_cleaned.parquet"),
+        data_source=("<resources>/automatic/" "load_data_source.parquet"),
+        cleaning_method=("<resources>/automatic/" "load_cleaning_method.parquet"),
         cleaning_method_rank=(
-            "<resources>/automatic/"
-            "load_cleaning_method_rank.parquet"
+            "<resources>/automatic/" "load_cleaning_method_rank.parquet"
         ),
-        gap_report=(
-            "<resources>/automatic/"
-            "load_gap_report.parquet"
-        ),
+        gap_report=("<resources>/automatic/" "load_gap_report.parquet"),
         auxiliary_fill_plan=(
-            "<resources>/automatic/"
-            "load_auxiliary_fill_plan.parquet"
+            "<resources>/automatic/" "load_auxiliary_fill_plan.parquet"
         ),
-    params:
-        source_names=config["load_sources"],
-        gap_filling=config["gap_filling"],
     log:
         "<logs>/clean_demand.log",
     conda:
         "../envs/module.yaml"
+    params:
+        source_names=config["load_sources"],
+        gap_filling=config["gap_filling"],
     message:
         "Combine and clean electricity-demand sources."
     script:
@@ -136,34 +99,25 @@ rule clean_demand:
 
 rule plot_cleaning_timeline:
     input:
-        demand=(
-            "<resources>/automatic/"
-            "load_cleaned.parquet"
-        ),
-        cleaning_method=(
-            "<resources>/automatic/"
-            "load_final_cleaning_method.parquet"
-        ),
+        demand=("<resources>/automatic/" "load_cleaned.parquet"),
+        cleaning_method=("<resources>/automatic/" "load_final_cleaning_method.parquet"),
         cleaning_method_rank=(
-            "<resources>/automatic/"
-            "load_final_cleaning_method_rank.parquet"
+            "<resources>/automatic/" "load_final_cleaning_method_rank.parquet"
         ),
     output:
-        plot=(
-            "<results>/{shape}/"
-            "load_cleaning_timeline.pdf"
-        ),
-    params:
-        source_names=config["load_sources"],
-        gap_filling=config["gap_filling"],
+        plot=("<results>/{shape}/" "load_cleaning_timeline.pdf"),
     log:
         "<logs>/{shape}/plot_cleaning_timeline.log",
     conda:
         "../envs/module.yaml"
+    params:
+        source_names=config["load_sources"],
+        gap_filling=config["gap_filling"],
     message:
         "Plot electricity-demand cleaning provenance."
     script:
         "../scripts/plot_cleaning_timeline.py"
+
 
 rule clean_population:
     input:
@@ -175,4 +129,3 @@ rule clean_population:
         "<logs>/{shape}/clean_population.log",
     wrapper:
         "v7.2.0/geo/rasterio/clip-geotiff"
-

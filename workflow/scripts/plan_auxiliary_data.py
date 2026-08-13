@@ -11,9 +11,7 @@ if TYPE_CHECKING:
 
 
 if __name__ == "__main__":
-    fill_plan = pd.read_parquet(
-        snakemake.input.fill_plan
-    )
+    fill_plan = pd.read_parquet(snakemake.input.fill_plan)
 
     plan = build_advanced_execution_plan(
         fill_plan=fill_plan,
@@ -21,7 +19,4 @@ if __name__ == "__main__":
         source_names=snakemake.params.source_names,
     )
 
-    write_execution_plan(
-        plan,
-        snakemake.output.plan,
-    )
+    write_execution_plan(plan, snakemake.output.plan)

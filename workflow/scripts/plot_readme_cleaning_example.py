@@ -19,42 +19,26 @@ from cleaning.plot_timeline import (
     _validate_provenance_metadata,
 )
 
-DEMAND_PATH = Path(
-    "resources/module/resources/automatic/load_cleaned.parquet"
-)
+DEMAND_PATH = Path("resources/module/resources/automatic/load_cleaned.parquet")
 
 CLEANING_METHOD_PATH = Path(
-    "resources/module/resources/automatic/"
-    "load_final_cleaning_method.parquet"
+    "resources/module/resources/automatic/load_final_cleaning_method.parquet"
 )
 
 CLEANING_METHOD_RANK_PATH = Path(
-    "resources/module/resources/automatic/"
-    "load_final_cleaning_method_rank.parquet"
+    "resources/module/resources/automatic/load_final_cleaning_method_rank.parquet"
 )
 
-OUTPUT_PATH = Path(
-    "tmp/readme_cleaning_timeline.png"
-)
+OUTPUT_PATH = Path("tmp/readme_cleaning_timeline.png")
 
 # Curated subset for the README figure.
-COUNTRIES = [
-    "ALB",
-    "GBR",
-    "IRL",
-    "MKD",
-    "DEU",
-]
+COUNTRIES = ["ALB", "GBR", "IRL", "MKD", "DEU"]
 
 START = "2021-05-01"
 END = "2021-11-01"
 
 # Must correspond to the configuration used for the long run.
-SOURCE_NAMES = [
-    "entsoe_api",
-    "neso",
-    "opsd_api",
-]
+SOURCE_NAMES = ["entsoe_api", "neso", "opsd_api"]
 
 GAP_FILLING_CONFIG = {
     "mode": "basic",
@@ -83,35 +67,21 @@ GAP_FILLING_CONFIG = {
                 "max_gap": "168h",
                 "source_offset": "168h",
             },
-        ],
+        ]
     },
 }
 
 
 def main() -> None:
     demand = pd.read_parquet(DEMAND_PATH)
-    cleaning_method = pd.read_parquet(
-        CLEANING_METHOD_PATH
-    )
-    cleaning_method_rank = pd.read_parquet(
-        CLEANING_METHOD_RANK_PATH
-    )
+    cleaning_method = pd.read_parquet(CLEANING_METHOD_PATH)
+    cleaning_method_rank = pd.read_parquet(CLEANING_METHOD_RANK_PATH)
 
-    print(
-        "Available period:",
-        demand.index.min(),
-        "to",
-        demand.index.max(),
-    )
-    print(
-        "Available countries:",
-        ", ".join(demand.columns),
-    )
+    print("Available period:", demand.index.min(), "to", demand.index.max())
+    print("Available countries:", ", ".join(demand.columns))
 
     missing_countries = [
-        country
-        for country in COUNTRIES
-        if country not in demand.columns
+        country for country in COUNTRIES if country not in demand.columns
     ]
 
     if missing_countries:
@@ -123,38 +93,21 @@ def main() -> None:
     start = pd.Timestamp(START, tz="UTC")
     end = pd.Timestamp(END, tz="UTC")
 
-    mask = (
-        (demand.index >= start)
-        & (demand.index < end)
-    )
+    mask = (demand.index >= start) & (demand.index < end)
 
     demand = demand.loc[mask, COUNTRIES]
-    cleaning_method = cleaning_method.loc[
-        mask,
-        COUNTRIES,
-    ]
-    cleaning_method_rank = cleaning_method_rank.loc[
-        mask,
-        COUNTRIES,
-    ]
+    cleaning_method = cleaning_method.loc[mask, COUNTRIES]
+    cleaning_method_rank = cleaning_method_rank.loc[mask, COUNTRIES]
 
     if len(demand) < 2:
-        raise ValueError(
-            f"No usable data found between {START} and {END}."
-        )
+        raise ValueError(f"No usable data found between {START} and {END}.")
 
-    print(
-        f"Plotting {len(demand):,} hourly timestamps "
-        f"for {len(COUNTRIES)} countries."
-    )
+    print(f"Plotting {len(demand):,} hourly timestamps for {len(COUNTRIES)} countries.")
 
     # Useful while choosing the README window/countries.
     print("\nCleaning-method counts:")
     for country in COUNTRIES:
-        counts = (
-            cleaning_method[country]
-            .value_counts(dropna=False)
-        )
+        counts = cleaning_method[country].value_counts(dropna=False)
         print(f"\n{country}")
         print(counts.to_string())
 
@@ -165,8 +118,7 @@ def main() -> None:
     )
 
     metadata = _build_cleaning_method_metadata(
-        source_names=SOURCE_NAMES,
-        gap_filling_config=GAP_FILLING_CONFIG,
+        source_names=SOURCE_NAMES, gap_filling_config=GAP_FILLING_CONFIG
     )
 
     _validate_provenance_metadata(
@@ -177,35 +129,23 @@ def main() -> None:
 
     rank_colours = _build_rank_colours(metadata)
 
-    background, background_cmap = (
-        _encode_rank_background(
-            cleaning_method_rank=cleaning_method_rank,
-            metadata=metadata,
-            rank_colours=rank_colours,
-        )
+    background, background_cmap = _encode_rank_background(
+        cleaning_method_rank=cleaning_method_rank,
+        metadata=metadata,
+        rank_colours=rank_colours,
     )
 
     figure, axis = _plot_cleaning_background(
-        demand=demand,
-        background=background,
-        background_cmap=background_cmap,
+        demand=demand, background=background, background_cmap=background_cmap
     )
 
-    mean_load_gw = _add_normalised_demand_traces(
-        axis=axis,
-        demand=demand,
-    )
+    mean_load_gw = _add_normalised_demand_traces(axis=axis, demand=demand)
 
     _add_mean_load_labels(
-        axis=axis,
-        mean_load_gw=mean_load_gw,
-        countries=demand.columns,
+        axis=axis, mean_load_gw=mean_load_gw, countries=demand.columns
     )
 
-    legend_handles = _build_legend_handles(
-        metadata,
-        rank_colours,
-    )
+    legend_handles = _build_legend_handles(metadata, rank_colours)
 
     figure.legend(
         handles=legend_handles,
@@ -214,22 +154,13 @@ def main() -> None:
         frameon=False,
     )
 
-    OUTPUT_PATH.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    figure.savefig(
-        OUTPUT_PATH,
-        dpi=200,
-        bbox_inches="tight",
-    )
+    figure.savefig(OUTPUT_PATH, dpi=200, bbox_inches="tight")
 
     plt.close(figure)
 
-    print(
-        f"\nSaved README figure to: {OUTPUT_PATH.resolve()}"
-    )
+    print(f"\nSaved README figure to: {OUTPUT_PATH.resolve()}")
 
 
 if __name__ == "__main__":

@@ -42,7 +42,7 @@ def fill_basic_gaps(
     enabled:
         Whether basic gap filling should be applied.
 
-    Returns
+    Returns:
     -------
     filled:
         Load after applying the configured rules. If gap filling is disabled,
@@ -51,27 +51,19 @@ def fill_basic_gaps(
         Per-cell provenance containing the observed-source identifier,
         configured gap-filling rule name, or ``missing``.
     """
-    _validate_settings(
-        enabled=enabled,
-        rules=rules
-    )
+    _validate_settings(enabled=enabled, rules=rules)
     validate_load(load)
-    _validate_cleaning_method(
-        load=load,
-        cleaning_method=cleaning_method,
-    )
+    _validate_cleaning_method(load=load, cleaning_method=cleaning_method)
 
     filled = load.copy()
     cleaning_method = cleaning_method.copy()
 
     if not enabled:
-            logger.info("Basic gap filling is disabled.")
-            cleaning_method = cleaning_method.fillna("missing")
-            return filled, cleaning_method
+        logger.info("Basic gap filling is disabled.")
+        cleaning_method = cleaning_method.fillna("missing")
+        return filled, cleaning_method
 
-    original_gap_duration = calculate_missing_run_durations(
-        load
-    )
+    original_gap_duration = calculate_missing_run_durations(load)
 
     for rule in rules:
         method = _get_method(rule)
@@ -97,69 +89,40 @@ def fill_basic_gaps(
                 filled,
                 max_gap=rule["max_gap"],
                 source_offset=rule["source_offset"],
-                require_complete_source=rule.get(
-                    "require_complete_source",
-                    True,
-                ),
+                require_complete_source=rule.get("require_complete_source", True),
                 original_gap_duration=original_gap_duration,
             )
 
         else:
-            raise ValueError(
-                f"Unsupported gap-filling method: {method!r}"
-            )
+            raise ValueError(f"Unsupported gap-filling method: {method!r}")
 
-        cleaning_method = cleaning_method.mask(
-            newly_filled,
-            rule_name,
-        )
+        cleaning_method = cleaning_method.mask(newly_filled, rule_name)
 
-        _log_rule_results(
-            rule_name=rule_name,
-            method=method,
-            newly_filled=newly_filled,
-        )
+        _log_rule_results(rule_name=rule_name, method=method, newly_filled=newly_filled)
 
-    cleaning_method = cleaning_method.fillna(
-        "missing"
-    )
+    cleaning_method = cleaning_method.fillna("missing")
 
-    unresolved = int(
-        filled.isna().to_numpy().sum()
-    )
+    unresolved = int(filled.isna().to_numpy().sum())
 
-    logger.info(
-        "Gap filling completed with %s unresolved values.",
-        unresolved,
-    )
+    logger.info("Gap filling completed with %s unresolved values.", unresolved)
 
     return filled, cleaning_method
 
 
-def calculate_missing_run_durations(
-    load: pd.DataFrame,
-) -> pd.DataFrame:
+def calculate_missing_run_durations(load: pd.DataFrame) -> pd.DataFrame:
     """Return the original duration of each missing run.
 
     Observed values receive a duration of zero.
     """
     timestep = infer_regular_timestep(load.index)
 
-    durations = pd.DataFrame(
-        pd.Timedelta(0),
-        index=load.index,
-        columns=load.columns,
-    )
+    durations = pd.DataFrame(pd.Timedelta(0), index=load.index, columns=load.columns)
 
     for column in load.columns:
         missing = load[column].isna()
         group_ids = missing.ne(missing.shift()).cumsum()
 
-        run_lengths = (
-            missing.groupby(group_ids)
-            .transform("sum")
-            .where(missing, 0)
-        )
+        run_lengths = missing.groupby(group_ids).transform("sum").where(missing, 0)
 
         durations[column] = run_lengths * timestep
 
@@ -170,50 +133,33 @@ def _get_method(rule: Mapping[str, Any]) -> str:
     try:
         method = rule["method"]
     except KeyError as error:
-        raise ValueError(
-            "Each gap-filling rule must define a 'method'."
-        ) from error
+        raise ValueError("Each gap-filling rule must define a 'method'.") from error
 
     if not isinstance(method, str):
-        raise TypeError(
-            "Gap-filling rule 'method' must be a string."
-        )
+        raise TypeError("Gap-filling rule 'method' must be a string.")
 
     return method
 
 
-def _get_rule_name(
-    rule: Mapping[str, Any],
-) -> str:
+def _get_rule_name(rule: Mapping[str, Any]) -> str:
     try:
         name = rule["name"]
     except KeyError as error:
-        raise ValueError(
-            "Each gap-filling rule must define a 'name'."
-        ) from error
+        raise ValueError("Each gap-filling rule must define a 'name'.") from error
 
     if not isinstance(name, str):
-        raise TypeError(
-            "Gap-filling rule 'name' must be a string."
-        )
+        raise TypeError("Gap-filling rule 'name' must be a string.")
 
     if not name:
-        raise ValueError(
-            "Gap-filling rule 'name' must not be empty."
-        )
+        raise ValueError("Gap-filling rule 'name' must not be empty.")
 
     return name
 
 
 def _log_rule_results(
-    *,
-    rule_name: str,
-    method: str,
-    newly_filled: pd.DataFrame,
+    *, rule_name: str, method: str, newly_filled: pd.DataFrame
 ) -> None:
-    total = int(
-        newly_filled.to_numpy().sum()
-    )
+    total = int(newly_filled.to_numpy().sum())
 
     logger.info(
         "Gap-filling rule '%s' using method '%s' filled %s values.",
@@ -227,79 +173,48 @@ def _log_rule_results(
 
         if count:
             logger.info(
-                "%s: %s values filled using rule '%s'.",
-                country,
-                count,
-                rule_name,
+                "%s: %s values filled using rule '%s'.", country, count, rule_name
             )
 
 
-def _validate_settings(
-    *,
-    enabled: bool,
-    rules: Sequence[Mapping[str, Any]],
-) -> None:
+def _validate_settings(*, enabled: bool, rules: Sequence[Mapping[str, Any]]) -> None:
     """Validate basic gap-filling settings."""
     if not isinstance(enabled, bool):
-        raise TypeError(
-            "Basic gap-filling 'enabled' must be a boolean."
-        )
+        raise TypeError("Basic gap-filling 'enabled' must be a boolean.")
 
-    if not isinstance(rules, Sequence) or isinstance(
-        rules,
-        (str, bytes),
-    ):
-        raise TypeError(
-            "Basic gap-filling 'rules' must be an ordered sequence."
-        )
+    if not isinstance(rules, Sequence) or isinstance(rules, (str, bytes)):
+        raise TypeError("Basic gap-filling 'rules' must be an ordered sequence.")
 
 
 def _validate_cleaning_method(
-    *,
-    load: pd.DataFrame,
-    cleaning_method: pd.DataFrame,
+    *, load: pd.DataFrame, cleaning_method: pd.DataFrame
 ) -> None:
     if not isinstance(cleaning_method, pd.DataFrame):
-        raise TypeError(
-            "Cleaning method must be a pandas DataFrame."
-        )
+        raise TypeError("Cleaning method must be a pandas DataFrame.")
 
     if not cleaning_method.index.equals(load.index):
         raise ValueError(
-            "Cleaning-method provenance must use the same "
-            "index as the load data."
+            "Cleaning-method provenance must use the same index as the load data."
         )
 
     if not cleaning_method.columns.equals(load.columns):
         raise ValueError(
-            "Cleaning-method provenance must use the same "
-            "columns as the load data."
+            "Cleaning-method provenance must use the same columns as the load data."
         )
 
-    missing_observed_provenance = (
-        load.notna()
-        & cleaning_method.isna()
-    )
+    missing_observed_provenance = load.notna() & cleaning_method.isna()
 
     if missing_observed_provenance.any().any():
-        count = int(
-            missing_observed_provenance.to_numpy().sum()
-        )
+        count = int(missing_observed_provenance.to_numpy().sum())
 
         raise ValueError(
-            "Cleaning-method provenance is missing for "
-            f"{count} observed load values."
+            f"Cleaning-method provenance is missing for {count} observed load values."
         )
 
-    provenance_for_missing_values = (
-        load.isna()
-        & cleaning_method.notna()
-    )
+    provenance_for_missing_values = load.isna() & cleaning_method.notna()
 
     if provenance_for_missing_values.any().any():
-        count = int(
-            provenance_for_missing_values.to_numpy().sum()
-        )
+        count = int(provenance_for_missing_values.to_numpy().sum())
 
         raise ValueError(
             "Cleaning-method provenance is already assigned "

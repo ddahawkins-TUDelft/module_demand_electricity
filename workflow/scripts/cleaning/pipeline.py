@@ -1,4 +1,5 @@
 """The pipeline coordinates the gap-filling rules and ensures each receives the necessary parameters."""
+
 from __future__ import annotations
 
 import logging
@@ -22,21 +23,16 @@ def clean_demand(
     source_priority: Sequence[str],
     gap_filling_config: Mapping[str, Any],
 ) -> tuple[
-    pd.DataFrame, #data
-    pd.DataFrame, #sources
-    pd.DataFrame, #method
-    pd.DataFrame, #rank
-    pd.DataFrame, #gap_report
-    pd.DataFrame, #auxiliary_fill_plan
+    pd.DataFrame,  # data
+    pd.DataFrame,  # sources
+    pd.DataFrame,  # method
+    pd.DataFrame,  # rank
+    pd.DataFrame,  # gap_report
+    pd.DataFrame,  # auxiliary_fill_plan
 ]:
     """Combine observed sources and fill remaining gaps."""
-    (
-        combined,
-        data_source,
-        cleaning_method,
-    ) = combine_sources(
-        sources,
-        priority=source_priority,
+    (combined, data_source, cleaning_method) = combine_sources(
+        sources, priority=source_priority
     )
 
     basic_rules = gap_filling_config["basic"]["rules"]
@@ -49,18 +45,15 @@ def clean_demand(
     )
 
     cleaning_method_ranks = build_cleaning_method_ranks(
-        source_priority=source_priority,
-        rules=basic_rules,
+        source_priority=source_priority, rules=basic_rules
     )
 
     cleaning_method_rank = derive_cleaning_method_rank(
-        cleaning_method=cleaning_method,
-        ranks=cleaning_method_ranks,
+        cleaning_method=cleaning_method, ranks=cleaning_method_ranks
     )
 
     gap_report = build_gap_report(
-        cleaned,
-        enabled=gap_filling_config["mode"] == "advanced",
+        cleaned, enabled=gap_filling_config["mode"] == "advanced"
     )
 
     target_countries = list(cleaned.columns)
@@ -78,15 +71,13 @@ def clean_demand(
         )
 
         logger.info(
-            "Advanced gap diagnosis found %s unresolved gaps "
-            "covering %s values.",
+            "Advanced gap diagnosis found %s unresolved gaps covering %s values.",
             len(gap_report),
             int(gap_report["gap_hours"].sum()),
         )
 
         logger.info(
-            "Advanced auxiliary-fill plan contains %s active "
-            "instructions.",
+            "Advanced auxiliary-fill plan contains %s active instructions.",
             len(auxiliary_fill_plan),
         )
     else:

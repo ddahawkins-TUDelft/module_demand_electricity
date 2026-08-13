@@ -7,14 +7,10 @@ from urllib.request import urlretrieve
 
 import pytest
 
-
 MODULE_PATH = Path(__file__).resolve().parent.parent
 WORKFLOW_SCRIPTS = MODULE_PATH / "workflow" / "scripts"
 
-sys.path.insert(
-    0,
-    str(WORKFLOW_SCRIPTS),
-)
+sys.path.insert(0, str(WORKFLOW_SCRIPTS))
 
 
 TEST_FILES = {

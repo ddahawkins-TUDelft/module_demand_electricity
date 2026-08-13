@@ -8,32 +8,20 @@ import pandas as pd
 
 
 def combine_sources(
-    sources: Mapping[str, pd.DataFrame],
-    *,
-    priority: Sequence[str],
+    sources: Mapping[str, pd.DataFrame], *, priority: Sequence[str]
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Combine sources and record source and cleaning-method provenance."""
     if not priority:
-        raise ValueError(
-            "At least one demand source must be configured."
-        )
+        raise ValueError("At least one demand source must be configured.")
 
-    missing_sources = [
-        source
-        for source in priority
-        if source not in sources
-    ]
+    missing_sources = [source for source in priority if source not in sources]
 
     if missing_sources:
         raise ValueError(
-            "Configured demand sources were not supplied: "
-            f"{missing_sources}"
+            f"Configured demand sources were not supplied: {missing_sources}"
         )
 
-    selected = {
-        source: sources[source]
-        for source in priority
-    }
+    selected = {source: sources[source] for source in priority}
 
     _validate_source_alignment(selected)
 
@@ -41,57 +29,38 @@ def combine_sources(
     combined = selected[first_source].copy()
 
     data_source = pd.DataFrame(
-        pd.NA,
-        index=combined.index,
-        columns=combined.columns,
-        dtype="string",
+        pd.NA, index=combined.index, columns=combined.columns, dtype="string"
     )
 
     cleaning_method = pd.DataFrame(
-        pd.NA,
-        index=combined.index,
-        columns=combined.columns,
-        dtype="string",
+        pd.NA, index=combined.index, columns=combined.columns, dtype="string"
     )
 
     first_source_values = combined.notna()
 
-    data_source = data_source.mask(
-        first_source_values,
-        first_source,
-    )
+    data_source = data_source.mask(first_source_values, first_source)
 
     cleaning_method = cleaning_method.mask(
-        first_source_values,
-        f"observed_{first_source}",
+        first_source_values, f"observed_{first_source}"
     )
 
     for source_name in priority[1:]:
         candidate = selected[source_name]
 
-        newly_supplied = (
-            combined.isna()
-            & candidate.notna()
-        )
+        newly_supplied = combined.isna() & candidate.notna()
 
         combined = combined.combine_first(candidate)
 
-        data_source = data_source.mask(
-            newly_supplied,
-            source_name,
-        )
+        data_source = data_source.mask(newly_supplied, source_name)
 
         cleaning_method = cleaning_method.mask(
-            newly_supplied,
-            f"observed_{source_name}",
+            newly_supplied, f"observed_{source_name}"
         )
 
     return combined, data_source, cleaning_method
 
 
-def _validate_source_alignment(
-    sources: Mapping[str, pd.DataFrame],
-) -> None:
+def _validate_source_alignment(sources: Mapping[str, pd.DataFrame]) -> None:
     """Require all prepared sources to use the same target grid."""
     source_items = list(sources.items())
 
@@ -112,14 +81,8 @@ def _validate_source_alignment(
 
 
 def combine_auxiliary_sources(
-    loads: Mapping[str, pd.DataFrame],
-    *,
-    priority: Sequence[str],
-) -> tuple[
-    pd.DataFrame,
-    pd.DataFrame,
-    pd.DataFrame,
-]:
+    loads: Mapping[str, pd.DataFrame], *, priority: Sequence[str]
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Combine available auxiliary sources using configured source priority."""
     if not loads:
         empty = pd.DataFrame()
@@ -133,26 +96,10 @@ def combine_auxiliary_sources(
             f"source priority: {sorted(unexpected_sources)}."
         )
 
-    available_priority = [
-        source
-        for source in priority
-        if source in loads
-    ]
+    available_priority = [source for source in priority if source in loads]
 
-    columns = sorted(
-        {
-            column
-            for load in loads.values()
-            for column in load.columns
-        }
-    )
+    columns = sorted({column for load in loads.values() for column in load.columns})
 
-    aligned = {
-        source: load.reindex(columns=columns)
-        for source, load in loads.items()
-    }
+    aligned = {source: load.reindex(columns=columns) for source, load in loads.items()}
 
-    return combine_sources(
-        aligned,
-        priority=available_priority,
-    )
+    return combine_sources(aligned, priority=available_priority)

@@ -19,45 +19,31 @@ def validate_load(load: pd.DataFrame) -> None:
             f"Found timestep {timestep}."
         )
 
-    if not all(
-        pd.api.types.is_numeric_dtype(dtype)
-        for dtype in load.dtypes
-    ):
+    if not all(pd.api.types.is_numeric_dtype(dtype) for dtype in load.dtypes):
         raise TypeError("All load columns must be numeric.")
 
 
-def infer_regular_timestep(
-    index: pd.Index,
-) -> pd.Timedelta:
+def infer_regular_timestep(index: pd.Index) -> pd.Timedelta:
     """Infer and validate the regular timestep of a datetime index."""
     if not isinstance(index, pd.DatetimeIndex):
-        raise TypeError(
-            "Load data must use a pandas DatetimeIndex."
-        )
+        raise TypeError("Load data must use a pandas DatetimeIndex.")
 
     if not index.is_monotonic_increasing:
-        raise ValueError(
-            "Load timestamps must be sorted in increasing order."
-        )
+        raise ValueError("Load timestamps must be sorted in increasing order.")
 
     if index.has_duplicates:
-        raise ValueError(
-            "Load timestamps must not contain duplicates."
-        )
+        raise ValueError("Load timestamps must not contain duplicates.")
 
     differences = index.to_series().diff().dropna()
 
     if differences.empty:
-        raise ValueError(
-            "At least two timestamps are required for gap filling."
-        )
+        raise ValueError("At least two timestamps are required for gap filling.")
 
     timestep = differences.iloc[0]
 
     if not differences.eq(timestep).all():
         raise ValueError(
-            "Load data must have a complete, regular time index "
-            "before gap filling."
+            "Load data must have a complete, regular time index before gap filling."
         )
 
     return timestep

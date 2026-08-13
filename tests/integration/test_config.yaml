@@ -3,7 +3,7 @@ integration_test:
     start: "2017-01-01"
     end: "2017-01-03"
   # provide a list of sources and set their priority order. Options include: entsoe_api, opsd_api
-  load_sources: 
+  load_sources:
     - entsoe_api
     - neso
     - opsd_api
@@ -85,7 +85,7 @@ integration_test:
                 start: "2024-01-01"
                 end: "2024-01-03"
                 weight: 1
-        
+
         example_inactive_mne_override:
           country: MNE
           start: "2020-03-01"
@@ -97,7 +97,7 @@ integration_test:
               start: "2022-03-01"
               end: "2022-04-01"
               weight: 1
-        
+
         test_external_profile_overwrite:
           country: ALB
           start: "2022-01-01 00:00"

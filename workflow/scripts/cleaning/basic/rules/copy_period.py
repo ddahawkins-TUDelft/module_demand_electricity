@@ -41,15 +41,11 @@ def apply_copy_period(
         & original_gap_duration.le(max_gap)
     )
 
-    source = _values_at_offset(
-        load,
-        source_offset=source_offset,
-    )
+    source = _values_at_offset(load, source_offset=source_offset)
 
     if require_complete_source:
         eligible = _require_complete_source_for_each_gap(
-            eligible=eligible,
-            source=source,
+            eligible=eligible, source=source
         )
     else:
         eligible &= source.notna()
@@ -61,9 +57,7 @@ def apply_copy_period(
 
 
 def _values_at_offset(
-    load: pd.DataFrame,
-    *,
-    source_offset: pd.Timedelta,
+    load: pd.DataFrame, *, source_offset: pd.Timedelta
 ) -> pd.DataFrame:
     """Align values at ``timestamp + source_offset`` to each target timestamp."""
     source_timestamps = load.index + source_offset
@@ -75,22 +69,14 @@ def _values_at_offset(
 
 
 def _require_complete_source_for_each_gap(
-    *,
-    eligible: pd.DataFrame,
-    source: pd.DataFrame,
+    *, eligible: pd.DataFrame, source: pd.DataFrame
 ) -> pd.DataFrame:
     """Keep a gap eligible only when every source value for that gap exists."""
-    result = pd.DataFrame(
-        False,
-        index=eligible.index,
-        columns=eligible.columns,
-    )
+    result = pd.DataFrame(False, index=eligible.index, columns=eligible.columns)
 
     for column in eligible.columns:
         eligible_column = eligible[column]
-        gap_ids = eligible_column.ne(
-            eligible_column.shift(fill_value=False)
-        ).cumsum()
+        gap_ids = eligible_column.ne(eligible_column.shift(fill_value=False)).cumsum()
 
         for _, gap_mask in eligible_column.groupby(gap_ids):
             gap_index = gap_mask.index[gap_mask]

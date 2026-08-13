@@ -99,7 +99,7 @@ $defs:
       - target_sources
 
     additionalProperties: false
-  
+
   auxiliary_fill_rule_base:
     type: object
     properties:
@@ -197,7 +197,7 @@ $defs:
       - $ref: "#/$defs/construct_from_sources_rule"
       - $ref: "#/$defs/external_profile_rule"
       - $ref: "#/$defs/leave_missing_rule"
-  
+
   auxiliary_basic_cleaning:
     type: object
     properties:

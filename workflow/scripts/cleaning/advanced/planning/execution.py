@@ -32,31 +32,24 @@ def build_advanced_execution_plan(
 
     overrides = gap_filling_config["advanced"]["overrides"]
     ordered_active_rule_names = _get_ordered_active_rule_names(
-        fill_plan,
-        overrides=overrides,
+        fill_plan, overrides=overrides
     )
     active_overrides = {
-        rule_name: overrides[rule_name]
-        for rule_name in ordered_active_rule_names
+        rule_name: overrides[rule_name] for rule_name in ordered_active_rule_names
     }
 
     requirements = build_auxiliary_acquisition_requirements(
         overrides=active_overrides,
         basic_rules=gap_filling_config["basic"]["rules"],
         basic_cleaning_enabled=(
-            gap_filling_config["advanced"]
-            ["auxiliary_data"]
-            ["basic_cleaning"]
-            ["enabled"]
+            gap_filling_config["advanced"]["auxiliary_data"]["basic_cleaning"][
+                "enabled"
+            ]
         ),
     )
-    requests = build_auxiliary_source_requests(
-        requirements,
-        source_names=source_names,
-    )
+    requests = build_auxiliary_source_requests(requirements, source_names=source_names)
     batches = [
-        _serialize_batch(batch)
-        for batch in build_auxiliary_source_batches(requests)
+        _serialize_batch(batch) for batch in build_auxiliary_source_batches(requests)
     ]
 
     rules: dict[str, dict[str, object]] = {}
@@ -70,15 +63,12 @@ def build_advanced_execution_plan(
 
         if override["method"] == CONSTRUCT_FROM_SOURCES:
             required_group_ids = _get_required_auxiliary_group_ids(
-                batch_plan,
-                override=override,
+                batch_plan, override=override
             )
             constructed_profile_rule_names.append(rule_name)
 
         elif override["method"] == EXTERNAL_PROFILE:
-            external_profile_files[rule_name] = str(
-                override["path"]
-            )
+            external_profile_files[rule_name] = str(override["path"])
 
         rules[rule_name] = {
             "override": override,
@@ -112,21 +102,14 @@ def _empty_execution_plan() -> dict[str, object]:
 
 
 def _get_ordered_active_rule_names(
-    fill_plan: pd.DataFrame,
-    *,
-    overrides: Mapping[str, Mapping[str, Any]],
+    fill_plan: pd.DataFrame, *, overrides: Mapping[str, Mapping[str, Any]]
 ) -> list[str]:
     """Return active rule names in configured execution order."""
     if "rule_name" not in fill_plan.columns:
-        raise ValueError(
-            "Auxiliary fill plan must define a 'rule_name' column."
-        )
+        raise ValueError("Auxiliary fill plan must define a 'rule_name' column.")
 
     duplicate_rule_names = sorted(
-        fill_plan.loc[
-            fill_plan["rule_name"].duplicated(),
-            "rule_name",
-        ]
+        fill_plan.loc[fill_plan["rule_name"].duplicated(), "rule_name"]
         .drop_duplicates()
         .tolist()
     )
@@ -144,24 +127,16 @@ def _get_ordered_active_rule_names(
             f"overrides: {sorted(unknown_rule_names)}."
         )
 
-    return [
-        rule_name
-        for rule_name in overrides
-        if rule_name in active_rule_names
-    ]
+    return [rule_name for rule_name in overrides if rule_name in active_rule_names]
 
 
-def _serialize_batch(
-    batch: Mapping[str, object],
-) -> dict[str, object]:
+def _serialize_batch(batch: Mapping[str, object]) -> dict[str, object]:
     """Convert one planned batch to JSON-compatible values."""
     start = pd.Timestamp(batch["start"])
     end = pd.Timestamp(batch["end"])
 
     if end <= start:
-        raise ValueError(
-            "Auxiliary batch end must be later than its start."
-        )
+        raise ValueError("Auxiliary batch end must be later than its start.")
 
     final_included_time = end - pd.Timedelta(nanoseconds=1)
 
@@ -169,12 +144,7 @@ def _serialize_batch(
         **batch,
         "start": start.isoformat(),
         "end": end.isoformat(),
-        "years": list(
-            range(
-                start.year,
-                final_included_time.year + 1,
-            )
-        ),
+        "years": list(range(start.year, final_included_time.year + 1)),
     }
 
 
@@ -185,10 +155,7 @@ def _index_batch_ids_by_source(
     result: dict[str, list[str]] = {}
 
     for batch in batches:
-        result.setdefault(
-            str(batch["source"]),
-            [],
-        ).append(str(batch["batch_id"]))
+        result.setdefault(str(batch["source"]), []).append(str(batch["batch_id"]))
 
     return result
 
@@ -200,35 +167,23 @@ def _index_batch_ids_by_group(
     result: dict[str, list[str]] = {}
 
     for batch in batches:
-        result.setdefault(
-            str(batch["group_id"]),
-            [],
-        ).append(str(batch["batch_id"]))
+        result.setdefault(str(batch["group_id"]), []).append(str(batch["batch_id"]))
 
     return result
 
 
-
-def _get_required_auxiliary_sources(
-    override: Mapping,
-) -> list[Mapping]:
+def _get_required_auxiliary_sources(override: Mapping) -> list[Mapping]:
     """Return all auxiliary sources consumed by an override."""
     sources = list(override["sources"])
 
     scaling = override.get("scaling")
     if scaling is not None:
-        sources.extend(
-            scaling.get("target_sources", [])
-        )
+        sources.extend(scaling.get("target_sources", []))
 
     return sources
 
 
-def _get_required_auxiliary_group_ids(
-    plan: Mapping,
-    *,
-    override: Mapping,
-) -> list[str]:
+def _get_required_auxiliary_group_ids(plan: Mapping, *, override: Mapping) -> list[str]:
     """Return auxiliary groups required to execute one override."""
     group_ids: set[str] = set()
 

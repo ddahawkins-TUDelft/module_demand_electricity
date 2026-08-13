@@ -2,38 +2,35 @@
 
 from datetime import datetime, timedelta
 
+
 def _years_in_period(
     start: str,
     end: str,
-    ) -> tuple[int, ...]:
-        """Return calendar years intersecting an end-exclusive period."""
-        start = datetime.fromisoformat(start)
-        end = datetime.fromisoformat(end)
+) -> tuple[int, ...]:
+    """Return calendar years intersecting an end-exclusive period."""
+    start = datetime.fromisoformat(start)
+    end = datetime.fromisoformat(end)
 
-        if end <= start:
-            raise ValueError(
-                "Period end must be later than period start."
-            )
+    if end <= start:
+        raise ValueError("Period end must be later than period start.")
 
-        final_included_time = end - timedelta(
-            microseconds=1
+    final_included_time = end - timedelta(microseconds=1)
+
+    return tuple(
+        range(
+            start.year,
+            final_included_time.year + 1,
         )
+    )
 
-        return tuple(
-            range(
-                start.year,
-                final_included_time.year + 1,
-            )
-        )
 
 NESO_YEARS = _years_in_period(
-        start=config["temporal_scope"]["start"],
-        end=config["temporal_scope"]["end"],
+    start=config["temporal_scope"]["start"],
+    end=config["temporal_scope"]["end"],
 )
 
 NESO_RAW_FILES = expand(
-    "<resources>/automatic/neso/"
-    "historic_demand_{year}.csv",
+    "<resources>/automatic/neso/" "historic_demand_{year}.csv",
     year=NESO_YEARS,
 )
 
@@ -80,19 +77,17 @@ rule download_load_entsoe_opsd:
         curl -sSLo {output.load:q} {params.url_load:q}
         """
 
+
 rule download_load_neso_year:
     output:
-        annual_file=(
-            "<resources>/automatic/neso/"
-            "historic_demand_{year}.csv"
-        ),
-    params:
-        year=lambda wildcards: int(wildcards.year),
+        annual_file=("<resources>/automatic/neso/" "historic_demand_{year}.csv"),
     log:
         "<logs>/download_load_neso_{year}.log",
     localrule: True
     conda:
         "../envs/module.yaml"
+    params:
+        year=lambda wildcards: int(wildcards.year),
     message:
         "Download NESO historic electricity demand for {wildcards.year}."
     script:

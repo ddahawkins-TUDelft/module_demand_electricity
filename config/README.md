@@ -257,7 +257,7 @@ example_rule_construct_from_sources:
 
 The source period must describe the same number of hourly timestamps as the target period.
 
-Multiple sources may be supplied. Their weight values determine their relative contribution to the constructed profile. 
+Multiple sources may be supplied. Their weight values determine their relative contribution to the constructed profile.
 
 > [!IMPORTANT]
 > Weighting is relative and values provided are normalised such that all weights sum to 1, i.e. in the example above, `GRC` has a relative contribution of `0.25` and `MKD` has a relative contribution of `0.75`.
@@ -336,7 +336,7 @@ advanced:
     basic_cleaning:
       enabled: true
 ```
-When enabled, the same basic gap-filling logic is applied to auxiliary demand before it is used to construct an advanced profile. 
+When enabled, the same basic gap-filling logic is applied to auxiliary demand before it is used to construct an advanced profile.
 
 
 ## Complete example
@@ -374,7 +374,7 @@ gap_filling:
 
       # This rule  constructs a synthetic profile from GRC
       # and MKD Jan 2022, rescales to ALB Jan 2024 average
-      # energy levels, and fill gaps in ALB Jan 2022. It 
+      # energy levels, and fill gaps in ALB Jan 2022. It
       # does not overwrite existing values.
       build_alb_winter:
         country: ALB
@@ -410,7 +410,7 @@ gap_filling:
         method: external_profile
         path: inputs/external_profiles/alb_external.csv
 
-      # This rule intentionally leaves missing values. 
+      # This rule intentionally leaves missing values.
       # This rule is inactive because its target period lies
       # outside the configured temporal_scope.
       leave_alb_gap:

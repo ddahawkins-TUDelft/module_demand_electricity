@@ -31,11 +31,7 @@ def main(
 
     sources = {
         source_name: _read_prepared_source(path)
-        for source_name, path in zip(
-            source_names,
-            input_paths,
-            strict=True,
-        )
+        for source_name, path in zip(source_names, input_paths, strict=True)
     }
 
     (
@@ -44,50 +40,33 @@ def main(
         cleaning_method,
         cleaning_method_rank,
         gap_report,
-        auxiliary_fill_plan
+        auxiliary_fill_plan,
     ) = clean_demand(
-        sources,
-        source_priority=source_names,
-        gap_filling_config=gap_filling_config,
+        sources, source_priority=source_names, gap_filling_config=gap_filling_config
     )
 
     cleaned.to_parquet(output.demand)
 
     data_source.to_parquet(output.data_source)
-    cleaning_method.to_parquet(
-        output.cleaning_method
-    )
+    cleaning_method.to_parquet(output.cleaning_method)
 
-    cleaning_method_rank.to_parquet(
-        output.cleaning_method_rank
-    )
+    cleaning_method_rank.to_parquet(output.cleaning_method_rank)
 
-    gap_report.to_parquet(
-        output.gap_report,
-        index=False,
-    )
+    gap_report.to_parquet(output.gap_report, index=False)
 
-    auxiliary_fill_plan.to_parquet(
-        output.auxiliary_fill_plan,
-        index=False,
-    )
+    auxiliary_fill_plan.to_parquet(output.auxiliary_fill_plan, index=False)
 
     _log_source_counts(data_source)
-    _log_cleaning_method_counts(cleaning_method,cleaning_method_rank)
+    _log_cleaning_method_counts(cleaning_method, cleaning_method_rank)
     _log_gap_report(gap_report)
 
 
-def _read_prepared_source(
-    path: str | Path,
-) -> pd.DataFrame:
+def _read_prepared_source(path: str | Path) -> pd.DataFrame:
     """Read and validate one prepared demand source."""
     demand = pd.read_parquet(path)
 
     if not isinstance(demand.index, pd.DatetimeIndex):
-        demand.index = pd.to_datetime(
-            demand.index,
-            utc=True,
-        )
+        demand.index = pd.to_datetime(demand.index, utc=True)
 
     elif demand.index.tz is None:
         demand.index = demand.index.tz_localize("UTC")
@@ -96,49 +75,32 @@ def _read_prepared_source(
         demand.index = demand.index.tz_convert("UTC")
 
     if demand.index.has_duplicates:
-        raise ValueError(
-            f"Demand source contains duplicate timestamps: {path}"
-        )
+        raise ValueError(f"Demand source contains duplicate timestamps: {path}")
 
     if demand.columns.has_duplicates:
-        raise ValueError(
-            f"Demand source contains duplicate columns: {path}"
-        )
+        raise ValueError(f"Demand source contains duplicate columns: {path}")
 
     return demand.sort_index()
 
 
-def _log_source_counts(
-    data_source: pd.DataFrame,
-) -> None:
+def _log_source_counts(data_source: pd.DataFrame) -> None:
     """Log the number of cells supplied by each observed source."""
     counts = data_source.stack().value_counts()
 
     for source_name, count in counts.items():
-        logger.info(
-            "%s supplied %s observed values.",
-            source_name,
-            int(count),
-        )
+        logger.info("%s supplied %s observed values.", source_name, int(count))
 
 
 def _log_cleaning_method_counts(
-    cleaning_method: pd.DataFrame,
-    cleaning_method_rank: pd.DataFrame,
+    cleaning_method: pd.DataFrame, cleaning_method_rank: pd.DataFrame
 ) -> None:
     """Log the number of cells assigned to each cleaning method."""
     method_counts = cleaning_method.stack().value_counts()
 
     for method_name, count in method_counts.items():
-        method_mask = (
-            cleaning_method.eq(method_name)
-            .fillna(False)
-            .to_numpy(dtype=bool)
-        )
+        method_mask = cleaning_method.eq(method_name).fillna(False).to_numpy(dtype=bool)
 
-        ranks = cleaning_method_rank.to_numpy()[
-            method_mask
-        ]
+        ranks = cleaning_method_rank.to_numpy()[method_mask]
 
         unique_ranks = pd.unique(ranks)
 
@@ -157,26 +119,16 @@ def _log_cleaning_method_counts(
         )
 
 
-def _log_gap_report(
-    gap_report: pd.DataFrame,
-) -> None:
+def _log_gap_report(gap_report: pd.DataFrame) -> None:
     """Log unresolved-gap counts by country."""
     if gap_report.empty:
-        logger.info(
-            "No advanced unresolved-gap report was generated."
-        )
+        logger.info("No advanced unresolved-gap report was generated.")
         return
 
-    logger.info(
-        "Gap report contains %s contiguous unresolved gaps.",
-        len(gap_report),
-    )
+    logger.info("Gap report contains %s contiguous unresolved gaps.", len(gap_report))
 
-    country_summary = gap_report.groupby(
-        "country"
-    ).agg(
-        gap_count=("country", "size"),
-        missing_hours=("gap_hours", "sum"),
+    country_summary = gap_report.groupby("country").agg(
+        gap_count=("country", "size"), missing_hours=("gap_hours", "sum")
     )
 
     for country, row in country_summary.iterrows():
@@ -187,25 +139,15 @@ def _log_gap_report(
             int(row["missing_hours"]),
         )
 
-if __name__ == "__main__":
-    sys.stderr = open(
-        snakemake.log[0],
-        "w",
-        buffering=1,
-    )
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(levelname)s: %(message)s",
-    )
+if __name__ == "__main__":
+    sys.stderr = open(snakemake.log[0], "w", buffering=1)
+
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
     main(
         input_paths=list(snakemake.input),
-        source_names=list(
-            snakemake.params.source_names
-        ),
-        gap_filling_config=(
-            snakemake.params.gap_filling
-        ),
+        source_names=list(snakemake.params.source_names),
+        gap_filling_config=(snakemake.params.gap_filling),
         output=snakemake.output,
     )

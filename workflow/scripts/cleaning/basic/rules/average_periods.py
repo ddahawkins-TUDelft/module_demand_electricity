@@ -6,7 +6,6 @@ from collections.abc import Sequence
 
 import pandas as pd
 
-
 METHOD_NAME = "average_periods"
 
 
@@ -33,30 +32,19 @@ def apply_average_periods(
     """
     max_gap = pd.Timedelta(max_gap)
 
-    offsets = tuple(
-        pd.Timedelta(offset)
-        for offset in source_offsets
-    )
+    offsets = tuple(pd.Timedelta(offset) for offset in source_offsets)
 
     if max_gap <= pd.Timedelta(0):
-        raise ValueError(
-            "'max_gap' must be greater than zero."
-        )
+        raise ValueError("'max_gap' must be greater than zero.")
 
     if len(offsets) < 2:
-        raise ValueError(
-            "'source_offsets' must contain at least two offsets."
-        )
+        raise ValueError("'source_offsets' must contain at least two offsets.")
 
     if len(set(offsets)) != len(offsets):
-        raise ValueError(
-            "'source_offsets' must not contain duplicates."
-        )
+        raise ValueError("'source_offsets' must not contain duplicates.")
 
     if pd.Timedelta(0) in offsets:
-        raise ValueError(
-            "'source_offsets' must not contain zero."
-        )
+        raise ValueError("'source_offsets' must not contain zero.")
 
     eligible = (
         load.isna()
@@ -64,55 +52,33 @@ def apply_average_periods(
         & original_gap_duration.le(max_gap)
     )
 
-    sources = [
-        _values_at_offset(
-            load,
-            source_offset=offset,
-        )
-        for offset in offsets
-    ]
+    sources = [_values_at_offset(load, source_offset=offset) for offset in offsets]
 
-    candidate = _mean_complete_sources(
-        sources=sources,
-    )
+    candidate = _mean_complete_sources(sources=sources)
 
     eligible &= candidate.notna()
 
-    filled = load.mask(
-        eligible,
-        candidate,
-    )
+    filled = load.mask(eligible, candidate)
 
-    newly_filled = (
-        load.isna()
-        & filled.notna()
-    )
+    newly_filled = load.isna() & filled.notna()
 
     return filled, newly_filled
 
+
 def _values_at_offset(
-    load: pd.DataFrame,
-    *,
-    source_offset: pd.Timedelta,
+    load: pd.DataFrame, *, source_offset: pd.Timedelta
 ) -> pd.DataFrame:
     """Align values at timestamp + offset to target timestamps."""
-    source_timestamps = (
-        load.index + source_offset
-    )
+    source_timestamps = load.index + source_offset
 
-    source = load.reindex(
-        source_timestamps
-    )
+    source = load.reindex(source_timestamps)
 
     source.index = load.index
 
     return source
 
 
-def _mean_complete_sources(
-    *,
-    sources: Sequence[pd.DataFrame],
-) -> pd.DataFrame:
+def _mean_complete_sources(*, sources: Sequence[pd.DataFrame]) -> pd.DataFrame:
     """Calculate the mean only where every source is available."""
     source_sum = sources[0].copy()
     complete = sources[0].notna()

@@ -24,18 +24,12 @@ def configure_logging(log_path) -> None:
     logger.setLevel(logging.INFO)
     logger.handlers.clear()
 
-    formatter = logging.Formatter(
-        "%(asctime)s | %(levelname)s | %(message)s"
-    )
+    formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
 
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(formatter)
 
-    file_handler = logging.FileHandler(
-        log_path,
-        mode="w",
-        encoding="utf-8",
-    )
+    file_handler = logging.FileHandler(log_path, mode="w", encoding="utf-8")
     file_handler.setFormatter(formatter)
 
     logger.addHandler(console_handler)
@@ -51,37 +45,23 @@ def load_txt(filepath):
 
 
 def download_country(
-    *,
-    country_alpha_3: str,
-    start: pd.Timestamp,
-    end: pd.Timestamp,
-    token: str,
+    *, country_alpha_3: str, start: pd.Timestamp, end: pd.Timestamp, token: str
 ) -> tuple[str, pd.Series, float]:
     """Download ENTSO-E load for one country."""
-    country = pycountry.countries.get(
-        alpha_3=country_alpha_3
-    )
+    country = pycountry.countries.get(alpha_3=country_alpha_3)
 
     if country is None:
-        raise ValueError(
-            "Unknown ISO alpha-3 country code: "
-            f"{country_alpha_3!r}."
-        )
+        raise ValueError(f"Unknown ISO alpha-3 country code: {country_alpha_3!r}.")
 
     country_alpha_2 = country.alpha_2
 
-    client = EntsoePandasClient(
-        api_key=token,
-        timeout=60,
-    )
+    client = EntsoePandasClient(api_key=token, timeout=60)
 
     country_start = perf_counter()
 
     try:
         df_country = client.query_load(
-            country_code=country_alpha_2,
-            start=start,
-            end=end,
+            country_code=country_alpha_2, start=start, end=end
         )
 
         df_country = df_country["Actual Load"]
@@ -96,28 +76,14 @@ def download_country(
             end,
         )
 
-        df_country = pd.Series(
-            name=country_alpha_3,
-            dtype=float,
-        )
+        df_country = pd.Series(name=country_alpha_3, dtype=float)
 
     elapsed = perf_counter() - country_start
 
-    return (
-        country_alpha_3,
-        df_country,
-        elapsed,
-    )
+    return (country_alpha_3, df_country, elapsed)
 
 
-def main(
-    start,
-    end,
-    country_codes,
-    token,
-    output_load,
-    workers,
-    ):
+def main(start, end, country_codes, token, output_load, workers):
     """Download load in MW via the ENTSO-E API."""
     start = as_utc_timestamp(start)
     end = as_utc_timestamp(end)
@@ -139,9 +105,7 @@ def main(
 
     data_by_country = {}
 
-    with ThreadPoolExecutor(
-        max_workers=workers
-    ) as executor:
+    with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = {
             executor.submit(
                 download_country,
@@ -153,28 +117,18 @@ def main(
             for country_alpha_3 in country_codes
         }
 
-        for completed, future in enumerate(
-            as_completed(futures),
-            start=1,
-        ):
+        for completed, future in enumerate(as_completed(futures), start=1):
             country_alpha_3 = futures[future]
 
             try:
-                (
-                    country_alpha_3,
-                    df_country,
-                    elapsed,
-                ) = future.result()
+                (country_alpha_3, df_country, elapsed) = future.result()
 
             except Exception as exc:
                 raise RuntimeError(
-                    "Failed to download ENTSO-E load for "
-                    f"{country_alpha_3!r}."
+                    f"Failed to download ENTSO-E load for {country_alpha_3!r}."
                 ) from exc
 
-            data_by_country[
-                country_alpha_3
-            ] = df_country
+            data_by_country[country_alpha_3] = df_country
 
             logger.info(
                 "[%s/%s] Finished %s in %.1fs.",
@@ -184,46 +138,26 @@ def main(
                 elapsed,
             )
 
-    logger.info(
-        "Finished ENTSO-E downloads in %.1fs.",
-        perf_counter() - download_start,
-    )
+    logger.info("Finished ENTSO-E downloads in %.1fs.", perf_counter() - download_start)
 
     # Restore configured country order because futures complete
     # in arbitrary order.
-    data = [
-        data_by_country[country_alpha_3]
-        for country_alpha_3 in country_codes
-    ]
+    data = [data_by_country[country_alpha_3] for country_alpha_3 in country_codes]
 
     processing_start = perf_counter()
 
-    df = pd.concat(
-        data,
-        axis=1,
-    )
+    df = pd.concat(data, axis=1)
 
-    df.index = pd.to_datetime(
-        df.index,
-        utc=True,
-    )
+    df.index = pd.to_datetime(df.index, utc=True)
 
     df = df.resample("1h").mean()
 
     # Reindexing adds security to the ENTSO-E download.
-    target_index = build_hourly_index(
-        start=start,
-        end=end,
-    )
+    target_index = build_hourly_index(start=start, end=end)
 
-    df = df.reindex(
-        index=target_index,
-        columns=country_codes,
-    )
+    df = df.reindex(index=target_index, columns=country_codes)
 
-    non_numeric_columns = df.select_dtypes(
-        exclude="number"
-    ).columns
+    non_numeric_columns = df.select_dtypes(exclude="number").columns
 
     invalid = {
         column: df[column].dropna().head().tolist()
@@ -232,10 +166,7 @@ def main(
     }
 
     if invalid:
-        raise TypeError(
-            "ENTSO-E load contains non-numeric values: "
-            f"{invalid}"
-        )
+        raise TypeError(f"ENTSO-E load contains non-numeric values: {invalid}")
 
     # Pre-cleaning. Replace empty object columns with NaN
     # columns to allow data-source combining.
@@ -250,22 +181,14 @@ def main(
 
 
 if __name__ == "__main__":
-    configure_logging(
-        snakemake.log[0]
-    )
+    configure_logging(snakemake.log[0])
 
-    plan_path = getattr(
-        snakemake.input,
-        "plan",
-        None,
-    )
+    plan_path = getattr(snakemake.input, "plan", None)
 
     if plan_path is not None:
         plan = load_execution_plan(plan_path)
         batch = get_batch(
-            plan,
-            batch_id=snakemake.wildcards.batch_id,
-            source="entsoe_api",
+            plan, batch_id=snakemake.wildcards.batch_id, source="entsoe_api"
         )
         start = batch["start"]
         end = batch["end"]

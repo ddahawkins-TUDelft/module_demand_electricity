@@ -8,6 +8,7 @@ from common.time import as_utc_timestamp
 
 METHOD_NAME = "construct_from_sources"
 
+
 def _align_leap_day(
     auxiliary: pd.Series,
     *,
@@ -16,26 +17,16 @@ def _align_leap_day(
     target_index: pd.DatetimeIndex,
 ) -> pd.Series:
     """Align source values with target calendar around February 29."""
-    source_values = auxiliary.loc[
-        (auxiliary.index >= start)
-        & (auxiliary.index < end)
-    ]
+    source_values = auxiliary.loc[(auxiliary.index >= start) & (auxiliary.index < end)]
 
     source_has_leap_day = (
-        (source_values.index.month == 2)
-        & (source_values.index.day == 29)
+        (source_values.index.month == 2) & (source_values.index.day == 29)
     ).any()
 
-    target_has_leap_day = (
-        (target_index.month == 2)
-        & (target_index.day == 29)
-    ).any()
+    target_has_leap_day = ((target_index.month == 2) & (target_index.day == 29)).any()
 
     if source_has_leap_day and not target_has_leap_day:
-        leap_day = (
-            (source_values.index.month == 2)
-            & (source_values.index.day == 29)
-        )
+        leap_day = (source_values.index.month == 2) & (source_values.index.day == 29)
 
         return source_values.loc[~leap_day]
 
@@ -58,23 +49,14 @@ def _align_leap_day(
                 "February 28 and March 1 source data are required."
             )
 
-        leap_values = (
-            feb_28.to_numpy(dtype=float)
-            + march_1.to_numpy(dtype=float)
-        ) / 2
+        leap_values = (feb_28.to_numpy(dtype=float) + march_1.to_numpy(dtype=float)) / 2
 
-        insertion_point = (
-            source_values.index.month < 3
-        ).sum()
+        insertion_point = (source_values.index.month < 3).sum()
 
         values = source_values.to_numpy(dtype=float)
 
         aligned = pd.Series(
-            data=[
-                *values[:insertion_point],
-                *leap_values,
-                *values[insertion_point:],
-            ],
+            data=[*values[:insertion_point], *leap_values, *values[insertion_point:]],
             dtype=float,
         )
 
@@ -95,20 +77,12 @@ def _match_energy(
 
     for source in target_sources:
         country = source["country"]
-        start = as_utc_timestamp(
-            source["start"]
-        )
-        end = as_utc_timestamp(
-            source["end"]
-        )
-        weight = float(
-            source.get("weight", 1)
-        )
+        start = as_utc_timestamp(source["start"])
+        end = as_utc_timestamp(source["end"])
+        weight = float(source.get("weight", 1))
 
         source_values = auxiliary.loc[
-            (auxiliary.index >= start)
-            & (auxiliary.index < end),
-            country,
+            (auxiliary.index >= start) & (auxiliary.index < end), country
         ]
 
         if source_values.empty:
@@ -123,48 +97,34 @@ def _match_energy(
                 f"Source {country!r}: {start} to {end}."
             )
 
-        weighted_energy += (
-            float(source_values.sum()) * weight
-        )
+        weighted_energy += float(source_values.sum()) * weight
         total_weight += weight
 
     if total_weight == 0:
-        raise ValueError(
-            "Scaling source weights must sum to more than zero."
-        )
+        raise ValueError("Scaling source weights must sum to more than zero.")
 
     target_energy = weighted_energy / total_weight
     profile_energy = float(profile.sum())
 
     if profile_energy == 0:
         raise ValueError(
-            "Cannot match energy for a constructed profile "
-            "with zero total energy."
+            "Cannot match energy for a constructed profile with zero total energy."
         )
 
-    return profile * (
-        target_energy / profile_energy
-    )
+    return profile * (target_energy / profile_energy)
 
 
 def _apply_scaling(
-    profile: pd.Series,
-    *,
-    auxiliary: pd.DataFrame,
-    scaling: Mapping[str, Any],
+    profile: pd.Series, *, auxiliary: pd.DataFrame, scaling: Mapping[str, Any]
 ) -> pd.Series:
     """Scale a constructed profile according to its configured method."""
     method = scaling["method"]
 
     if method != "match_energy":
-        raise ValueError(
-            f"Unsupported auxiliary scaling method: {method!r}."
-        )
+        raise ValueError(f"Unsupported auxiliary scaling method: {method!r}.")
 
     return _match_energy(
-        profile,
-        auxiliary=auxiliary,
-        target_sources=scaling["target_sources"],
+        profile, auxiliary=auxiliary, target_sources=scaling["target_sources"]
     )
 
 
@@ -181,21 +141,12 @@ def construct_from_sources(
 
     for source in sources:
         country = source["country"]
-        start = as_utc_timestamp(
-            source["start"]
-        )
-        end = as_utc_timestamp(
-            source["end"]
-        )
-        weight = float(
-            source.get("weight", 1)
-        )
+        start = as_utc_timestamp(source["start"])
+        end = as_utc_timestamp(source["end"])
+        weight = float(source.get("weight", 1))
 
         source_values = _align_leap_day(
-            auxiliary[country],
-            start=start,
-            end=end,
-            target_index=target_index,
+            auxiliary[country], start=start, end=end, target_index=target_index
         )
 
         if len(source_values) != len(target_index):
@@ -213,34 +164,19 @@ def construct_from_sources(
                 f"Source {country!r}: {start} to {end}."
             )
 
-        remapped = pd.Series(
-            source_values.to_numpy(),
-            index=target_index,
-            dtype=float,
-        )
+        remapped = pd.Series(source_values.to_numpy(), index=target_index, dtype=float)
 
-        weighted_sources.append(
-            remapped * weight
-        )
+        weighted_sources.append(remapped * weight)
         weights.append(weight)
 
     if not weighted_sources:
-        raise ValueError(
-            "At least one auxiliary source is required."
-        )
+        raise ValueError("At least one auxiliary source is required.")
 
-    weighted_sum = sum(
-        weighted_sources[1:],
-        weighted_sources[0].copy(),
-    )
+    weighted_sum = sum(weighted_sources[1:], weighted_sources[0].copy())
 
     profile = weighted_sum / sum(weights)
 
     if scaling is not None:
-        profile = _apply_scaling(
-            profile,
-            auxiliary=auxiliary,
-            scaling=scaling,
-        )
+        profile = _apply_scaling(profile, auxiliary=auxiliary, scaling=scaling)
 
     return profile

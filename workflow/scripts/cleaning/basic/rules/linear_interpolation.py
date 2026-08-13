@@ -33,10 +33,7 @@ def apply_linear_interpolation(
         & original_gap_duration.le(max_gap)
     )
 
-    interpolated = load.interpolate(
-        method="time",
-        limit_area="inside",
-    )
+    interpolated = load.interpolate(method="time", limit_area="inside")
 
     filled = load.mask(eligible, interpolated)
     newly_filled = load.isna() & filled.notna()
