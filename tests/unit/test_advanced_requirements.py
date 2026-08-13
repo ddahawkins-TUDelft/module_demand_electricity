@@ -132,7 +132,7 @@ def test_compile_auxiliary_requirements_deduplicates_sources() -> None:
 def test_compile_auxiliary_requirements_ignores_other_methods() -> None:
     overrides = {
         "manual_case": {
-            "method": "manual_review",
+            "method": "leave_missing",
         },
         "leave_case": {
             "method": "leave_missing",

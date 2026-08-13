@@ -12,8 +12,6 @@ from cleaning.advanced.methods.external_profile import METHOD_NAME as EXTERNAL_P
 
 FILL_GAPS= "fill_gaps"
 OVERWRITE = "overwrite"
-
-MANUAL_REVIEW = "manual_review"
 LEAVE_MISSING = "leave_missing"
 
 
@@ -85,7 +83,6 @@ def validate_auxiliary_fill_rule(
     supported_methods = {
         CONSTRUCT_FROM_SOURCES,
         EXTERNAL_PROFILE,
-        MANUAL_REVIEW,
         LEAVE_MISSING,
     }
 
@@ -109,7 +106,6 @@ def validate_auxiliary_fill_rule(
             )
 
     elif method in {
-        MANUAL_REVIEW,
         LEAVE_MISSING,
     }:
         if "sources" in rule:
@@ -421,8 +417,6 @@ def build_auxiliary_fill_plan(
             status = "ready"
         elif method == EXTERNAL_PROFILE:
             status = "ready"
-        elif method == MANUAL_REVIEW:
-            status = "manual_review"
         elif method == LEAVE_MISSING:
             status = "leave_missing"
         else:

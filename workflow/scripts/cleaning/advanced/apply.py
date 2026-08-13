@@ -11,7 +11,6 @@ from cleaning.advanced.methods.construct_from_sources import (
 )
 from cleaning.advanced.methods.external_profile import METHOD_NAME as EXTERNAL_PROFILE
 
-MANUAL_REVIEW = "manual_review"
 LEAVE_MISSING = "leave_missing"
 
 
@@ -60,12 +59,6 @@ def apply_auxiliary_fill_rule(
             end=as_utc_timestamp(rule["end"]),
             scope=rule["scope"],
             rule_name=rule_name,
-        )
-
-    if method == MANUAL_REVIEW:
-        raise ValueError(
-            f"Advanced-fill rule {rule_name!r} requires manual "
-            "review and cannot be applied automatically."
         )
 
     if method == LEAVE_MISSING:

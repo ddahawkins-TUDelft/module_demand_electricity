@@ -150,23 +150,6 @@ def test_construct_from_sources_overwrites_entire_period() -> None:
     ]
 
 
-def test_manual_review_cannot_be_applied_automatically() -> None:
-    rule = {
-        "method": "manual_review",
-    }
-
-    with pytest.raises(
-        ValueError,
-        match="requires manual review",
-    ):
-        apply_auxiliary_fill_rule(
-            _load(),
-            _cleaning_method(),
-            rule_name="review_albania",
-            rule=rule,
-        )
-
-
 def test_leave_missing_returns_unchanged_copies() -> None:
     load = _load()
     cleaning_method = _cleaning_method()

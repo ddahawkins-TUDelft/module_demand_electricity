@@ -181,18 +181,6 @@ $defs:
     unevaluatedProperties: false
 
 
-  manual_review_rule:
-    allOf:
-      - $ref: "#/$defs/auxiliary_fill_rule_base"
-
-      - type: object
-        properties:
-          method:
-            const: manual_review
-
-    unevaluatedProperties: false
-
-
   leave_missing_rule:
     allOf:
       - $ref: "#/$defs/auxiliary_fill_rule_base"
@@ -208,7 +196,6 @@ $defs:
     oneOf:
       - $ref: "#/$defs/construct_from_sources_rule"
       - $ref: "#/$defs/external_profile_rule"
-      - $ref: "#/$defs/manual_review_rule"
       - $ref: "#/$defs/leave_missing_rule"
   
   auxiliary_basic_cleaning:
