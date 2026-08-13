@@ -14,26 +14,6 @@ def auxiliary_acquisition_plan(_wildcards):
     return checkpoints.plan_auxiliary_data.get().output.plan
 
 
-def auxiliary_entsoe_outputs(_wildcards):
-    """Return all ENTSO-E outputs required by the execution plan."""
-    plan = _read_auxiliary_plan()
-
-    return [
-        ("<resources>/automatic/" "auxiliary/entsoe_api/" f"{batch_id}.parquet")
-        for batch_id in plan["batch_ids_by_source"].get("entsoe_api", [])
-    ]
-
-
-def auxiliary_opsd_outputs(_wildcards):
-    """Return all OPSD outputs required by the execution plan."""
-    plan = _read_auxiliary_plan()
-
-    return [
-        ("<resources>/automatic/" "auxiliary/opsd_api/" f"{batch_id}.parquet")
-        for batch_id in plan["batch_ids_by_source"].get("opsd_api", [])
-    ]
-
-
 def auxiliary_neso_raw_files(wildcards):
     """Return annual NESO files required by one auxiliary batch."""
     plan = _read_auxiliary_plan()
@@ -47,16 +27,6 @@ def auxiliary_neso_raw_files(wildcards):
     return [
         ("<resources>/automatic/neso/" f"historic_demand_{year}.csv")
         for year in batch["years"]
-    ]
-
-
-def auxiliary_neso_outputs(_wildcards):
-    """Return all NESO outputs required by the execution plan."""
-    plan = _read_auxiliary_plan()
-
-    return [
-        ("<resources>/automatic/" "auxiliary/neso/" f"{batch_id}.parquet")
-        for batch_id in plan["batch_ids_by_source"].get("neso", [])
     ]
 
 
@@ -75,16 +45,6 @@ def auxiliary_group_source_files(wildcards):
             f"{batch_id}.parquet"
         )
         for batch_id in batch_ids
-    ]
-
-
-def auxiliary_combined_outputs(_wildcards):
-    """Return all combined auxiliary group outputs."""
-    plan = _read_auxiliary_plan()
-
-    return [
-        ("<resources>/automatic/" "auxiliary/combined/" f"{group_id}.parquet")
-        for group_id in plan["groups"]
     ]
 
 

@@ -19,17 +19,6 @@ def write_execution_plan(plan: Mapping[str, Any], path: str | Path) -> None:
         json.dump(plan, file, indent=2)
 
 
-def write_advanced_execution_plan(
-    *, plan: dict[str, object], output_path: str | Path
-) -> None:
-    """Write the advanced execution plan as JSON."""
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    with output_path.open("w", encoding="utf-8") as file:
-        json.dump(plan, file, indent=2)
-
-
 def load_execution_plan(path: str | Path) -> dict[str, Any]:
     """Load one compiled advanced execution plan."""
     with open(path, encoding="utf-8") as file:

@@ -401,26 +401,6 @@ def _add_mean_load_labels(
     )
 
 
-def _format_method_label(method: str) -> str:
-    """Convert a method identifier into a legend label."""
-    if method == "missing":
-        return "Missing"
-
-    if method.startswith("observed_"):
-        source = method.removeprefix("observed_")
-
-        source_labels = {
-            "entsoe_api": "Observed: ENTSO-E API",
-            "opsd_api": "Observed: OPSD API",
-        }
-
-        return source_labels.get(
-            source, ("Observed: " + source.replace("_", " ").upper())
-        )
-
-    return method.replace("_", " ").capitalize()
-
-
 def _build_cleaning_method_metadata(
     *, source_names: list[str], gap_filling_config: dict[str, Any]
 ) -> pd.DataFrame:
