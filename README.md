@@ -6,8 +6,12 @@ The module supports configurable gap filling, including deterministic cleaning r
 
 
 <!-- Place an attractive image of module outputs here -->
+
 <p align="center">
-  <img src="./figures/plot_profiles.png">
+  <img src="./figures/readme_cleaning_timeline.png">
+</p>
+<p align="center">
+  <em>Example diagnostic showing electricity-demand provenance and basic gap filling for selected countries (May–October 2021).</em>
 </p>
 
 ## About
