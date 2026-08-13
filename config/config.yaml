@@ -1,20 +1,19 @@
 # A minimal example of how to configure this module
 temporal_scope:
-  start: "2017-01-01"
-  end: "2018-01-01"
-
-# Provide a list of sources in priority order.
-# Options: entsoe_api, opsd_api
-load_sources:
+  start: "2016-01-01"
+  end: "2026-01-01"
+# provide a list of sources and set their priority order. 
+# Options include: entsoe_api, neso, opsd_api
+load_sources: 
   - entsoe_api
   - neso
   - opsd_api
 
-# Gap-filling rules are applied in the listed order.
 gap_filling:
   # Sets the data-cleaning mode. Options: off, basic, advanced.
-  mode: advanced
-  
+  mode: basic
+
+  # Basic gap-filling configuration.
   basic:
     # Basic gap-filling rules are applied in the listed order.
     rules:
@@ -43,10 +42,69 @@ gap_filling:
         max_gap: 168h
         source_offset: 168h
 
+  # Advanced gap-filling configuration.
   advanced:
     auxiliary_data:
       basic_cleaning:
         enabled: true
 
     # Explicit country-period instructions for unresolved cases.
-    overrides: {}
+    overrides:
+
+      build_alb_from_gbr_alb_winter:
+        country: ALB
+        start: "2022-01-01"
+        end: "2022-02-01"
+        scope: fill_gaps
+        method: construct_from_sources
+        sources:
+          - country: GBR
+            start: "2024-01-01"
+            end: "2024-02-01"
+            weight: 1
+        scaling:
+          method: match_energy
+          target_sources:
+            - country: ALB
+              start: "2024-01-01"
+              end: "2024-02-01"
+              weight: 1
+
+      build_alb_from_gbr_summer:
+        country: ALB
+        start: "2022-05-01"
+        end: "2022-06-01"
+        scope: fill_gaps
+        method: construct_from_sources
+        sources:
+          - country: GBR
+            start: "2022-05-01"
+            end: "2022-06-01"
+            weight: 1
+        scaling:
+          method: match_energy
+          target_sources:
+            - country: ALB
+              start: "2024-05-01"
+              end: "2024-06-01"
+              weight: 1
+      
+      example_inactive_mne_override:
+        country: MNE
+        start: "2020-03-01"
+        end: "2020-04-01"
+        scope: fill_gaps
+        method: construct_from_sources
+        sources:
+          - country: SRB
+            start: "2022-03-01"
+            end: "2022-04-01"
+            weight: 1
+      
+      test_external_profile_overwrite:
+        country: ALB
+        start: "2022-01-01 00:00"
+        end: "2022-01-08 00:00"
+        scope: overwrite
+        method: external_profile
+        path: inputs/external_profiles/alb_external_test.csv
