@@ -73,6 +73,7 @@ GAP_FILLING_CONFIG = {
 
 
 def main() -> None:
+    """Main function for generating README figure."""
     demand = pd.read_parquet(DEMAND_PATH)
     cleaning_method = pd.read_parquet(CLEANING_METHOD_PATH)
     cleaning_method_rank = pd.read_parquet(CLEANING_METHOD_RANK_PATH)

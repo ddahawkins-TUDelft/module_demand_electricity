@@ -1,3 +1,4 @@
+"""Generates the final cleaned parquet."""
 import shutil
 
 import pandas as pd

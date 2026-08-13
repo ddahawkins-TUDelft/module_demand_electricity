@@ -1,3 +1,4 @@
+"""Constructs the auxiliary profile."""
 import pandas as pd
 from cleaning.advanced.methods.construct_from_sources import construct_from_sources
 from cleaning.advanced.planning.manifest import get_rule_override, load_execution_plan

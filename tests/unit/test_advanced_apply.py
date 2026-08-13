@@ -226,7 +226,7 @@ def test_overwrite_replaces_existing_values() -> None:
 
 
 def test_fill_gaps_preserves_existing_values() -> None:
-    """Test fill doesnt overwrite."""
+    """Test fill doesn't overwrite."""
     index = pd.date_range("2022-01-01", periods=4, freq="h", tz="UTC")
 
     load = pd.DataFrame({"ALB": [10.0, float("nan"), 30.0, 40.0]}, index=index)

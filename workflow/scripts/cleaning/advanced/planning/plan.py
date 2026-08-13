@@ -26,7 +26,6 @@ def validate_auxiliary_fill_rule(rule_name: str, rule: Mapping[str, Any]) -> Non
     if not isinstance(rule, Mapping):
         raise TypeError(f"Advanced-fill rule {rule_name!r} must be a mapping.")
 
-    country = _get_required_string(rule, key="country", rule_name=rule_name)
     start = _get_required_timestamp(rule, key="start", rule_name=rule_name)
     end = _get_required_timestamp(rule, key="end", rule_name=rule_name)
 
