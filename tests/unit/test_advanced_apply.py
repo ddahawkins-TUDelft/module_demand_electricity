@@ -23,6 +23,7 @@ def _cleaning_method() -> pd.DataFrame:
 
 
 def test_construct_from_sources_requires_profile() -> None:
+    """Test construct from sources requires profile."""
     rule = {"method": "construct_from_sources"}
 
     with pytest.raises(ValueError, match="requires a constructed auxiliary profile"):
@@ -32,6 +33,7 @@ def test_construct_from_sources_requires_profile() -> None:
 
 
 def test_construct_from_sources_fills_gaps() -> None:
+    """Test construct from sources fills gaps."""
     load = _load()
     cleaning_method = _cleaning_method()
 
@@ -59,6 +61,7 @@ def test_construct_from_sources_fills_gaps() -> None:
 
 
 def test_construct_from_sources_overwrites_entire_period() -> None:
+    """Test construct from sources overwrites entire period."""
     load = _load()
     cleaning_method = _cleaning_method()
 
@@ -86,6 +89,7 @@ def test_construct_from_sources_overwrites_entire_period() -> None:
 
 
 def test_leave_missing_returns_unchanged_copies() -> None:
+    """Test leaving missing does nothing."""
     load = _load()
     cleaning_method = _cleaning_method()
 
@@ -104,6 +108,7 @@ def test_leave_missing_returns_unchanged_copies() -> None:
 
 
 def test_rejects_unsupported_method() -> None:
+    """Test unsupported methods."""
     with pytest.raises(ValueError, match="Unsupported advanced-fill method"):
         apply_auxiliary_fill_rule(
             _load(),
@@ -114,6 +119,7 @@ def test_rejects_unsupported_method() -> None:
 
 
 def test_apply_auxiliary_fill_rules_applies_rules_in_order() -> None:
+    """Test order."""
     load = _load()
     cleaning_method = _cleaning_method()
 
@@ -154,6 +160,7 @@ def test_apply_auxiliary_fill_rules_applies_rules_in_order() -> None:
 
 
 def test_apply_auxiliary_fill_rules_with_no_overrides_returns_copies() -> None:
+    """Test fill returns copy without overrides."""
     load = _load()
     cleaning_method = _cleaning_method()
 
@@ -173,6 +180,7 @@ def test_apply_auxiliary_fill_rules_with_no_overrides_returns_copies() -> None:
 
 
 def test_overwrite_replaces_existing_values() -> None:
+    """Test overwrite."""
     index = pd.date_range("2022-01-01", periods=4, freq="h", tz="UTC")
 
     load = pd.DataFrame({"ALB": [10.0, 20.0, 30.0, 40.0]}, index=index)
@@ -218,6 +226,7 @@ def test_overwrite_replaces_existing_values() -> None:
 
 
 def test_fill_gaps_preserves_existing_values() -> None:
+    """Test fill doesnt overwrite."""
     index = pd.date_range("2022-01-01", periods=4, freq="h", tz="UTC")
 
     load = pd.DataFrame({"ALB": [10.0, float("nan"), 30.0, 40.0]}, index=index)
@@ -273,6 +282,7 @@ def test_fill_gaps_preserves_existing_values() -> None:
 
 
 def test_external_profile_fill_gaps_only_replaces_missing_values():
+    """Test external profile fills gaps."""
     index = pd.date_range("2025-01-01", periods=4, freq="h", tz="UTC")
 
     load = pd.DataFrame({"ALB": [100.0, None, 300.0, None]}, index=index)
@@ -310,6 +320,7 @@ def test_external_profile_fill_gaps_only_replaces_missing_values():
 
 
 def test_external_profile_overwrite_replaces_supplied_values():
+    """Test external overwrites."""
     index = pd.date_range("2025-01-01", periods=4, freq="h", tz="UTC")
 
     load = pd.DataFrame({"ALB": [100.0, 200.0, 300.0, 400.0]}, index=index)
@@ -344,6 +355,7 @@ def test_external_profile_overwrite_replaces_supplied_values():
 
 
 def test_external_profile_overwrite_only_replaces_supplied_timestamps():
+    """Test overwrite domains."""
     index = pd.date_range("2025-01-01", periods=5, freq="h", tz="UTC")
 
     load = pd.DataFrame({"ALB": [100.0, 200.0, 300.0, 400.0, 500.0]}, index=index)
@@ -383,6 +395,7 @@ def test_external_profile_overwrite_only_replaces_supplied_timestamps():
 
 
 def test_external_profile_ignores_values_outside_rule_period():
+    """Test overwrite restricts domain."""
     index = pd.date_range("2025-01-01", periods=5, freq="h", tz="UTC")
 
     load = pd.DataFrame({"ALB": [100.0, 200.0, 300.0, 400.0, 500.0]}, index=index)
@@ -417,6 +430,7 @@ def test_external_profile_ignores_values_outside_rule_period():
 
 
 def test_external_profile_requires_profile():
+    """Test external requires profile."""
     index = pd.date_range("2025-01-01", periods=2, freq="h", tz="UTC")
 
     load = pd.DataFrame({"ALB": [None, None]}, index=index)

@@ -3,6 +3,7 @@ from cleaning.combine_sources import combine_auxiliary_sources
 
 
 def test_combine_auxiliary_sources_aligns_country_columns() -> None:
+    """Test combine auxiliary sources aligns country cols."""
     index = pd.date_range("2020-01-01", periods=2, freq="h", tz="UTC")
 
     entsoe = pd.DataFrame({"GBR": [10.0, 11.0], "GRC": [20.0, 21.0]}, index=index)
