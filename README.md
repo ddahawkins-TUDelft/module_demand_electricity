@@ -1,6 +1,9 @@
 # European electricity demand
 
-This module prepares electricity demand timeseries for Europe at arbitrary resolution, based on ENTSO-E historical load data.
+This module prepares hourly electricity-demand time series for European regions at arbitrary spatial resolution. National demand data from multiple sources are combined and cleaned before being spatially disaggregated using population data and aggregated to user-provided target regions.
+
+The module supports configurable gap filling, including deterministic cleaning rules and advanced country- and period-specific strategies, whilst retaining provenance for observed and filled demand values.
+
 
 <!-- Place an attractive image of module outputs here -->
 <p align="center">
@@ -19,15 +22,44 @@ and the `snakemake` [documentation](https://snakemake.readthedocs.io/en/stable/s
 ## Overview
 <!-- Please describe the processing stages of this module here -->
 
-Data processing steps:
+The workflow first builds a cleaned national electricity-demand time series and then spatially distributes that demand to the user-provided target regions.
 
-- Download ENTSO-E historical load profiles.
-- Download a gridded population dataset that serves as a disaggregation proxy.
-- Filter and clean the raw load profile data.
-- Clip the population raster to the ENTSO-E area.
-- Disaggregate the national annual load to raster, using population as weight.
-- Re-aggregate the annual load raster data to the target shapes.
-- Assign the corresponding national load profile to each region to get the final load profiles for the target shapes.
+The main processing stages are:
+
+1. Download electricity-demand data from the configured sources. Current sources include: ENTSO-E, OPSD, and NESO.
+2. Combine the available demand sources according to their configured priority.
+3. Apply basic gap-filling rules to gaps that can be resolved using deterministic rules.
+4. In advanced mode, identify remaining gaps and apply explicitly configured country- and period-specific strategies.
+5. Finalise the cleaned national demand time series and retain provenance for observed and filled values.
+6. Download and prepare gridded population data as a spatial disaggregation proxy.
+7. Disaggregate national demand to a population-weighted raster.
+8. Re-aggregate the raster to the target shapes and assign the corresponding national demand profile to each region.
+
+A simplified representation of the workflow is:
+
+```text
+Demand sources
+      │
+      ▼
+Combine sources
+      │
+      ▼
+Basic gap filling
+      │
+      ├── basic mode ──────────────────────┐
+      │                                    │
+      └── advanced mode ─► Advanced rules ─┤
+                                           ▼
+                               Final national demand
+                                   + provenance
+                                           │
+                                           ▼
+                                Population-weighted
+                               spatial disaggregation
+                                           │
+                                           ▼
+                                 Regional hourly demand
+```
 
 ## Configuration
 <!-- Please describe how to configure this module below -->
@@ -37,7 +69,56 @@ Please consult the configuration [README](./config/README.md) and the [configura
 ## Input / output structure
 <!-- Please describe input / output file placement below -->
 
+The module requires user-provided target shapes and, when ENTSO-E data is used, a valid ENTSO-E API token. Optional external electricity-demand profiles can also be supplied for use in advanced gap-filling rules.
+
+Intermediate data, including downloaded demand sources, cleaned national demand, provenance information, and auxiliary gap-filling data, are stored under `resources/automatic/`.
+
+The final output contains hourly electricity demand in MW for the requested target regions and is written to the module results directory.
+
+The workflow also produces diagnostic outputs, including a gap report describing unresolved missing periods and a cleaning timeline showing how observed and filled values contribute to the final national demand series. See [Provenance and diagnostics](#provenance-and-diagnostics) for more information.
+
 Please consult the [interface file](./INTERFACE.yaml) for more information.
+
+## Cleaning and Gap Handling
+
+After the available electricity-demand sources have been combined, the resulting national time series are checked for missing values and cleaned according to the configured gap-filling mode.
+
+Three modes are available:
+
+- `off`:   no gap filling is applied.
+- `basic`:   deterministic gap-filling rules are applied in the configured order.
+- `advanced`:   basic gap filling is applied first, after which remaining gaps can be handled using explicitly configured country- and period-specific rules.
+
+### Basic gap filling
+
+Basic gap filling is intended for gaps that can be resolved using simple and reproducible rules, such as interpolation or copying values from a comparable period.
+
+Rules are applied sequentially in the order in which they are configured. Values filled by an earlier rule are therefore available to subsequent rules.
+
+Any gaps that remain after basic cleaning are retained rather than filled automatically with increasingly speculative values. These unresolved periods are reported in the [gap report](#provenance-and-diagnostics).
+
+### Advanced gap filling
+
+Advanced mode provides explicit strategies for gaps that cannot be resolved appropriately using the basic rules. Advanced rules are defined for a specific country and time period and can use one of the following methods:
+
+- `construct_from_sources`: construct a demand profile from one or more alternative country or time-period sources.
+- `external_profile`: use a user-provided electricity-demand profile.
+- `leave_missing`: explicitly retain the remaining gap.
+
+Advanced rules can either fill only missing values (`fill_gaps`) or replace all supplied values within the configured period (`overwrite`).
+
+Configured time periods follow a half-open interval convention, `[start, end)`: the start timestamp is included and the end timestamp is excluded.
+
+## Provenance and diagnostics
+
+The workflow retains provenance information throughout the cleaning process so that observed electricity-demand values can be distinguished from values introduced by basic or advanced gap-filling rules.
+
+Two diagnostic outputs are particularly useful when assessing data quality and configuring gap handling:
+
+- **Gap report**: lists periods that remain unresolved after cleaning, including the affected country and time interval. This can be used to identify where additional advanced rules or external data may be required.
+- **Cleaning timeline**: visualises the origin and cleaning method of demand values over time, making it easier to inspect source coverage, basic fills, advanced overrides, and remaining gaps.
+
+These diagnostics are intended to support transparent gap handling rather than hide missing data behind automatic imputation.
 
 ## Development
 <!-- Please do not modify this templated section -->
@@ -87,6 +168,7 @@ This module is based on the following research and datasets:
 
 * ENTSOE Transparency Platform (https://transparency.entsoe.eu)
 * Open Power System Data (https://data.open-power-system-data.org)
+* NESO Data Portal (https://www.neso.energy/data-portal/historic-demand-data)
 * Schiavina M., Freire S., Carioli A., MacManus K. (2023):
   GHS-POP R2023A - GHS population grid multitemporal (1975-2030).European Commission, Joint Research Centre (JRC)
   PID: http://data.europa.eu/89h/2ff68a52-5b5b-4a22-8f40-c41da8332cfe, doi:10.2905/2FF68A52-5B5B-4A22-8F40-C41DA8332CFE
