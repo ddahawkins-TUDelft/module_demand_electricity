@@ -43,5 +43,5 @@ load_entsoe_api:
     - "SWE"
     - "SVN"
     - "SVK"
-    - "TUR"
+    # - "TUR"   #Data is unavailable for Turkey
   MAX_WORKERS: 3
