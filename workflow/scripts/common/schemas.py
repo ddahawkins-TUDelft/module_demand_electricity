@@ -9,8 +9,10 @@ from pandera.typing.pandas import Series
 
 class OPSDLoad(DataFrameModel):
     """OPSD Download Class."""
+
     class Config:
         """OPSD Config class."""
+
         coerce = True
         strict = False
 
@@ -28,8 +30,10 @@ class OPSDLoad(DataFrameModel):
 
 class Shapes(DataFrameModel):
     """Shapes Class."""
+
     class Config:
         """Shape config class."""
+
         coerce = True
         strict = False
 

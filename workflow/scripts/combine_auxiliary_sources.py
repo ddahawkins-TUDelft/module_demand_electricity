@@ -1,4 +1,5 @@
 """Aggregates auxiliary data into one source."""
+
 from pathlib import Path
 
 import pandas as pd

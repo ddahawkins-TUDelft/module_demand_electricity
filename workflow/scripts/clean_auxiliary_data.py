@@ -1,4 +1,5 @@
 """Applies basic rules to auxiliary data."""
+
 import pandas as pd
 from cleaning.basic.apply import fill_basic_gaps
 

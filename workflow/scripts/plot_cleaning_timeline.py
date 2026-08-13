@@ -1,4 +1,5 @@
 """Plots the diagnostic figure."""
+
 import logging
 import sys
 
