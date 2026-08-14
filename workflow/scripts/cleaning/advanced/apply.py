@@ -63,7 +63,7 @@ def apply_auxiliary_fill_rule(
     if method == LEAVE_MISSING:
         return load.copy(), cleaning_method.copy()
 
-    # Cautionary incase of edge cases making is this far.
+    # Cautionary in case of edge cases making is this far.
     raise ValueError(f"Unsupported advanced-fill method {method!r}.")
 
 
