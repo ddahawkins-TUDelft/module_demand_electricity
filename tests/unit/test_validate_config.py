@@ -1,29 +1,15 @@
 """Tests for semantic configuration validation."""
 
 import pytest
-
 from common.config_validation import validate_config_semantics
 
 
 def _config() -> dict:
     """Return a structurally valid configuration for semantic validation."""
     return {
-        "temporal_scope": {
-            "start": "2022-01-01",
-            "end": "2023-01-01",
-        },
-        "load_sources": [
-            "entsoe_api",
-            "neso",
-        ],
-        "gap_filling": {
-            "basic": {
-                "rules": [],
-            },
-            "advanced": {
-                "overrides": {},
-            },
-        },
+        "temporal_scope": {"start": "2022-01-01", "end": "2023-01-01"},
+        "load_sources": ["entsoe_api", "neso"],
+        "gap_filling": {"basic": {"rules": []}, "advanced": {"overrides": {}}},
     }
 
 
