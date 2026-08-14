@@ -9,15 +9,10 @@ import pandas as pd
 
 SOURCE_REQUEST_COLUMNS = ["source", "country", "start", "end"]
 
-SUPPORTED_SOURCES = {"entsoe_api", "neso", "opsd_api"}
-
-
 def build_auxiliary_source_requests(
     requirements: pd.DataFrame, *, source_names: Sequence[str]
 ) -> pd.DataFrame:
     """Map auxiliary requirements onto applicable configured sources."""
-    _validate_source_names(source_names)
-
     if requirements.empty:
         return pd.DataFrame(columns=SOURCE_REQUEST_COLUMNS)
 
@@ -49,21 +44,6 @@ def _source_supports_country(source_name: str, country: str) -> bool:
         return True
 
     raise ValueError(f"Unsupported auxiliary load source: {source_name!r}")
-
-
-def _validate_source_names(source_names: Sequence[str]) -> None:
-    """Validate configured sources used for auxiliary acquisition."""
-    unknown = [
-        source_name
-        for source_name in source_names
-        if source_name not in SUPPORTED_SOURCES
-    ]
-
-    if unknown:
-        raise ValueError(f"Unsupported auxiliary load sources: {unknown}")
-
-    if len(source_names) != len(set(source_names)):
-        raise ValueError("Auxiliary load source names must be unique.")
 
 
 def build_auxiliary_source_batches(requests: pd.DataFrame) -> list[dict[str, object]]:

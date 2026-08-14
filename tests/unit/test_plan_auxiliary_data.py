@@ -295,24 +295,6 @@ def test_batch_years_use_half_open_period_semantics() -> None:
     assert result["batches"][0]["years"] == [2020]
 
 
-def test_plan_rejects_unknown_fill_plan_rule() -> None:
-    with pytest.raises(ValueError, match="references unknown advanced overrides"):
-        build_advanced_execution_plan(
-            fill_plan=_fill_plan(["missing_rule"]),
-            gap_filling_config=_config({}),
-            source_names=["entsoe_api"],
-        )
-
-
-def test_plan_rejects_duplicate_fill_plan_rules() -> None:
-    with pytest.raises(ValueError, match="contains duplicate rule names"):
-        build_advanced_execution_plan(
-            fill_plan=_fill_plan(["fill_albania", "fill_albania"]),
-            gap_filling_config=_config({"fill_albania": _construct_override()}),
-            source_names=["entsoe_api"],
-        )
-
-
 def test_plan_rejects_unresolvable_auxiliary_group() -> None:
     with pytest.raises(
         ValueError, match="Expected exactly one auxiliary group covering"

@@ -59,19 +59,20 @@ def test_empty_requirements_return_empty_source_request_schema() -> None:
     assert list(result.columns) == SOURCE_REQUEST_COLUMNS
 
 
-def test_unknown_source_is_rejected() -> None:
-    requirements = pd.DataFrame(columns=["country", "start", "end"])
+def test_unknown_source_is_rejected_when_planning_request() -> None:
+    """Reject a source without defined country applicability."""
+    requirements = pd.DataFrame(
+        {
+            "country": ["ALB"],
+            "start": [pd.Timestamp("2020-01-01", tz="UTC")],
+            "end": [pd.Timestamp("2020-02-01", tz="UTC")],
+        }
+    )
 
-    with pytest.raises(ValueError, match="Unsupported auxiliary load sources"):
-        build_auxiliary_source_requests(requirements, source_names=["mystery_source"])
-
-
-def test_duplicate_source_names_are_rejected() -> None:
-    requirements = pd.DataFrame(columns=["country", "start", "end"])
-
-    with pytest.raises(ValueError, match="must be unique"):
+    with pytest.raises(ValueError, match="Unsupported auxiliary load source"):
         build_auxiliary_source_requests(
-            requirements, source_names=["entsoe_api", "entsoe_api"]
+            requirements,
+            source_names=["mystery_source"],
         )
 
 

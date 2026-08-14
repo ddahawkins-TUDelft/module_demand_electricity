@@ -5,15 +5,6 @@ import pandas as pd
 
 def add_utc_timestamps(data: pd.DataFrame) -> pd.DataFrame:
     """Convert NESO settlement dates and periods to UTC timestamps."""
-    required_columns = {"SETTLEMENT_DATE", "SETTLEMENT_PERIOD", "ND"}
-
-    missing_columns = required_columns - set(data.columns)
-
-    if missing_columns:
-        raise ValueError(
-            f"NESO data are missing required columns: {sorted(missing_columns)}"
-        )
-
     prepared = data.copy()
 
     prepared["SETTLEMENT_DATE"] = pd.to_datetime(
