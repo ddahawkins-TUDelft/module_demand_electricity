@@ -26,6 +26,13 @@ def apply_auxiliary_fill_rule(
     method = rule["method"]
 
     if method == CONSTRUCT_FROM_SOURCES:
+
+        if profile is None:
+            raise ValueError(
+                f"Advanced-fill rule {rule_name!r} requires "
+                "a constructed auxiliary profile."
+            )
+
         return apply_constructed_profile(
             load,
             cleaning_method,
@@ -53,6 +60,9 @@ def apply_auxiliary_fill_rule(
             scope=rule["scope"],
             rule_name=rule_name,
         )
+
+    if method == LEAVE_MISSING:
+        return load.copy(), cleaning_method.copy()
 
     # Cautionary incase of edge cases making is this far.
     raise ValueError(f"Unsupported advanced-fill method {method!r}.")
