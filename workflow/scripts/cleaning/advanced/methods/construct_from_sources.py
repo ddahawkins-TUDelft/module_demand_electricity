@@ -43,12 +43,6 @@ def _align_leap_day(
             & (auxiliary.index.day == 1)
         ]
 
-        if len(feb_28) != 24 or len(march_1) != 24:
-            raise ValueError(
-                "Cannot construct February 29 because complete "
-                "February 28 and March 1 source data are required."
-            )
-
         leap_values = (feb_28.to_numpy(dtype=float) + march_1.to_numpy(dtype=float)) / 2
 
         insertion_point = (source_values.index.month < 3).sum()
@@ -100,9 +94,6 @@ def _match_energy(
         weighted_energy += float(source_values.sum()) * weight
         total_weight += weight
 
-    if total_weight == 0:
-        raise ValueError("Scaling source weights must sum to more than zero.")
-
     target_energy = weighted_energy / total_weight
     profile_energy = float(profile.sum())
 
@@ -115,16 +106,16 @@ def _match_energy(
 
 
 def _apply_scaling(
-    profile: pd.Series, *, auxiliary: pd.DataFrame, scaling: Mapping[str, Any]
+    profile: pd.Series,
+    *,
+    auxiliary: pd.DataFrame,
+    scaling: Mapping[str, Any],
 ) -> pd.Series:
-    """Scale a constructed profile according to its configured method."""
-    method = scaling["method"]
-
-    if method != "match_energy":
-        raise ValueError(f"Unsupported auxiliary scaling method: {method!r}.")
-
+    """Scale a constructed profile to configured reference energy."""
     return _match_energy(
-        profile, auxiliary=auxiliary, target_sources=scaling["target_sources"]
+        profile,
+        auxiliary=auxiliary,
+        target_sources=scaling["target_sources"],
     )
 
 
@@ -169,8 +160,6 @@ def construct_from_sources(
         weighted_sources.append(remapped * weight)
         weights.append(weight)
 
-    if not weighted_sources:
-        raise ValueError("At least one auxiliary source is required.")
 
     weighted_sum = sum(weighted_sources[1:], weighted_sources[0].copy())
 

@@ -26,12 +26,6 @@ def apply_auxiliary_fill_rule(
     method = rule["method"]
 
     if method == CONSTRUCT_FROM_SOURCES:
-        if profile is None:
-            raise ValueError(
-                f"Advanced-fill rule {rule_name!r} requires "
-                "a constructed auxiliary profile."
-            )
-
         return apply_constructed_profile(
             load,
             cleaning_method,
@@ -60,9 +54,7 @@ def apply_auxiliary_fill_rule(
             rule_name=rule_name,
         )
 
-    if method == LEAVE_MISSING:
-        return load.copy(), cleaning_method.copy()
-
+    # Cautionary incase of edge cases making is this far.
     raise ValueError(f"Unsupported advanced-fill method {method!r}.")
 
 
@@ -88,9 +80,6 @@ def apply_constructed_profile(
             "Constructed profile index must exactly match the target period."
         )
 
-    if country not in filled.columns:
-        raise ValueError(f"Target country {country!r} is not present in load data.")
-
     if scope == "fill_gaps":
         replace_mask = filled.loc[target_index, country].isna()
 
@@ -98,6 +87,7 @@ def apply_constructed_profile(
         replace_mask = pd.Series(True, index=target_index)
 
     else:
+        # Redundant but elifs are preferred so this stays.
         raise ValueError(f"Unsupported advanced fill scope: {scope!r}")
 
     replacement_index = target_index[replace_mask.to_numpy()]
@@ -169,6 +159,7 @@ def apply_external_profile(
         replace_index = candidate.index
 
     else:
+        # Redundant but elifs are preferred so this stays.
         raise ValueError(f"Unsupported advanced fill scope: {scope!r}")
 
     filled.loc[replace_index, country] = candidate.loc[replace_index]
