@@ -93,7 +93,7 @@ def fill_basic_gaps(
             )
 
         else:
-            #Code should never reach this, but its convenient final catch.
+            # Code should never reach this, but its convenient final catch.
             raise ValueError(f"Unsupported gap-filling method: {method!r}")
 
         cleaning_method = cleaning_method.mask(newly_filled, rule_name)

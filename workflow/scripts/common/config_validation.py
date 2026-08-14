@@ -15,21 +15,13 @@ def validate_config_semantics(config: Mapping[str, Any]) -> None:
 
 
 def _validate_temporal_scope(scope: Mapping[str, Any]) -> None:
-    _validate_period(
-        scope["start"],
-        scope["end"],
-        context="Temporal scope",
-    )
+    _validate_period(scope["start"], scope["end"], context="Temporal scope")
 
 
-def _validate_advanced_overrides(
-    overrides: Mapping[str, Mapping[str, Any]],
-) -> None:
+def _validate_advanced_overrides(overrides: Mapping[str, Mapping[str, Any]]) -> None:
     for rule_name, rule in overrides.items():
         _validate_period(
-            rule["start"],
-            rule["end"],
-            context=f"Advanced-fill rule {rule_name!r}",
+            rule["start"], rule["end"], context=f"Advanced-fill rule {rule_name!r}"
         )
 
         if rule["method"] != "construct_from_sources":

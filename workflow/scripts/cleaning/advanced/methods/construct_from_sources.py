@@ -106,16 +106,11 @@ def _match_energy(
 
 
 def _apply_scaling(
-    profile: pd.Series,
-    *,
-    auxiliary: pd.DataFrame,
-    scaling: Mapping[str, Any],
+    profile: pd.Series, *, auxiliary: pd.DataFrame, scaling: Mapping[str, Any]
 ) -> pd.Series:
     """Scale a constructed profile to configured reference energy."""
     return _match_energy(
-        profile,
-        auxiliary=auxiliary,
-        target_sources=scaling["target_sources"],
+        profile, auxiliary=auxiliary, target_sources=scaling["target_sources"]
     )
 
 
@@ -159,7 +154,6 @@ def construct_from_sources(
 
         weighted_sources.append(remapped * weight)
         weights.append(weight)
-
 
     weighted_sum = sum(weighted_sources[1:], weighted_sources[0].copy())
 
