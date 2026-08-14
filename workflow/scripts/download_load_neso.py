@@ -120,36 +120,22 @@ def _download_file(*, url: str, output_path: Path) -> None:
         raise
 
 
-def download_annual_files(*, years: list[int], output_paths: list[str | Path]) -> None:
-    """Discover and download the NESO CSV for each requested year."""
-    if len(years) != len(output_paths):
-        raise ValueError(
-            "The number of NESO years must match the number of output paths."
-        )
-
-    if len(set(years)) != len(years):
-        raise ValueError(f"NESO years must be unique: {years}")
+def download_annual_file(*, year: int, output_path: str | Path) -> None:
+    """Discover and download one annual NESO historic-demand CSV."""
+    output_path = Path(output_path)
 
     dataset = _get_historic_demand_dataset()
 
-    for year, raw_output_path in zip(years, output_paths, strict=True):
-        output_path = Path(raw_output_path)
+    logger.info("Selecting NESO historic-demand resource for %s.", year)
 
-        if output_path.exists() and output_path.stat().st_size > 0:
-            logger.info("Retaining existing NESO file for %s: %s", year, output_path)
-            continue
+    resource = _select_csv_resource(dataset, year=year)
+    url = str(resource["url"])
 
-        logger.info("Selecting NESO historic-demand resource for %s.", year)
+    logger.info("Downloading NESO historic demand for %s from %s.", year, url)
 
-        resource = _select_csv_resource(dataset, year=year)
+    _download_file(url=url, output_path=output_path)
 
-        url = str(resource["url"])
-
-        logger.info("Downloading NESO historic demand for %s from %s.", year, url)
-
-        _download_file(url=url, output_path=output_path)
-
-        logger.info("Saved NESO historic demand for %s to %s.", year, output_path)
+    logger.info("Saved NESO historic demand for %s to %s.", year, output_path)
 
 
 if __name__ == "__main__":
@@ -157,7 +143,7 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-    download_annual_files(
-        years=[int(snakemake.params.year)],
-        output_paths=[Path(snakemake.output.annual_file)],
+    download_annual_file(
+        year=int(snakemake.params.year),
+        output_path=snakemake.output.annual_file,
     )

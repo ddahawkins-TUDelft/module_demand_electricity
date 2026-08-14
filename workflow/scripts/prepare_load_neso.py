@@ -27,9 +27,6 @@ def _read_neso_files(paths: Iterable[str | Path]) -> pd.DataFrame:
     for raw_path in paths:
         path = Path(raw_path)
 
-        if not path.exists():
-            raise FileNotFoundError(f"NESO input file does not exist: {path}")
-
         logger.info("Reading NESO historic demand from %s.", path)
 
         try:
@@ -44,9 +41,6 @@ def _read_neso_files(paths: Iterable[str | Path]) -> pd.DataFrame:
             ) from error
 
         frames.append(frame)
-
-    if not frames:
-        raise ValueError("At least one NESO input file is required.")
 
     return pd.concat(frames, ignore_index=True)
 
@@ -76,9 +70,6 @@ def _prepare_half_hourly_demand(raw: pd.DataFrame) -> pd.Series:
         raise ValueError(
             f"NESO data contain duplicate UTC timestamps: {duplicate_timestamps[:10]}"
         )
-
-    if not half_hourly.index.is_monotonic_increasing:
-        raise ValueError("Prepared NESO timestamps are not sorted.")
 
     return half_hourly
 
@@ -110,9 +101,6 @@ def prepare_load_neso(
 ) -> None:
     """Prepare NESO demand on the common time-country target grid."""
     target_countries = list(countries)
-
-    if len(target_countries) != len(set(target_countries)):
-        raise ValueError("Target country codes must be unique.")
 
     target_index = build_hourly_index(start=temporal_start, end=temporal_end)
 

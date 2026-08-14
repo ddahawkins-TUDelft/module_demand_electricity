@@ -16,7 +16,6 @@ from cleaning.plot_timeline import (
     _encode_rank_background,
     _plot_cleaning_background,
     _validate_alignment,
-    _validate_provenance_metadata,
 )
 
 DEMAND_PATH = Path("resources/module/resources/automatic/load_cleaned.parquet")
@@ -120,12 +119,6 @@ def main() -> None:
 
     metadata = _build_cleaning_method_metadata(
         source_names=SOURCE_NAMES, gap_filling_config=GAP_FILLING_CONFIG
-    )
-
-    _validate_provenance_metadata(
-        cleaning_method=cleaning_method,
-        cleaning_method_rank=cleaning_method_rank,
-        metadata=metadata,
     )
 
     rank_colours = _build_rank_colours(metadata)

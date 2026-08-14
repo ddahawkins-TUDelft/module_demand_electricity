@@ -152,21 +152,10 @@ def main(start, end, country_codes, token, output_load, workers):
 
     df = df.resample("1h").mean()
 
-    # Reindexing adds security to the ENTSO-E download.
+    # Align downloaded data to the requested hourly target grid.
     target_index = build_hourly_index(start=start, end=end)
 
     df = df.reindex(index=target_index, columns=country_codes)
-
-    non_numeric_columns = df.select_dtypes(exclude="number").columns
-
-    invalid = {
-        column: df[column].dropna().head().tolist()
-        for column in non_numeric_columns
-        if not df[column].dropna().empty
-    }
-
-    if invalid:
-        raise TypeError(f"ENTSO-E load contains non-numeric values: {invalid}")
 
     # Pre-cleaning. Replace empty object columns with NaN
     # columns to allow data-source combining.

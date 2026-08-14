@@ -7,9 +7,6 @@ from common.time import build_hourly_index
 
 loads = [pd.read_parquet(path) for path in snakemake.input.sources]
 
-if not loads:
-    raise ValueError("No cleaned auxiliary data were supplied.")
-
 auxiliary = loads[0].copy()
 
 for load in loads[1:]:
