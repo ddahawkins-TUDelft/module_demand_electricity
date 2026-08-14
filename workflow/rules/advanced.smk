@@ -165,7 +165,7 @@ rule download_auxiliary_load_entsoe_api:
 
 rule prepare_auxiliary_load_opsd:
     input:
-        load=rules.download_load_entsoe_opsd.output.load,
+        load=rules.download_load_opsd.output.load,
         plan=auxiliary_acquisition_plan,
     output:
         load=("<resources>/automatic/" "auxiliary/opsd_api/" "{batch_id}.parquet"),

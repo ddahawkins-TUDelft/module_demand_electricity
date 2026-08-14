@@ -40,22 +40,20 @@ rule download_load_entsoe_api:
         "../scripts/download_load_entsoe_api.py"
 
 
-rule download_load_entsoe_opsd:
+rule download_load_opsd:
     output:
-        load="<resources>/automatic/load_entsoe_opsd.csv",
+        load="<resources>/automatic/load_opsd.csv",
     log:
-        "<logs>/download_load_entsoe_opsd.log",
+        "<logs>/download_load_opsd.log",
     localrule: True
     conda:
         "../envs/module.yaml"
     params:
-        url_load=internal["resources"]["automatic"]["load_entsoe_opsd"],
+        url=internal["resources"]["automatic"]["load_opsd"],
     message:
         "Download load profiles from Open Power System Data (OPSD)."
-    shell:
-        """
-        curl -sSLo {output.load:q} {params.url_load:q}
-        """
+    script:
+        "../scripts/download_load_opsd.py"
 
 
 rule download_load_neso_year:

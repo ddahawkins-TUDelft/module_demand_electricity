@@ -21,7 +21,7 @@ def neso_raw_files(_wildcards):
 rule prepare_load_opsd:
     input:
         validation="<resources>/automatic/config_validation.json",
-        load="<resources>/automatic/load_entsoe_opsd.csv",
+        load="<resources>/automatic/load_opsd.csv",
     output:
         load="<resources>/automatic/load_opsd_api.parquet",
     log:
