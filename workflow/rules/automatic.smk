@@ -1,42 +1,22 @@
 """Rules used to download automatic resource files."""
 
-from datetime import datetime, timedelta
 
-
-def _years_in_period(
-    start: str,
-    end: str,
-) -> tuple[int, ...]:
-    """Return calendar years intersecting an end-exclusive period."""
-    start = datetime.fromisoformat(start)
-    end = datetime.fromisoformat(end)
-
-    if end <= start:
-        raise ValueError("Period end must be later than period start.")
-
-    final_included_time = end - timedelta(microseconds=1)
-
-    return tuple(
-        range(
-            start.year,
-            final_included_time.year + 1,
-        )
-    )
-
-
-NESO_YEARS = _years_in_period(
-    start=config["temporal_scope"]["start"],
-    end=config["temporal_scope"]["end"],
-)
-
-NESO_RAW_FILES = expand(
-    "<resources>/automatic/neso/" "historic_demand_{year}.csv",
-    year=NESO_YEARS,
-)
+rule validate_config_semantics:
+    output:
+        "<resources>/automatic/config_validation.json",
+    conda:
+        "../envs/module.yaml"
+    params:
+        validation_config=config
+    message:
+        "Validate module configuration semantics."
+    script:
+        "../scripts/validate_config.py"
 
 
 rule download_load_entsoe_api:
     input:
+        validation="<resources>/automatic/config_validation.json",
         token_entsoe="<token_entsoe>",
     output:
         load="<resources>/automatic/load_entsoe_api.parquet",
@@ -79,6 +59,8 @@ rule download_load_entsoe_opsd:
 
 
 rule download_load_neso_year:
+    input:
+        validation="<resources>/automatic/config_validation.json",
     output:
         annual_file=("<resources>/automatic/neso/" "historic_demand_{year}.csv"),
     log:

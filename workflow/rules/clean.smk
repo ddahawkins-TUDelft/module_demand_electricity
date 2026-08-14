@@ -6,9 +6,6 @@ def neso_raw_files(_wildcards):
     start = datetime.fromisoformat(config["temporal_scope"]["start"])
     end = datetime.fromisoformat(config["temporal_scope"]["end"])
 
-    if end <= start:
-        raise ValueError("Period end must be later than period start.")
-
     final_included_time = end - timedelta(microseconds=1)
 
     years = range(
@@ -23,6 +20,7 @@ def neso_raw_files(_wildcards):
 
 rule prepare_load_opsd:
     input:
+        validation="<resources>/automatic/config_validation.json",
         load="<resources>/automatic/load_entsoe_opsd.csv",
     output:
         load="<resources>/automatic/load_opsd_api.parquet",
@@ -42,6 +40,7 @@ rule prepare_load_opsd:
 
 rule prepare_load_neso:
     input:
+        validation="<resources>/automatic/config_validation.json",
         annual_files=neso_raw_files,
     output:
         load="<resources>/automatic/load_neso.parquet",
