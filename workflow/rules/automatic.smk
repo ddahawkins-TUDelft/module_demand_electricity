@@ -42,7 +42,7 @@ rule download_load_entsoe_api:
 
 rule download_load_opsd:
     output:
-        load="<resources>/automatic/load_opsd.csv",
+        load=update("<resources>/automatic/load_opsd.csv"),
     log:
         "<logs>/download_load_opsd.log",
     localrule: True
