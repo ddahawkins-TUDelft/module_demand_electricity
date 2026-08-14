@@ -9,6 +9,7 @@ import pandas as pd
 
 SOURCE_REQUEST_COLUMNS = ["source", "country", "start", "end"]
 
+
 def build_auxiliary_source_requests(
     requirements: pd.DataFrame, *, source_names: Sequence[str]
 ) -> pd.DataFrame:

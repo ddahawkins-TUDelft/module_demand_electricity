@@ -102,18 +102,12 @@ def _empty_execution_plan() -> dict[str, object]:
 
 
 def _get_ordered_active_rule_names(
-    fill_plan: pd.DataFrame,
-    *,
-    overrides: Mapping[str, Mapping[str, Any]],
+    fill_plan: pd.DataFrame, *, overrides: Mapping[str, Mapping[str, Any]]
 ) -> list[str]:
     """Return active rule names in configured execution order."""
     active_rule_names = set(fill_plan["rule_name"])
 
-    return [
-        rule_name
-        for rule_name in overrides
-        if rule_name in active_rule_names
-    ]
+    return [rule_name for rule_name in overrides if rule_name in active_rule_names]
 
 
 def _serialize_batch(batch: Mapping[str, object]) -> dict[str, object]:

@@ -70,10 +70,7 @@ def test_unknown_source_is_rejected_when_planning_request() -> None:
     )
 
     with pytest.raises(ValueError, match="Unsupported auxiliary load source"):
-        build_auxiliary_source_requests(
-            requirements,
-            source_names=["mystery_source"],
-        )
+        build_auxiliary_source_requests(requirements, source_names=["mystery_source"])
 
 
 def test_build_batch_id_is_independent_of_country_order() -> None:
