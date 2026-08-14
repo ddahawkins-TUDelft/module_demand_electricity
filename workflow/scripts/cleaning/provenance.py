@@ -1,6 +1,5 @@
 """Cleaning-method provenance and ranking helpers."""
 
-from collections import Counter
 from collections.abc import Mapping, Sequence
 from typing import Any
 
