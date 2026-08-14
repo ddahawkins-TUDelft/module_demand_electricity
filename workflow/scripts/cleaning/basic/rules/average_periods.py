@@ -34,18 +34,6 @@ def apply_average_periods(
 
     offsets = tuple(pd.Timedelta(offset) for offset in source_offsets)
 
-    if max_gap <= pd.Timedelta(0):
-        raise ValueError("'max_gap' must be greater than zero.")
-
-    if len(offsets) < 2:
-        raise ValueError("'source_offsets' must contain at least two offsets.")
-
-    if len(set(offsets)) != len(offsets):
-        raise ValueError("'source_offsets' must not contain duplicates.")
-
-    if pd.Timedelta(0) in offsets:
-        raise ValueError("'source_offsets' must not contain zero.")
-
     eligible = (
         load.isna()
         & original_gap_duration.gt(pd.Timedelta(0))

@@ -26,15 +26,6 @@ def apply_copy_period(
     max_gap = pd.Timedelta(max_gap)
     source_offset = pd.Timedelta(source_offset)
 
-    if max_gap <= pd.Timedelta(0):
-        raise ValueError("'max_gap' must be greater than zero.")
-
-    if source_offset == pd.Timedelta(0):
-        raise ValueError("'source_offset' must not be zero.")
-
-    if not isinstance(require_complete_source, bool):
-        raise TypeError("'require_complete_source' must be a boolean.")
-
     eligible = (
         load.isna()
         & original_gap_duration.gt(pd.Timedelta(0))
