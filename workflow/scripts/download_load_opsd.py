@@ -12,13 +12,7 @@ logger = logging.getLogger(__name__)
 
 USER_AGENT = "modelblocks-module-demand-electricity/OPSD downloader"
 
-REQUIRED_COLUMNS = {
-    "utc_timestamp",
-    "region",
-    "variable",
-    "attribute",
-    "data",
-}
+REQUIRED_COLUMNS = {"utc_timestamp", "region", "variable", "attribute", "data"}
 
 
 def _is_valid_cached_snapshot(path: Path) -> bool:
@@ -83,9 +77,7 @@ def download_opsd(*, url: str, output_path: str | Path) -> None:
         raise
 
     logger.info(
-        "Saved OPSD snapshot to %s (%s bytes).",
-        output_path,
-        output_path.stat().st_size,
+        "Saved OPSD snapshot to %s (%s bytes).", output_path, output_path.stat().st_size
     )
 
 
@@ -94,7 +86,4 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-    download_opsd(
-        url=snakemake.params.url,
-        output_path=snakemake.output.load,
-    )
+    download_opsd(url=snakemake.params.url, output_path=snakemake.output.load)
