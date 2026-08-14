@@ -122,9 +122,7 @@ def _validate_alignment(
             raise ValueError(f"{name} does not use the same time index as demand.")
 
         if not frame.columns.equals(demand.columns):
-            raise ValueError(
-                f"{name} does not use the same country columns as demand."
-            )
+            raise ValueError(f"{name} does not use the same country columns as demand.")
 
 
 def _build_rank_colours(

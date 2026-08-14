@@ -11,7 +11,6 @@ def combine_sources(
     sources: Mapping[str, pd.DataFrame], *, priority: Sequence[str]
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Combine sources and record source and cleaning-method provenance."""
-
     selected = {source: sources[source] for source in priority}
 
     _validate_source_alignment(selected)
