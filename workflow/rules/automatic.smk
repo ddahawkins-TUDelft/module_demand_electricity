@@ -76,20 +76,19 @@ rule download_load_neso_year:
 
 rule download_population:
     output:
-        population="<resources>/automatic/population.zip",
+        population=update("<resources>/automatic/population.zip"),
     log:
         "<logs>/download_population.log",
     localrule: True
     conda:
         "../envs/module.yaml"
     params:
-        url_population=internal["resources"]["automatic"]["population"],
+        url=internal["resources"]["automatic"]["population"],
+        expected_member=internal["resources"]["automatic"]["population_tif"],
     message:
         "Download population data."
-    shell:
-        """
-        curl -sSLo {output.population:q} {params.url_population:q}
-        """
+    script:
+        "../scripts/download_population.py"
 
 
 rule unzip_population:
