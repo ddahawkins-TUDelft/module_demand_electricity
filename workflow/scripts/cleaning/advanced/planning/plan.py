@@ -67,13 +67,9 @@ def build_auxiliary_fill_plan(
                 "target_end": _as_utc_timestamp(rule["end"]),
                 "scope": rule["scope"],
                 "method": method,
-                "status": (
-                    "leave_missing" if method == LEAVE_MISSING else "ready"
-                ),
+                "status": ("leave_missing" if method == LEAVE_MISSING else "ready"),
                 "source_count": len(rule.get("sources", [])),
-                "scaling_method": (
-                    scaling["method"] if scaling is not None else None
-                ),
+                "scaling_method": (scaling["method"] if scaling is not None else None),
             }
         )
 
@@ -94,6 +90,6 @@ def build_auxiliary_fill_plan(
     if plan.empty:
         return plan
 
-    return plan.sort_values(
-        ["country", "target_start", "rule_name"]
-    ).reset_index(drop=True)
+    return plan.sort_values(["country", "target_start", "rule_name"]).reset_index(
+        drop=True
+    )

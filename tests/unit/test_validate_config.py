@@ -6,15 +6,8 @@ from common.config_validation import validate_config_semantics
 
 def _config() -> dict:
     return {
-        "temporal_scope": {
-            "start": "2022-01-01",
-            "end": "2023-01-01",
-        },
-        "gap_filling": {
-            "advanced": {
-                "overrides": {},
-            }
-        },
+        "temporal_scope": {"start": "2022-01-01", "end": "2023-01-01"},
+        "gap_filling": {"advanced": {"overrides": {}}},
     }
 
 

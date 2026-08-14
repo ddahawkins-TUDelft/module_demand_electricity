@@ -1,7 +1,6 @@
 """Tests for advanced auxiliary-fill planning."""
 
 import pandas as pd
-
 from cleaning.advanced.planning.plan import build_auxiliary_fill_plan
 
 TARGET_COUNTRIES = ["ALB"]
@@ -26,11 +25,7 @@ def test_build_auxiliary_fill_plan_normalizes_rules() -> None:
             "scope": "overwrite",
             "method": "construct_from_sources",
             "sources": [
-                {
-                    "country": "MNE",
-                    "start": "2023-01-01",
-                    "end": "2023-12-31 23:00",
-                },
+                {"country": "MNE", "start": "2023-01-01", "end": "2023-12-31 23:00"},
                 {
                     "country": "MKD",
                     "start": "2023-01-01",
@@ -41,11 +36,7 @@ def test_build_auxiliary_fill_plan_normalizes_rules() -> None:
             "scaling": {
                 "method": "match_energy",
                 "target_sources": [
-                    {
-                        "country": "ALB",
-                        "start": "2022-01-01",
-                        "end": "2022-12-31 23:00",
-                    }
+                    {"country": "ALB", "start": "2022-01-01", "end": "2022-12-31 23:00"}
                 ],
             },
         },
@@ -116,13 +107,7 @@ def test_build_auxiliary_fill_plan_ignores_wrong_country() -> None:
             "end": "2023-02-01",
             "scope": "overwrite",
             "method": "construct_from_sources",
-            "sources": [
-                {
-                    "country": "GBR",
-                    "start": "2023-01-01",
-                    "end": "2023-02-01",
-                }
-            ],
+            "sources": [{"country": "GBR", "start": "2023-01-01", "end": "2023-02-01"}],
         },
         "montenegro": {
             "country": "MNE",
@@ -130,13 +115,7 @@ def test_build_auxiliary_fill_plan_ignores_wrong_country() -> None:
             "end": "2023-02-01",
             "scope": "overwrite",
             "method": "construct_from_sources",
-            "sources": [
-                {
-                    "country": "GBR",
-                    "start": "2023-01-01",
-                    "end": "2023-02-01",
-                }
-            ],
+            "sources": [{"country": "GBR", "start": "2023-01-01", "end": "2023-02-01"}],
         },
     }
 
@@ -159,13 +138,7 @@ def test_build_auxiliary_fill_plan_ignores_non_overlapping_periods() -> None:
             "end": "2020-02-01",
             "scope": "overwrite",
             "method": "construct_from_sources",
-            "sources": [
-                {
-                    "country": "GBR",
-                    "start": "2020-01-01",
-                    "end": "2020-02-01",
-                }
-            ],
+            "sources": [{"country": "GBR", "start": "2020-01-01", "end": "2020-02-01"}],
         },
         "after": {
             "country": "ALB",
@@ -173,13 +146,7 @@ def test_build_auxiliary_fill_plan_ignores_non_overlapping_periods() -> None:
             "end": "2026-02-01",
             "scope": "overwrite",
             "method": "construct_from_sources",
-            "sources": [
-                {
-                    "country": "GBR",
-                    "start": "2026-01-01",
-                    "end": "2026-02-01",
-                }
-            ],
+            "sources": [{"country": "GBR", "start": "2026-01-01", "end": "2026-02-01"}],
         },
     }
 
@@ -202,13 +169,7 @@ def test_build_auxiliary_fill_plan_keeps_partial_overlap() -> None:
             "end": "2022-02-01",
             "scope": "overwrite",
             "method": "construct_from_sources",
-            "sources": [
-                {
-                    "country": "GBR",
-                    "start": "2021-12-01",
-                    "end": "2022-02-01",
-                }
-            ],
+            "sources": [{"country": "GBR", "start": "2021-12-01", "end": "2022-02-01"}],
         }
     }
 
@@ -231,13 +192,7 @@ def test_build_auxiliary_fill_plan_excludes_touching_periods() -> None:
             "end": "2022-01-01",
             "scope": "overwrite",
             "method": "construct_from_sources",
-            "sources": [
-                {
-                    "country": "GBR",
-                    "start": "2021-12-01",
-                    "end": "2022-01-01",
-                }
-            ],
+            "sources": [{"country": "GBR", "start": "2021-12-01", "end": "2022-01-01"}],
         },
         "starts_at_end": {
             "country": "ALB",
@@ -245,13 +200,7 @@ def test_build_auxiliary_fill_plan_excludes_touching_periods() -> None:
             "end": "2025-02-01",
             "scope": "overwrite",
             "method": "construct_from_sources",
-            "sources": [
-                {
-                    "country": "GBR",
-                    "start": "2025-01-01",
-                    "end": "2025-02-01",
-                }
-            ],
+            "sources": [{"country": "GBR", "start": "2025-01-01", "end": "2025-02-01"}],
         },
     }
 

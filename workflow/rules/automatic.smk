@@ -7,7 +7,7 @@ rule validate_config_semantics:
     conda:
         "../envs/module.yaml"
     params:
-        validation_config=config
+        validation_config=config,
     message:
         "Validate module configuration semantics."
     script:
