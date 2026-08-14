@@ -70,10 +70,7 @@ def _validate_cleaning_method_names(config: Mapping[str, Any]) -> None:
         *(f"observed_{source_name}" for source_name in source_names),
     }
 
-    rule_names = [
-        *(rule["name"] for rule in basic_rules),
-        *advanced_overrides.keys(),
-    ]
+    rule_names = [*(rule["name"] for rule in basic_rules), *advanced_overrides.keys()]
 
     collisions = sorted(set(rule_names) & reserved_names)
 
