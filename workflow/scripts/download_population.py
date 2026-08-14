@@ -32,18 +32,12 @@ def _is_valid_cached_archive(path: Path, *, expected_member: str) -> bool:
 
 
 def download_population(
-    *,
-    url: str,
-    output_path: str | Path,
-    expected_member: str,
+    *, url: str, output_path: str | Path, expected_member: str
 ) -> None:
     """Download the population archive unless a valid cached copy exists."""
     output_path = Path(output_path)
 
-    if _is_valid_cached_archive(
-        output_path,
-        expected_member=expected_member,
-    ):
+    if _is_valid_cached_archive(output_path, expected_member=expected_member):
         logger.info("Using cached population archive: %s", output_path)
         return
 
@@ -79,8 +73,7 @@ def download_population(
             )
 
         if not _is_valid_cached_archive(
-            temporary_path,
-            expected_member=expected_member,
+            temporary_path, expected_member=expected_member
         ):
             raise RuntimeError(
                 "Downloaded population archive does not contain "
