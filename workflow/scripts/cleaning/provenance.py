@@ -7,40 +7,10 @@ from typing import Any
 import pandas as pd
 
 
-def validate_rule_names(
-    *, rules: Sequence[Mapping[str, Any]], source_priority: Sequence[str]
-) -> None:
-    """Validate rule-name uniqueness and reserved-name collisions."""
-    names = [str(rule["name"]) for rule in rules]
-
-    counts = Counter(names)
-    duplicates = sorted(name for name, count in counts.items() if count > 1)
-
-    if duplicates:
-        raise ValueError(
-            f"Gap-filling rule names must be unique. Duplicate names: {duplicates}"
-        )
-
-    reserved_names = {
-        "missing",
-        *(f"observed_{source_name}" for source_name in source_priority),
-    }
-
-    collisions = sorted(set(names) & reserved_names)
-
-    if collisions:
-        raise ValueError(
-            "Gap-filling rule names conflict with reserved "
-            f"cleaning-method names: {collisions}"
-        )
-
-
 def build_cleaning_method_ranks(
     *, source_priority: Sequence[str], rules: Sequence[Mapping[str, Any]]
 ) -> dict[str, int]:
     """Build cleaning-method ranks from configured order."""
-    validate_rule_names(rules=rules, source_priority=source_priority)
-
     ranks: dict[str, int] = {}
 
     for rank, source_name in enumerate(source_priority):

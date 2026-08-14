@@ -41,12 +41,6 @@ def main(
         source_names=source_names, gap_filling_config=gap_filling_config
     )
 
-    _validate_provenance_metadata(
-        cleaning_method=cleaning_method,
-        cleaning_method_rank=cleaning_method_rank,
-        metadata=metadata,
-    )
-
     rank_colours = _build_rank_colours(metadata)
 
     background, background_cmap = _encode_rank_background(
@@ -128,55 +122,9 @@ def _validate_alignment(
             raise ValueError(f"{name} does not use the same time index as demand.")
 
         if not frame.columns.equals(demand.columns):
-            raise ValueError(f"{name} does not use the same country columns as demand.")
-
-    if not isinstance(demand.index, pd.DatetimeIndex):
-        raise TypeError("Demand must use a pandas DatetimeIndex.")
-
-    if demand.index.has_duplicates:
-        raise ValueError("Demand timestamps must not contain duplicates.")
-
-    if not demand.index.is_monotonic_increasing:
-        raise ValueError("Demand timestamps must be sorted.")
-
-    if demand.columns.has_duplicates:
-        raise ValueError("Demand countries must not contain duplicates.")
-
-
-def _validate_provenance_metadata(
-    *,
-    cleaning_method: pd.DataFrame,
-    cleaning_method_rank: pd.DataFrame,
-    metadata: pd.DataFrame,
-) -> None:
-    """Validate observed provenance against configured metadata."""
-    methods = cleaning_method.stack(future_stack=True).rename("cleaning_method")
-
-    ranks = cleaning_method_rank.stack(future_stack=True).rename("cleaning_method_rank")
-
-    present = pd.concat([methods, ranks], axis=1).dropna().drop_duplicates()
-
-    present["cleaning_method_rank"] = present["cleaning_method_rank"].astype(int)
-
-    configured = metadata[["cleaning_method", "cleaning_method_rank"]]
-
-    checked = present.merge(
-        configured,
-        on=["cleaning_method", "cleaning_method_rank"],
-        how="left",
-        indicator=True,
-    )
-
-    unknown = checked.loc[
-        checked["_merge"] == "left_only", ["cleaning_method", "cleaning_method_rank"]
-    ]
-
-    if not unknown.empty:
-        raise ValueError(
-            "Cleaning provenance contains method/rank pairs "
-            "that are not defined by the configuration:\n"
-            f"{unknown.to_string(index=False)}"
-        )
+            raise ValueError(
+                f"{name} does not use the same country columns as demand."
+            )
 
 
 def _build_rank_colours(
@@ -192,9 +140,6 @@ def _build_rank_colours(
     imputed = ordered.loc[ordered["category"] == "imputed"]
 
     missing = ordered.loc[ordered["category"] == "missing"]
-
-    if observed.empty:
-        raise ValueError("At least one observed source must be configured.")
 
     # Primary source is white. Subsequent observed sources
     # become gradually darker, but remain very light so that
@@ -241,19 +186,6 @@ def _encode_rank_background(
     rank_to_code = {rank: code for code, rank in enumerate(rank_order)}
 
     encoded = cleaning_method_rank.apply(lambda column: column.map(rank_to_code))
-
-    if encoded.isna().any().any():
-        present_ranks = set(
-            cleaning_method_rank.stack(future_stack=True).dropna().astype(int).unique()
-        )
-
-        unknown_ranks = sorted(present_ranks - set(rank_to_code))
-
-        raise ValueError(
-            "Cleaning-method rank matrix contains ranks "
-            "without metadata: "
-            f"{unknown_ranks}"
-        )
 
     colour_list = [rank_colours[rank] for rank in rank_order]
 
