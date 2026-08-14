@@ -144,6 +144,5 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
     download_annual_file(
-        year=int(snakemake.params.year),
-        output_path=snakemake.output.annual_file,
+        year=int(snakemake.params.year), output_path=snakemake.output.annual_file
     )
