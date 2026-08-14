@@ -26,7 +26,6 @@ def apply_auxiliary_fill_rule(
     method = rule["method"]
 
     if method == CONSTRUCT_FROM_SOURCES:
-
         if profile is None:
             raise ValueError(
                 f"Advanced-fill rule {rule_name!r} requires "
