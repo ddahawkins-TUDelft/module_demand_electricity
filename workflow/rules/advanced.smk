@@ -286,7 +286,16 @@ rule construct_auxiliary_profile:
         sources=auxiliary_rule_cleaned_files,
     output:
         profile=(
-            "<resources>/automatic/" "auxiliary/constructed/" "{rule_name}.parquet"
+            "<resources>/automatic/"
+            "auxiliary/constructed/"
+            "{rule_name}.parquet"
+        ),
+    params:
+        frequency=config["temporal_scope"]["frequency"],
+        advanced_sources=(
+            config["gap_filling"]
+            ["advanced"]
+            ["sources"]
         ),
     conda:
         "../envs/module.yaml"

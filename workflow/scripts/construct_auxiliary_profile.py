@@ -1,28 +1,73 @@
-"""Constructs the auxiliary profile."""
+"""Construct an auxiliary profile from cleaned source data."""
+
+import json
 
 import pandas as pd
-from cleaning.advanced.methods.construct_from_sources import construct_from_sources
-from cleaning.advanced.planning.manifest import get_rule_override, load_execution_plan
-from common.time import build_hourly_index
+from _tclean_config import (
+    build_constructed_source_periods,
+    build_scaling_source_periods,
+)
+from tclean import TimeGrid
+from tclean.advanced import construct_from_sources
 
-loads = [pd.read_parquet(path) for path in snakemake.input.sources]
+with open(snakemake.input.plan, encoding="utf-8") as file:
+    plan = json.load(file)
 
-auxiliary = loads[0].copy()
+rule_name = snakemake.wildcards.rule_name
+rule = plan["rules"][rule_name]
 
-for load in loads[1:]:
-    auxiliary = auxiliary.combine_first(load)
+if rule["method"] != "construct_from_sources":
+    raise ValueError(
+        f"Rule {rule_name!r} is not a construct_from_sources rule."
+    )
 
-plan = load_execution_plan(snakemake.input.plan)
+source_name = rule["source"]
+source_definition = snakemake.params.advanced_sources[source_name]
 
-override = get_rule_override(plan, rule_name=snakemake.wildcards.rule_name)
+sources = build_constructed_source_periods(source_definition)
+scaling_sources = build_scaling_source_periods(source_definition)
 
-target_index = build_hourly_index(start=override["start"], end=override["end"])
-
-profile = construct_from_sources(
-    auxiliary,
-    target_index=target_index,
-    sources=override["sources"],
-    scaling=override.get("scaling"),
+grid = TimeGrid(
+    start=rule["start"],
+    end=rule["end"],
+    frequency=snakemake.params.frequency,
 )
 
-profile.to_frame(name=override["country"]).to_parquet(snakemake.output.profile)
+loads = [
+    pd.read_parquet(path)
+    for path in snakemake.input.sources
+]
+
+if not loads:
+    raise ValueError(
+        f"No cleaned auxiliary data were supplied for rule {rule_name!r}."
+    )
+
+source_data = loads[0].copy()
+
+for load in loads[1:]:
+    source_data = source_data.combine_first(load)
+
+source_start = source_data.index.min()
+source_end = source_data.index.max() + grid.frequency
+
+source_data = source_data.reindex(
+    grid.index_for_period(
+        start=source_start,
+        end=source_end,
+    )
+)
+
+profile = construct_from_sources(
+    source_data,
+    target_index=grid.target_index,
+    sources=sources,
+    scaling_sources=scaling_sources,
+    grid=grid,
+)
+
+profile.to_frame(
+    name=rule["context"]
+).to_parquet(
+    snakemake.output.profile
+)
