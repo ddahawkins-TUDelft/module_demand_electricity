@@ -8,11 +8,10 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from _tclean_config import build_advanced_rules, build_basic_rules
 from cmap import Colormap
 from matplotlib.colors import ListedColormap, to_rgba
 from matplotlib.patches import Patch
-
-from cleaning.provenance import build_final_cleaning_rules
 
 logger = logging.getLogger(__name__)
 
@@ -351,16 +350,27 @@ def _build_cleaning_method_metadata(
         )
         rank += 1
 
-    rules = build_final_cleaning_rules(gap_filling_config)
+    basic_rules = build_basic_rules(gap_filling_config)
+    advanced_rules = build_advanced_rules(gap_filling_config)
 
-    for rule in rules:
-        rule_name = rule["name"]
+    rule_names = [
+        rule["name"]
+        for rule in basic_rules
+    ]
 
+    if not advanced_rules.empty:
+        rule_names.extend(
+            advanced_rules["rule_name"].tolist()
+        )
+
+    for rule_name in rule_names:
         rows.append(
             {
                 "cleaning_method": rule_name,
                 "cleaning_method_rank": rank,
-                "label": (f"Rank {rank}: {_format_rule_name(rule_name)}"),
+                "label": (
+                    f"Rank {rank}: {_format_rule_name(rule_name)}"
+                ),
                 "category": "imputed",
             }
         )

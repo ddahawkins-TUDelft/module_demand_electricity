@@ -7,7 +7,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from cleaning.plot_timeline import (
+from _plot_timeline import (
     _add_mean_load_labels,
     _add_normalised_demand_traces,
     _build_cleaning_method_metadata,
@@ -37,7 +37,7 @@ START = "2021-05-01"
 END = "2021-11-01"
 
 # Must correspond to the configuration used for the long run.
-SOURCE_NAMES = ["entsoe_api", "neso", "opsd_api"]
+SOURCE_NAMES = ["entsoe", "neso", "opsd"]
 
 GAP_FILLING_CONFIG = {
     "mode": "basic",

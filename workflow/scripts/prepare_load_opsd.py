@@ -3,7 +3,7 @@
 import sys
 from typing import TYPE_CHECKING, Any
 
-from cleaning.advanced.planning.manifest import get_batch, load_execution_plan
+from _advanced_execution import get_batch, load_execution_plan
 from sources.opsd.prepare import prepare_opsd
 from tclean import TimeGrid
 

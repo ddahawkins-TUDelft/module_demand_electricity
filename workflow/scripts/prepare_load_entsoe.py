@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING, Any
 
-from cleaning.advanced.planning.manifest import get_batch, load_execution_plan
+from _advanced_execution import get_batch, load_execution_plan
 from sources.entsoe.prepare import prepare_entsoe
 from tclean import TimeGrid
 

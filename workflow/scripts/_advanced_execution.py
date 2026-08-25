@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from collections.abc import Mapping, Sequence
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -270,3 +272,60 @@ def empty_execution_plan() -> dict[str, object]:
         "constructed_profile_rule_names": [],
         "external_profile_files": {},
     }
+
+
+def load_execution_plan(
+    path: str | Path,
+) -> dict[str, Any]:
+    """Load one compiled advanced execution plan."""
+    with open(path, encoding="utf-8") as file:
+        plan = json.load(file)
+
+    if not isinstance(plan, dict):
+        raise TypeError(
+            "Advanced execution plan must contain a JSON object."
+        )
+
+    if plan.get("version") != EXECUTION_PLAN_VERSION:
+        raise ValueError(
+            "Unsupported advanced execution plan version: "
+            f"{plan.get('version')!r}. "
+            f"Expected {EXECUTION_PLAN_VERSION}."
+        )
+
+    return plan
+
+
+def get_batch(
+    plan: Mapping[str, Any],
+    *,
+    batch_id: str,
+    source: str | None = None,
+) -> Mapping[str, Any]:
+    """Return exactly one compiled auxiliary batch."""
+    matches = [
+        batch
+        for batch in plan["batches"]
+        if (
+            batch["batch_id"] == batch_id
+            and (
+                source is None
+                or batch["source"] == source
+            )
+        )
+    ]
+
+    if len(matches) != 1:
+        source_text = (
+            f" for source {source!r}"
+            if source is not None
+            else ""
+        )
+
+        raise ValueError(
+            "Expected exactly one auxiliary batch "
+            f"{batch_id!r}{source_text}, "
+            f"found {len(matches)}."
+        )
+
+    return matches[0]

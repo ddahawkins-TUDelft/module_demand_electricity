@@ -3,7 +3,7 @@
 import logging
 import sys
 
-from cleaning.plot_timeline import main
+from _plot_timeline import main
 
 sys.stderr = open(snakemake.log[0], "w", buffering=1)
 
