@@ -25,7 +25,7 @@ def main(snakemake: Any) -> None:
         batch = get_batch(
             plan,
             batch_id=snakemake.wildcards.batch_id,
-            source="entsoe_api",
+            source="entsoe",
         )
 
         start = batch["start"]

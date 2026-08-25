@@ -242,60 +242,42 @@ rule prepare_auxiliary_load_neso:
         "../scripts/prepare_load_neso.py"
 
 
-rule combine_auxiliary_sources:
+rule clean_auxiliary_group:
     input:
         plan=auxiliary_acquisition_plan,
         sources=auxiliary_group_source_files,
     output:
-        demand=("<resources>/automatic/" "auxiliary/combined/" "{group_id}.parquet"),
+        demand=(
+            "<resources>/automatic/"
+            "auxiliary/cleaned/"
+            "{group_id}.parquet"
+        ),
         data_source=(
             "<resources>/automatic/"
-            "auxiliary/combined/"
+            "auxiliary/cleaned/"
             "{group_id}_data_source.parquet"
         ),
-        cleaning_method=(
-            "<resources>/automatic/"
-            "auxiliary/combined/"
-            "{group_id}_cleaning_method.parquet"
-        ),
-    conda:
-        "../envs/module.yaml"
-    params:
-        source_priority=config["load_sources"],
-    message:
-        "Combine auxiliary electricity-demand sources."
-    script:
-        "../scripts/combine_auxiliary_sources.py"
-
-
-rule clean_auxiliary_data:
-    input:
-        demand=("<resources>/automatic/" "auxiliary/combined/" "{group_id}.parquet"),
-        cleaning_method=(
-            "<resources>/automatic/"
-            "auxiliary/combined/"
-            "{group_id}_cleaning_method.parquet"
-        ),
-    output:
-        demand=("<resources>/automatic/" "auxiliary/cleaned/" "{group_id}.parquet"),
         cleaning_method=(
             "<resources>/automatic/"
             "auxiliary/cleaned/"
             "{group_id}_cleaning_method.parquet"
         ),
+    params:
+        frequency=config["temporal_scope"]["frequency"],
+        basic_rules=config["gap_filling"]["basic"]["rules"],
+        basic_cleaning_enabled=(
+            config["gap_filling"]
+            ["advanced"]
+            ["auxiliary_data"]
+            ["basic_cleaning"]
+            ["enabled"]
+        ),
     conda:
         "../envs/module.yaml"
-    params:
-        basic_rules=config["gap_filling"]["basic"]["rules"],
-        enabled=(
-            config["gap_filling"]["advanced"]["auxiliary_data"]["basic_cleaning"][
-                "enabled"
-            ]
-        ),
     message:
-        "Apply basic cleaning to auxiliary electricity demand."
+        "Combine and clean auxiliary electricity-demand sources."
     script:
-        "../scripts/clean_auxiliary_data.py"
+        "../scripts/clean_auxiliary_group.py"
 
 
 rule construct_auxiliary_profile:
