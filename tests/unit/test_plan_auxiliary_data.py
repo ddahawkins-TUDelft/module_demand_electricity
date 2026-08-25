@@ -87,7 +87,7 @@ def test_plan_is_empty_outside_advanced_mode() -> None:
     result = build_advanced_execution_plan(
         fill_plan=_fill_plan(["example"]),
         gap_filling_config=_config({}, mode="basic"),
-        source_names=["entsoe_api", "neso", "opsd_api"],
+        source_names=["entsoe", "neso", "opsd"],
     )
 
     assert result == _empty_execution_plan()
@@ -97,7 +97,7 @@ def test_advanced_plan_with_empty_fill_plan_is_empty() -> None:
     result = build_advanced_execution_plan(
         fill_plan=pd.DataFrame(),
         gap_filling_config=_config({"fill_albania": _construct_override()}),
-        source_names=["entsoe_api"],
+        source_names=["entsoe"],
     )
 
     assert result == _empty_execution_plan()
@@ -109,17 +109,17 @@ def test_plan_builds_complete_execution_manifest() -> None:
     result = build_advanced_execution_plan(
         fill_plan=_fill_plan(["fill_albania"]),
         gap_filling_config=_config({"fill_albania": override}),
-        source_names=["entsoe_api", "opsd_api"],
+        source_names=["entsoe", "opsd"],
     )
 
     start = pd.Timestamp("2020-01-01", tz="UTC")
     end = pd.Timestamp("2020-02-01", tz="UTC")
     group_id = _build_group_id(start=start, end=end)
     entsoe_batch_id = _build_batch_id(
-        source="entsoe_api", start=start, end=end, countries=["GRC"]
+        source="entsoe", start=start, end=end, countries=["GRC"]
     )
     opsd_batch_id = _build_batch_id(
-        source="opsd_api", start=start, end=end, countries=["GRC"]
+        source="opsd", start=start, end=end, countries=["GRC"]
     )
 
     assert result == {
@@ -132,7 +132,7 @@ def test_plan_builds_complete_execution_manifest() -> None:
             {
                 "group_id": group_id,
                 "batch_id": entsoe_batch_id,
-                "source": "entsoe_api",
+                "source": "entsoe",
                 "start": "2020-01-01T00:00:00+00:00",
                 "end": "2020-02-01T00:00:00+00:00",
                 "countries": ["GRC"],
@@ -141,7 +141,7 @@ def test_plan_builds_complete_execution_manifest() -> None:
             {
                 "group_id": group_id,
                 "batch_id": opsd_batch_id,
-                "source": "opsd_api",
+                "source": "opsd",
                 "start": "2020-01-01T00:00:00+00:00",
                 "end": "2020-02-01T00:00:00+00:00",
                 "countries": ["GRC"],
@@ -149,8 +149,8 @@ def test_plan_builds_complete_execution_manifest() -> None:
             },
         ],
         "batch_ids_by_source": {
-            "entsoe_api": [entsoe_batch_id],
-            "opsd_api": [opsd_batch_id],
+            "entsoe": [entsoe_batch_id],
+            "opsd": [opsd_batch_id],
         },
         "groups": {group_id: [entsoe_batch_id, opsd_batch_id]},
         "constructed_profile_rule_names": ["fill_albania"],
@@ -167,7 +167,7 @@ def test_plan_uses_only_overrides_in_fill_plan() -> None:
                 "inactive": _construct_override(source_country="SRB"),
             }
         ),
-        source_names=["entsoe_api"],
+        source_names=["entsoe"],
     )
 
     assert result["active_rule_names"] == ["active"]
@@ -186,7 +186,7 @@ def test_plan_preserves_configured_override_order() -> None:
                 "second": _construct_override(source_country="SRB"),
             }
         ),
-        source_names=["entsoe_api"],
+        source_names=["entsoe"],
     )
 
     assert result["active_rule_names"] == ["first", "second"]
@@ -206,7 +206,7 @@ def test_plan_resolves_scaling_target_sources_to_groups() -> None:
     result = build_advanced_execution_plan(
         fill_plan=_fill_plan(["fill_albania"]),
         gap_filling_config=_config({"fill_albania": override}),
-        source_names=["entsoe_api"],
+        source_names=["entsoe"],
     )
 
     expected_group_ids = sorted(
@@ -244,7 +244,7 @@ def test_plan_resolves_rule_to_expanded_basic_cleaning_group() -> None:
             basic_cleaning_enabled=True,
             basic_rules=basic_rules,
         ),
-        source_names=["entsoe_api"],
+        source_names=["entsoe"],
     )
 
     batch = result["batches"][0]
@@ -266,7 +266,7 @@ def test_non_construct_rule_requires_no_auxiliary_groups() -> None:
     result = build_advanced_execution_plan(
         fill_plan=_fill_plan(["leave_albania"]),
         gap_filling_config=_config({"leave_albania": override}),
-        source_names=["entsoe_api"],
+        source_names=["entsoe"],
     )
 
     assert result["rules"] == {
@@ -310,7 +310,7 @@ def test_plan_is_json_serializable() -> None:
     result = build_advanced_execution_plan(
         fill_plan=_fill_plan(["fill_albania"]),
         gap_filling_config=_config({"fill_albania": _construct_override()}),
-        source_names=["entsoe_api"],
+        source_names=["entsoe"],
     )
 
     json.dumps(result)
@@ -324,7 +324,7 @@ def test_plan_records_active_external_profile_file() -> None:
     result = build_advanced_execution_plan(
         fill_plan=_fill_plan(["external_albania"]),
         gap_filling_config=_config({"external_albania": override}),
-        source_names=["entsoe_api"],
+        source_names=["entsoe"],
     )
 
     assert result["external_profile_files"] == {
@@ -346,7 +346,7 @@ def test_plan_excludes_inactive_external_profile_file() -> None:
                 ),
             }
         ),
-        source_names=["entsoe_api"],
+        source_names=["entsoe"],
     )
 
     assert result["external_profile_files"] == {"active": "resources/user/active.csv"}
@@ -367,7 +367,7 @@ def test_plan_allows_external_profile_file_reuse() -> None:
                 ),
             }
         ),
-        source_names=["entsoe_api"],
+        source_names=["entsoe"],
     )
 
     assert result["external_profile_files"] == {

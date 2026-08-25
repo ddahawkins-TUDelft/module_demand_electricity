@@ -361,8 +361,8 @@ def test_advanced_mode_builds_auxiliary_fill_plan() -> None:
         _gap_report,
         auxiliary_fill_plan,
     ) = clean_demand(
-        {"entsoe_api": source},
-        source_priority=["entsoe_api"],
+        {"entsoe": source},
+        source_priority=["entsoe"],
         gap_filling_config=config,
     )
 

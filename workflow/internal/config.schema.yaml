@@ -280,14 +280,14 @@ $defs:
           - source_offsets
     unevaluatedProperties: false
 
-  copy_period_rule:
+  copy_periods_rule:
     allOf:
       - $ref: "#/$defs/gap_filling_rule_base"
 
       - type: object
         properties:
           method:
-            const: copy_period
+            const: copy_periods
 
           max_gap:
             $ref: "#/$defs/duration"
@@ -312,7 +312,7 @@ $defs:
     oneOf:
       - $ref: "#/$defs/linear_interpolation_rule"
       - $ref: "#/$defs/average_periods_rule"
-      - $ref: "#/$defs/copy_period_rule"
+      - $ref: "#/$defs/copy_periods_rule"
 
 
 properties:

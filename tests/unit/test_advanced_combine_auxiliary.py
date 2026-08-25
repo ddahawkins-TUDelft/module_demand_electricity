@@ -11,7 +11,7 @@ def test_combine_auxiliary_sources_aligns_country_columns() -> None:
     neso = pd.DataFrame({"GBR": [12.0, 13.0]}, index=index)
 
     combined, data_source, cleaning_method = combine_auxiliary_sources(
-        {"entsoe_api": entsoe, "neso": neso}, priority=["neso", "entsoe_api"]
+        {"entsoe": entsoe, "neso": neso}, priority=["neso", "entsoe"]
     )
 
     assert list(combined.columns) == ["GBR", "GRC"]
@@ -22,14 +22,14 @@ def test_combine_auxiliary_sources_aligns_country_columns() -> None:
 
     assert data_source["GBR"].tolist() == ["neso", "neso"]
 
-    assert data_source["GRC"].tolist() == ["entsoe_api", "entsoe_api"]
+    assert data_source["GRC"].tolist() == ["entsoe", "entsoe"]
 
     assert cleaning_method.shape == combined.shape
 
 
 def test_combine_auxiliary_sources_handles_empty_input() -> None:
     combined, data_source, cleaning_method = combine_auxiliary_sources(
-        {}, priority=["entsoe_api", "neso", "opsd_api"]
+        {}, priority=["entsoe", "neso", "opsd"]
     )
 
     assert combined.empty

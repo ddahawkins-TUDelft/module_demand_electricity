@@ -5,19 +5,18 @@ from typing import Any
 
 import pandas as pd
 from common.time import as_utc_timestamp
+from tclean import TimeGrid
+from tclean.advanced import (
+    build_auxiliary_acquisition_requirements,
+    build_auxiliary_source_requests,
+)
 
 from cleaning.advanced.methods.construct_from_sources import (
     METHOD_NAME as CONSTRUCT_FROM_SOURCES,
 )
 from cleaning.advanced.methods.external_profile import METHOD_NAME as EXTERNAL_PROFILE
 from cleaning.advanced.planning.manifest import EXECUTION_PLAN_VERSION
-from cleaning.advanced.planning.requirements import (
-    build_auxiliary_acquisition_requirements,
-)
-from cleaning.advanced.planning.source_requests import (
-    build_auxiliary_source_batches,
-    build_auxiliary_source_requests,
-)
+from cleaning.advanced.planning.source_requests import build_auxiliary_source_batches
 
 
 def build_advanced_execution_plan(
@@ -25,6 +24,7 @@ def build_advanced_execution_plan(
     fill_plan: pd.DataFrame,
     gap_filling_config: Mapping[str, Any],
     source_names: Sequence[str],
+    grid: TimeGrid,
 ) -> dict[str, object]:
     """Compile all domain-aware information needed by the advanced DAG."""
     if gap_filling_config["mode"] != "advanced" or fill_plan.empty:
@@ -85,6 +85,45 @@ def build_advanced_execution_plan(
         "constructed_profile_rule_names": constructed_profile_rule_names,
         "external_profile_files": external_profile_files,
     }
+
+
+def _build_source_periods(
+    overrides: Mapping[str, Mapping[str, Any]],
+) -> list[pd.DataFrame]:
+    """Convert Modelblocks auxiliary source definitions to T-Clean tables."""
+    source_periods: list[pd.DataFrame] = []
+
+    for override in overrides.values():
+        if override["method"] != CONSTRUCT_FROM_SOURCES:
+            continue
+
+        periods = list(override["sources"])
+
+        scaling = override.get("scaling")
+
+        if scaling is not None:
+            periods.extend(
+                scaling.get("target_sources", [])
+            )
+
+        if not periods:
+            continue
+
+        source_periods.append(
+            pd.DataFrame(
+                [
+                    {
+                        "context": period["country"],
+                        "start": period["start"],
+                        "end": period["end"],
+                        "weight": period["weight"],
+                    }
+                    for period in periods
+                ]
+            )
+        )
+
+    return source_periods
 
 
 def _empty_execution_plan() -> dict[str, object]:

@@ -118,6 +118,9 @@ checkpoint plan_auxiliary_data:
     params:
         gap_filling=config["gap_filling"],
         source_names=config["load_sources"],
+        start=config["temporal_scope"]["start"],
+        end=config["temporal_scope"]["end"],
+        frequency=config["temporal_scope"]["frequency"],
     message:
         "Plan auxiliary electricity-demand acquisition."
     script:

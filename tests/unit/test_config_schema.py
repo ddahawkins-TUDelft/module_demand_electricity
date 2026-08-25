@@ -41,7 +41,7 @@ def test_advanced_auxiliary_basic_cleaning_can_be_disabled() -> None:
 
     config = {
         "temporal_scope": {"start": "2021-01-01", "end": "2022-01-01"},
-        "load_sources": ["entsoe_api"],
+        "load_sources": ["entsoe"],
         "gap_filling": {
             "mode": "advanced",
             "basic": {"rules": []},
@@ -65,7 +65,7 @@ def test_advanced_mode_allows_no_rules_or_overrides() -> None:
 
     config = {
         "temporal_scope": {"start": "2021-01-01", "end": "2022-01-01"},
-        "load_sources": ["entsoe_api"],
+        "load_sources": ["entsoe"],
         "gap_filling": {
             "mode": "advanced",
             "basic": {"rules": []},

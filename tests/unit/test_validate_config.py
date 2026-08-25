@@ -8,7 +8,7 @@ def _config() -> dict:
     """Return a structurally valid configuration for semantic validation."""
     return {
         "temporal_scope": {"start": "2022-01-01", "end": "2023-01-01"},
-        "load_sources": ["entsoe_api", "neso"],
+        "load_sources": ["entsoe", "neso"],
         "gap_filling": {"basic": {"rules": []}, "advanced": {"overrides": {}}},
     }
 
@@ -49,7 +49,7 @@ def test_rejects_basic_rule_name_reserved_for_observed_source() -> None:
     config = _config()
     config["gap_filling"]["basic"]["rules"] = [
         {
-            "name": "observed_entsoe_api",
+            "name": "observed_entsoe",
             "method": "linear_interpolation",
             "max_gap": "3h",
         }

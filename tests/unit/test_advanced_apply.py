@@ -18,7 +18,7 @@ def _cleaning_method() -> pd.DataFrame:
     index = pd.date_range("2021-01-01", periods=3, freq="h", tz="UTC")
 
     return pd.DataFrame(
-        {"ALB": ["observed_entsoe_api", "missing", "observed_entsoe_api"]}, index=index
+        {"ALB": ["observed_entsoe", "missing", "observed_entsoe"]}, index=index
     )
 
 
@@ -54,9 +54,9 @@ def test_construct_from_sources_fills_gaps() -> None:
     assert filled["ALB"].tolist() == [1.0, 20.0, 3.0]
 
     assert methods["ALB"].tolist() == [
-        "observed_entsoe_api",
+        "observed_entsoe",
         "construct_albania",
-        "observed_entsoe_api",
+        "observed_entsoe",
     ]
 
 
@@ -185,7 +185,7 @@ def test_overwrite_replaces_existing_values() -> None:
 
     load = pd.DataFrame({"ALB": [10.0, 20.0, 30.0, 40.0]}, index=index)
 
-    cleaning_method = pd.DataFrame({"ALB": ["observed_entsoe_api"] * 4}, index=index)
+    cleaning_method = pd.DataFrame({"ALB": ["observed_entsoe"] * 4}, index=index)
 
     profile = pd.Series([100.0, 200.0], index=index[1:3], name="ALB")
 
@@ -218,10 +218,10 @@ def test_overwrite_replaces_existing_values() -> None:
     assert filled["ALB"].tolist() == [10.0, 100.0, 200.0, 40.0]
 
     assert methods["ALB"].tolist() == [
-        "observed_entsoe_api",
+        "observed_entsoe",
         "replace_albania",
         "replace_albania",
-        "observed_entsoe_api",
+        "observed_entsoe",
     ]
 
 
@@ -234,10 +234,10 @@ def test_fill_gaps_preserves_existing_values() -> None:
     cleaning_method = pd.DataFrame(
         {
             "ALB": [
-                "observed_entsoe_api",
+                "observed_entsoe",
                 "missing",
-                "observed_entsoe_api",
-                "observed_entsoe_api",
+                "observed_entsoe",
+                "observed_entsoe",
             ]
         },
         index=index,
@@ -274,10 +274,10 @@ def test_fill_gaps_preserves_existing_values() -> None:
     assert filled["ALB"].tolist() == [10.0, 100.0, 30.0, 40.0]
 
     assert methods["ALB"].tolist() == [
-        "observed_entsoe_api",
+        "observed_entsoe",
         "fill_albania",
-        "observed_entsoe_api",
-        "observed_entsoe_api",
+        "observed_entsoe",
+        "observed_entsoe",
     ]
 
 
