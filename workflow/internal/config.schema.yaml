@@ -350,9 +350,9 @@ properties:
     items:
       type: string
       enum:
-        - entsoe_api
+        - entsoe
         - neso
-        - opsd_api
+        - opsd
 
   gap_filling:
     type: object
