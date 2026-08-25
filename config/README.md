@@ -2,63 +2,76 @@
 
 This module is configured through `config/config.yaml`.
 
-We recommend consulting the following alongside this file:
+The configuration schema is intentionally strict: malformed or unsupported configuration should fail validation rather than silently falling back to defaults.
 
-- [`config/config.yaml`](./config.yaml): example configuration for this module.
-- [`workflow/internal/config.schema.yaml`](../workflow/internal/config.schema.yaml): complete schema defining valid configuration options.
-- [`INTERFACE.yaml`](../INTERFACE.yaml): module input and output files and their default locations.
-- [`tests/integration/Snakefile`](../tests/integration/Snakefile): example of how to import and call this module from another workflow.
+Useful references are:
 
-This data module is part of the [Modelblocks](https://www.modelblocks.org/) project.
-Please consult the [Modelblocks documentation](https://modelblocks.readthedocs.io/) for more information.
+- [`config/config.yaml`](./config.yaml): example configuration;
+- [`workflow/internal/config.schema.yaml`](../workflow/internal/config.schema.yaml): authoritative configuration schema;
+- [`INTERFACE.yaml`](../INTERFACE.yaml): module input/output interface;
+- [`tests/integration/test_config.yaml`](../tests/integration/test_config.yaml): a richer integration configuration;
+- [`tests/integration/Snakefile`](../tests/integration/Snakefile): example module import.
 
 ## Temporal scope
 
-The requested electricity-demand period is configured using `temporal_scope`.
+`temporal_scope` defines the regular target time grid used for demand cleaning.
 
 ```yaml
 temporal_scope:
-  start: "2016-01-01"
-  end: "2026-01-01"
+  start: "2017-01-01"
+  end: "2017-01-03"
+  frequency: "1h"
 ```
+
+The grid follows a half-open interval:
+
+```text
+[start, end)
+```
+
+so `start` is included and `end` is excluded.
+
+The period length must be an integer multiple of `frequency`. The `start` timestamp also anchors the grid phase, so timestamps used by provider data, auxiliary data, and external profiles must align with the configured grid.
+
+Date-only timestamps represent midnight. Date-time strings may be used when the grid needs a non-midnight start or another explicit offset.
 
 ## Demand sources
 
-The load_sources setting defines which demand datasets are used and their priority order.
+`load_sources` selects the national demand providers and defines their priority.
 
 ```yaml
 load_sources:
-  - entsoe_api
+  - entsoe
   - neso
-  - opsd_api
+  - opsd
 ```
 
-Sources are combined in the order listed. Where more than one source provides a value for the same country and timestamp, the higher-priority source is retained.
+Available identifiers are:
 
-Available sources are:
+- `entsoe`: ENTSO-E Transparency Platform;
+- `neso`: National Energy System Operator historic demand;
+- `opsd`: Open Power System Data.
 
-- `entsoe_api`: ENTSO-E Transparency Platform data
-- `neso`: historical demand data from the National Energy System Operator for Great Britain.
-- `opsd_api`: historical demand data from Open Power System Data.
+Sources are combined in the listed order. When more than one provider supplies a value for the same country and timestamp, the higher-priority provider is retained.
 
 ## Gap filling
-Gap handling is configured under `gap_filling`.
+
+Gap handling is configured below `gap_filling`.
 
 ```yaml
 gap_filling:
   mode: basic
 ```
 
-### Modes
 Three modes are available:
 
-- `off`: do not apply gap filling.
-- `basic`: apply deterministic gap-filling rules in the configured order.
-- `advanced`: apply basic gap filling first, then process remaining gaps using explicitly configured advanced rules.
-
+- `off`: no gap filling;
+- `basic`: apply deterministic basic rules in configured order;
+- `advanced`: run basic cleaning first and then apply configured advanced rules that are active for the current target countries and time grid.
 
 ## Basic gap filling
-Basic rules are listed under `gap_filling.basic.rules` and are applied sequentially in the order in which they appear.
+
+Basic rules are listed under `gap_filling.basic.rules`.
 
 ```yaml
 gap_filling:
@@ -78,20 +91,25 @@ gap_filling:
           - 7d
 
       - name: copy_previous_week
-        method: copy_period
+        method: copy_periods
         max_gap: 168h
         source_offset: -168h
+        require_complete_source: true
 
       - name: copy_following_week
-        method: copy_period
+        method: copy_periods
         max_gap: 168h
         source_offset: 168h
+        require_complete_source: true
 ```
-Each rule must have a unique `name`. The rule name is retained in the cleaning provenance and diagnostic plots, and should therefore be descriptive.
 
-### linear_interpolation
+Rules are applied sequentially. Values filled by an earlier rule are therefore available to later rules.
 
-Interpolates across missing periods up to the configured `max_gap`.
+Each rule requires a unique, descriptive `name`. Rule names are retained in cleaning provenance and diagnostic outputs.
+
+### `linear_interpolation`
+
+Interpolates across missing periods up to `max_gap`.
 
 ```yaml
 - name: interpolate_short_gaps
@@ -99,9 +117,9 @@ Interpolates across missing periods up to the configured `max_gap`.
   max_gap: 3h
 ```
 
-### average_periods
+### `average_periods`
 
-Fills a gap using the average of one or more periods offset from the missing interval.
+Uses the mean of corresponding values from one or more offset periods.
 
 ```yaml
 - name: average_adjacent_weeks
@@ -112,244 +130,218 @@ Fills a gap using the average of one or more periods offset from the missing int
     - 7d
 ```
 
-In this example, the value from the same hour one week earlier and one week later is averaged.
+In this example, corresponding values one week before and one week after the gap are averaged.
 
-### copy_period
+### `copy_periods`
 
-Copies values from a period offset from the missing interval.
+Copies corresponding values from a configured offset period.
 
 ```yaml
 - name: copy_previous_week
-  method: copy_period
+  method: copy_periods
   max_gap: 168h
   source_offset: -168h
+  require_complete_source: true
 ```
-A positive offset copies from a later period; a negative offset copies from an earlier period.
+
+A negative `source_offset` uses an earlier period; a positive offset uses a later period.
+
+`require_complete_source: true` requires the source period needed for the copy to be complete before that rule can fill the target gap.
 
 ## Advanced gap filling
-Advanced mode is intended for gaps that cannot be resolved appropriately using the deterministic basic rules.
 
-Advanced rules are defined under:
+Advanced mode separates two concepts:
+
+1. **sources** describe how an advanced profile is obtained;
+2. **rules** describe the target country, period, scope, and source to apply.
+
+This keeps reusable source definitions separate from their application.
+
+The overall structure is:
 
 ```yaml
 gap_filling:
   mode: advanced
 
+  basic:
+    rules: [...]
+
   advanced:
     auxiliary_data:
-    overrides:
+      basic_cleaning:
+        enabled: true
 
-      example_override_rule_name:
-        ...
+    sources:
+      example_source:
+        method: construct_from_sources
+        periods: [...]
+
+    rules:
+      - name: example_rule
+        country: ALB
+        start: "2017-01-01"
+        end: "2017-01-03"
+        scope: overwrite
+        source: example_source
 ```
 
-Each override targets a specific country and time period and defines:
+### Active and inactive rules
 
-- `country`: ISO3 country code.
-- `start`: start of the target period.
-- `end`: end of the target period.
-- `scope`: whether to fill only missing values or overwrite supplied values.
-- `method`: the advanced strategy to apply.
+Advanced rules may remain in a reusable configuration even when they do not apply to a particular run.
 
-Override names must be unique and use lowercase letters, numbers, and underscores.
+A rule is **active** when:
 
-### Active and inactive overrides
+- its target country is part of the demand being processed; and
+- its target interval overlaps the configured target time grid.
 
-Advanced overrides may be kept in the configuration even when they are not relevant to the current model run.
+A rule outside the current countries or time grid is **inactive** and does not trigger auxiliary-data acquisition or profile construction.
 
-An override is **active** when its target country and time period overlap with the demand being processed. Only active overrides are included in the advanced gap-filling workflow. Overrides that fall outside the current target countries or `temporal_scope` are considered **inactive** and are not executed.
+Activity is determined from target scope, not from whether a matching gap happens to remain after basic cleaning. In particular, a `fill_gaps` rule can be active even when there is ultimately nothing for it to fill.
 
-This allows a configuration to maintain a reusable collection of known gap-handling rules across countries and time periods. For example, a project may keep established overrides for Albania, Cyprus, and North Macedonia in the same configuration while running a model instance that only requires Albania. The rules for the other countries remain available but do not trigger unnecessary auxiliary data acquisition or processing.
+All configured rules must still be valid according to the schema. Inactivity does not make invalid configuration acceptable.
 
-In the example below, if the current run covers Albania in 2022 but not Montenegro in 2020, fill_alb_2022 is active while fill_mne_2020 remains inactive.
-
-```yaml
-advanced:
-  overrides:
-    fill_alb_2022:
-      country: ALB
-      start: "2022-01-01"
-      end: "2022-02-01"
-      scope: fill_gaps
-      method: construct_from_sources
-      ...
-
-    fill_mne_2020:
-      country: MNE
-      start: "2020-03-01"
-      end: "2020-04-01"
-      scope: fill_gaps
-      method: construct_from_sources
-      ...
-```
-
-> [!IMPORTANT]
-> All configured overrides must still be valid according to the configuration schema. An inactive rule is ignored because it is outside the current model scope, not because invalid configuration is tolerated.
-
-
-### Scope
+### Rule scopes
 
 Two scopes are supported:
 
-- `fill_gaps`: only missing target values are replaced.
-- `overwrite`: all values supplied by the advanced rule within the configured target period are replaced. Note, this method forces existing values to be overwritten.
+- `fill_gaps`: replace missing target values only;
+- `overwrite`: replace target values throughout the rule period.
 
-### Method
-Three methods are currently supported:
-- `construct_from_sources`: builds a synthetic profile from one or more alternative country-period sources using a weighted-average method configured by the user.
-- `external_profile`: reads a profile from a user-provided CSV file.
-- `leave_missing`: explicitly leaves the specified period unresolved.
+### Advanced periods
 
-### Timestamps
+Advanced target and source periods follow the same half-open convention as the model grid:
 
-All configured timestamps refer to the module's hourly UTC time index.
-
-For YAML configuration, timestamps may be written in one of the following forms:
-
-```yaml
-start: "2022-01-01"
-end: "2022-02-01"
-```
-or, when an hour must be specified explicitly:
-
-```yaml
-start: "2022-01-01 00:00"
-end: "2022-02-01 00:00"
+```text
+[start, end)
 ```
 
-A date without an explicit time represents 00:00 at the start of that date.
+Source periods used to construct a target profile must have the temporal length required by the target construction.
 
-Configured periods follow a half-open interval convention, [start, end): the start timestamp is included and the end timestamp is excluded.
+## Advanced source: `construct_from_sources`
 
-> [!Important]
-> Naive timestamps in the configuration are interpreted consistently with the module's UTC hourly time index; external profiles should use ISO 8601 timestamps and are therefore recommended to be supplied explicitly in UTC using `Z`. See [Advanced Method: `external_profile`](#advanced-method-external_profile).
-
-## Advanced Method: `construct_from_sources`
-
-`construct_from_sources` builds a synthetic profile from one or more alternative country-period sources using a weighted-average method configured by the user.
+A `construct_from_sources` source builds a profile from one or more configured country-period profiles.
 
 ```yaml
-example_rule_construct_from_sources:
-  country: ALB
-  start: "2022-01-01"
-  end: "2022-02-01"
-  scope: fill_gaps
-  method: construct_from_sources
-
+advanced:
   sources:
-    - country: GRC
-      start: "2022-01-01"
-      end: "2022-02-01"
-      weight: 1
-    - country: MKD
-      start: "2022-01-01"
-      end: "2022-02-01"
-      weight: 3
+    alb_from_gbr_alb_winter:
+      method: construct_from_sources
+      periods:
+        - country: GBR
+          start: "2024-01-01"
+          end: "2024-02-01"
+          weight: 1
 
-  scaling:
-    method: match_energy
-    target_sources:
-      - country: ALB
-        start: "2024-01-01"
-        end: "2024-02-01"
-        weight: 1
+      scaling:
+        method: match_energy
+        periods:
+          - country: ALB
+            start: "2024-01-01"
+            end: "2024-02-01"
+            weight: 1
 ```
 
-The source period must describe the same number of hourly timestamps as the target period.
+Each `periods` entry identifies:
 
-Multiple sources may be supplied. Their weight values determine their relative contribution to the constructed profile.
+- `country`;
+- `start`;
+- `end`;
+- `weight`.
 
-> [!IMPORTANT]
-> Weighting is relative and values provided are normalised such that all weights sum to 1, i.e. in the example above, `GRC` has a relative contribution of `0.25` and `MKD` has a relative contribution of `0.75`.
+Weights are relative contributions and must be finite and positive.
 
-> [!NOTE]
-> The combination of `scope: overwrite` and providing a single source, effectively provides a broad copy-paste function.
+Multiple source periods can be combined. Their relative weights determine their contribution to the constructed profile.
 
-### Scaling
+### Scaling constructed profiles
 
-A constructed profile can optionally be scaled before it is applied. This is helpful where sources are from other countries with different average energy consumptions.
+A constructed profile may optionally be rescaled.
 
-The currently supported scaling method is:
+The currently configured scaling strategy is:
 
 ```yaml
 scaling:
   method: match_energy
+  periods:
+    - country: ALB
+      start: "2024-01-01"
+      end: "2024-02-01"
+      weight: 1
 ```
 
-`match_energy` scales the constructed profile so that its total energy matches the weighted energy of the configured target_sources.
+`match_energy` uses the configured scaling periods to align the overall energy level of the constructed profile with a more representative reference.
 
-This allows the temporal shape of one country or period to be used while matching the overall demand level of a more representative target period.
+Scaling periods can require auxiliary demand data outside the main target grid; the workflow includes them when compiling acquisition requirements.
 
-## Advanced Method: `external_profile`
-`external_profile` applies demand values supplied in a user-provided .CSV file.
+## Advanced source: `external_profile`
+
+An `external_profile` source reads a user-supplied CSV.
 
 ```yaml
-external_alb_profile:
-  country: ALB
-  start: "2022-01-01 00:00"
-  end: "2022-01-08 00:00"
-  scope: overwrite
-  method: external_profile
-  path: inputs/external_profiles/alb_external.csv
+advanced:
+  sources:
+    alb_external:
+      method: external_profile
+      file: inputs/external_profiles/alb_external.csv
 ```
 
-External profiles must contain exactly two columns and use ISO 8601 timestamps with an explicit UTC designator:
+The target country, period, and application scope belong to the **rule**, not to the source:
+
+```yaml
+advanced:
+  rules:
+    - name: use_alb_external_profile
+      country: ALB
+      start: "2022-01-01 00:00"
+      end: "2022-01-08 00:00"
+      scope: overwrite
+      source: alb_external
+```
+
+External profile CSVs use the generic T-Clean column contract:
 
 ```csv
-timestamp,demand
+timestamp,value
 2022-01-01T00:00:00Z,723.0
 2022-01-01T01:00:00Z,716.0
 ```
 
-Requirements:
+The profile must use valid, unique timestamps aligned with the target grid, and numeric non-missing values. Sparse profiles are permitted where supported by the configured rule/application behavior.
 
-- timestamp must contain parseable hourly timestamps.
-- timestamps must be unique.
-- timestamps must be aligned to whole hours.
-- demand must be numeric and non-missing.
-- sparse profiles are allowed.
+## Explicitly leaving values missing
 
-Only timestamps present in both the external profile and the configured target period are applied.
+Advanced configuration can explicitly retain unresolved values rather than fabricate a profile. This is useful when missing data is known and accepted.
 
-## Advanced Method: `leave_missing`
+Consult the authoritative configuration schema for the exact `leave_missing` source/rule form supported by the current module version.
 
-`leave_missing` explicitly accepts that a target period remains unresolved.
+## Auxiliary data
 
-```yaml
-leave_alb_gap:
-  country: ALB
-  start: "2016-01-01"
-  end: "2016-02-01"
-  scope: fill_gaps
-  method: leave_missing
-```
+Advanced constructed profiles can require demand observations from countries or periods outside the main target grid.
 
-No replacement values are generated. The missing period remains visible in the cleaned demand series and diagnostic outputs.
+Auxiliary behavior is configured under:
 
-## Auxiliary Data
-Advanced rules that construct profiles from other countries or periods may require additional demand data outside the main requested target period.
-
-Auxiliary acquisition is configured under:
 ```yaml
 advanced:
   auxiliary_data:
     basic_cleaning:
       enabled: true
 ```
-When enabled, the same basic gap-filling logic is applied to auxiliary demand before it is used to construct an advanced profile.
 
+When enabled, the configured basic cleaning rules are also applied to auxiliary demand before it is used in advanced profile construction.
+
+The module determines auxiliary acquisition requirements only for **active** advanced rules. Provider acquisition and preparation remain Modelblocks responsibilities; generic planning and cleaning behavior is delegated to T-Clean.
 
 ## Complete example
 
 ```yaml
 temporal_scope:
-  start: "2020-01-01"
-  end: "2025-01-01"
+  start: "2017-01-01"
+  end: "2017-01-03"
+  frequency: "1h"
 
 load_sources:
-  - entsoe_api
+  - entsoe
   - neso
-  - opsd_api
+  - opsd
 
 gap_filling:
   mode: advanced
@@ -360,63 +352,88 @@ gap_filling:
         method: linear_interpolation
         max_gap: 3h
 
+      - name: average_adjacent_weeks
+        method: average_periods
+        max_gap: 326h
+        source_offsets:
+          - -7d
+          - 7d
+
       - name: copy_previous_week
-        method: copy_period
+        method: copy_periods
         max_gap: 168h
         source_offset: -168h
+        require_complete_source: true
+
+      - name: copy_following_week
+        method: copy_periods
+        max_gap: 168h
+        source_offset: 168h
+        require_complete_source: true
 
   advanced:
     auxiliary_data:
       basic_cleaning:
         enabled: true
 
-    overrides:
-
-      # This rule  constructs a synthetic profile from GRC
-      # and MKD Jan 2022, rescales to ALB Jan 2024 average
-      # energy levels, and fill gaps in ALB Jan 2022. It
-      # does not overwrite existing values.
-      build_alb_winter:
-        country: ALB
-        start: "2022-01-01"
-        end: "2022-02-01"
-        scope: fill_gaps
+    sources:
+      alb_from_alb_2024:
         method: construct_from_sources
-        sources:
-          - country: GRC
-          start: "2022-01-01"
-          end: "2022-02-01"
-          weight: 1
-          - country: MKD
-          start: "2022-01-01"
-          end: "2022-02-01"
-          weight: 3
-        scaling:
-          method: match_energy
-          target_sources:
+        periods:
           - country: ALB
             start: "2024-01-01"
-            end: "2024-02-01"
+            end: "2024-01-03"
+            weight: 1
+        scaling:
+          method: match_energy
+          periods:
+            - country: ALB
+              start: "2024-01-01"
+              end: "2024-01-03"
+              weight: 1
+
+      alb_external:
+        method: external_profile
+        file: inputs/external_profiles/alb_external.csv
+
+      mne_from_srb:
+        method: construct_from_sources
+        periods:
+          - country: SRB
+            start: "2022-03-01"
+            end: "2022-04-01"
             weight: 1
 
-      # This rule overwrites ALB 2021 using an external
-      # profile, including any values that do exist from
-      # the original ENTSO-E/NESO/OPSD download.
-      external_alb_profile:
+    rules:
+      - name: overwrite_alb_from_alb_2024
         country: ALB
-        start: "2021-01-01 00:00"
-        end: "2022-01-01 00:00"
+        start: "2017-01-01"
+        end: "2017-01-03"
         scope: overwrite
-        method: external_profile
-        path: inputs/external_profiles/alb_external.csv
+        source: alb_from_alb_2024
 
-      # This rule intentionally leaves missing values.
-      # This rule is inactive because its target period lies
-      # outside the configured temporal_scope.
-      leave_alb_gap:
-        country: ALB
-        start: "2016-01-01"
-        end: "2017-01-01"
+      - name: example_inactive_mne_rule
+        country: MNE
+        start: "2020-03-01"
+        end: "2020-04-01"
         scope: fill_gaps
-        method: leave_missing
+        source: mne_from_srb
 ```
+
+In this example:
+
+- the target grid is hourly from 1 January to 3 January 2017;
+- the Albania rule is active for an Albania target and overwrites the requested 2017 period with a profile constructed from 2024 data;
+- the Montenegro rule is outside the target period and is therefore inactive;
+- auxiliary acquisition is planned only where active advanced sources require it.
+
+## Validation
+
+Configuration is checked in two layers:
+
+1. the YAML schema checks structure, permitted values, required fields, and basic types;
+2. semantic validation checks constraints that depend on relationships between fields, such as time-grid alignment, unique rule/source names, valid source references, and compatible advanced periods.
+
+Invalid configuration should be corrected at source rather than handled through silent fallbacks.
+
+For the complete accepted configuration contract, refer to [`workflow/internal/config.schema.yaml`](../workflow/internal/config.schema.yaml).
