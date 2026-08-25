@@ -308,6 +308,7 @@ rule construct_auxiliary_profile:
 rule apply_advanced_overrides:
     input:
         demand=("<resources>/automatic/" "load_basic_cleaned.parquet"),
+        data_source=rules.clean_demand.output.data_source,
         cleaning_method=("<resources>/automatic/" "load_cleaning_method.parquet"),
         plan=auxiliary_acquisition_plan,
         constructed_profiles=advanced_constructed_profiles,
@@ -317,6 +318,8 @@ rule apply_advanced_overrides:
         cleaning_method=(
             "<resources>/automatic/" "load_advanced_cleaning_method.parquet"
         ),
+    params:
+        temporal_scope=config["temporal_scope"],
     conda:
         "../envs/module.yaml"
     message:
