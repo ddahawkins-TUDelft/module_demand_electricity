@@ -110,7 +110,7 @@ def auxiliary_entsoe_threads(wildcards):
 
 checkpoint plan_auxiliary_data:
     input:
-        gap_report=rules.clean_demand.output.gap_report,
+        demand=rules.clean_demand.output.demand,
     output:
         plan=(
             "<resources>/automatic/"

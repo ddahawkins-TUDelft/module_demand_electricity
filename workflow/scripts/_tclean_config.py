@@ -85,8 +85,14 @@ def build_advanced_rules(
                 "method": method,
                 "source": source_name,
                 "context": rule["country"],
-                "start": rule["start"],
-                "end": rule["end"],
+                "start": pd.to_datetime(
+                    rule["start"],
+                    utc=True,
+                ),
+                "end": pd.to_datetime(
+                    rule["end"],
+                    utc=True,
+                ),
                 "scope": rule["scope"],
             }
         )
@@ -242,8 +248,14 @@ def _build_source_periods(
         [
             {
                 "context": period["country"],
-                "start": period["start"],
-                "end": period["end"],
+                "start": pd.to_datetime(
+                    period["start"],
+                    utc=True,
+                ),
+                "end": pd.to_datetime(
+                    period["end"],
+                    utc=True,
+                ),
                 "weight": period["weight"],
             }
             for period in periods

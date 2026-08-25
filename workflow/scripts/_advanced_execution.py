@@ -1,0 +1,272 @@
+"""Build Snakemake execution metadata for advanced demand cleaning."""
+
+from __future__ import annotations
+
+import hashlib
+from collections.abc import Mapping, Sequence
+from typing import Any
+
+import pandas as pd
+
+EXECUTION_PLAN_VERSION = 1
+
+
+def build_source_batches(
+    requests: pd.DataFrame,
+) -> list[dict[str, object]]:
+    """Group T-Clean source requests into executable provider batches."""
+    if requests.empty:
+        return []
+
+    required_columns = {
+        "source",
+        "context",
+        "start",
+        "end",
+    }
+
+    missing_columns = (
+        required_columns - set(requests.columns)
+    )
+
+    if missing_columns:
+        raise ValueError(
+            "Auxiliary source requests are missing required "
+            f"columns: {sorted(missing_columns)}."
+        )
+
+    batches: list[dict[str, object]] = []
+
+    grouped = requests.groupby(
+        [
+            "source",
+            "start",
+            "end",
+        ],
+        sort=False,
+    )
+
+    for (
+        source,
+        start,
+        end,
+    ), group in grouped:
+        start = pd.Timestamp(start)
+        end = pd.Timestamp(end)
+
+        if end <= start:
+            raise ValueError(
+                "Auxiliary batch end must be later than "
+                "its start."
+            )
+
+        countries = sorted(
+            group["context"]
+            .drop_duplicates()
+            .tolist()
+        )
+
+        group_id = build_group_id(
+            start=start,
+            end=end,
+        )
+
+        batch_id = build_batch_id(
+            source=str(source),
+            start=start,
+            end=end,
+            countries=countries,
+        )
+
+        batches.append(
+            {
+                "group_id": group_id,
+                "batch_id": batch_id,
+                "source": str(source),
+                "start": start,
+                "end": end,
+                "countries": countries,
+            }
+        )
+
+    return batches
+
+
+def serialize_batch(
+    batch: Mapping[str, object],
+) -> dict[str, object]:
+    """Convert one auxiliary batch to JSON-compatible values."""
+    start = pd.Timestamp(batch["start"])
+    end = pd.Timestamp(batch["end"])
+
+    if end <= start:
+        raise ValueError(
+            "Auxiliary batch end must be later than "
+            "its start."
+        )
+
+    final_included_time = (
+        end - pd.Timedelta(nanoseconds=1)
+    )
+
+    return {
+        **batch,
+        "start": start.isoformat(),
+        "end": end.isoformat(),
+        "years": list(
+            range(
+                start.year,
+                final_included_time.year + 1,
+            )
+        ),
+    }
+
+
+def build_group_id(
+    *,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+) -> str:
+    """Build a deterministic identifier for one auxiliary period."""
+    return (
+        f"{start.strftime('%Y%m%dT%H%M')}__"
+        f"{end.strftime('%Y%m%dT%H%M')}"
+    )
+
+
+def build_batch_id(
+    *,
+    source: str,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+    countries: Sequence[str],
+) -> str:
+    """Build a deterministic identifier for one provider batch."""
+    countries_key = ",".join(
+        sorted(countries)
+    )
+
+    countries_hash = hashlib.sha1(
+        countries_key.encode("utf-8")
+    ).hexdigest()[:8]
+
+    return (
+        f"{source}__"
+        f"{start.strftime('%Y%m%dT%H%M')}__"
+        f"{end.strftime('%Y%m%dT%H%M')}__"
+        f"{countries_hash}"
+    )
+
+
+def index_batch_ids_by_source(
+    batches: Sequence[Mapping[str, object]],
+) -> dict[str, list[str]]:
+    """Index planned batch identifiers by provider source."""
+    result: dict[str, list[str]] = {}
+
+    for batch in batches:
+        source = str(batch["source"])
+        batch_id = str(batch["batch_id"])
+
+        result.setdefault(
+            source,
+            [],
+        ).append(batch_id)
+
+    return result
+
+
+def index_batch_ids_by_group(
+    batches: Sequence[Mapping[str, object]],
+) -> dict[str, list[str]]:
+    """Index planned batch identifiers by auxiliary period group."""
+    result: dict[str, list[str]] = {}
+
+    for batch in batches:
+        group_id = str(batch["group_id"])
+        batch_id = str(batch["batch_id"])
+
+        result.setdefault(
+            group_id,
+            [],
+        ).append(batch_id)
+
+    return result
+
+
+def resolve_required_group_ids(
+    batches: Sequence[Mapping[str, object]],
+    *,
+    source_periods: pd.DataFrame,
+) -> list[str]:
+    """Resolve source periods to acquired auxiliary period groups."""
+    if source_periods.empty:
+        return []
+
+    required_columns = {
+        "context",
+        "start",
+        "end",
+    }
+
+    missing_columns = (
+        required_columns - set(source_periods.columns)
+    )
+
+    if missing_columns:
+        raise ValueError(
+            "Advanced source periods are missing required "
+            f"columns: {sorted(missing_columns)}."
+        )
+
+    group_ids: list[str] = []
+
+    for period in source_periods.itertuples(
+        index=False
+    ):
+        start = pd.Timestamp(period.start)
+        end = pd.Timestamp(period.end)
+
+        matching_group_ids = {
+            str(batch["group_id"])
+            for batch in batches
+            if (
+                period.context
+                in batch["countries"]
+                and pd.Timestamp(batch["start"])
+                <= start
+                and pd.Timestamp(batch["end"])
+                >= end
+            )
+        }
+
+        if len(matching_group_ids) != 1:
+            raise ValueError(
+                "Expected exactly one auxiliary group "
+                f"covering context {period.context!r} "
+                f"from {start} to {end}, found "
+                f"{sorted(matching_group_ids)}."
+            )
+
+        group_id = next(
+            iter(matching_group_ids)
+        )
+
+        if group_id not in group_ids:
+            group_ids.append(group_id)
+
+    return group_ids
+
+
+def empty_execution_plan() -> dict[str, object]:
+    """Return an empty advanced execution manifest."""
+    return {
+        "version": EXECUTION_PLAN_VERSION,
+        "active_rule_names": [],
+        "rules": {},
+        "batches": [],
+        "batch_ids_by_source": {},
+        "groups": {},
+        "constructed_profile_rule_names": [],
+        "external_profile_files": {},
+    }
