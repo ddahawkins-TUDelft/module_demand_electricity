@@ -56,13 +56,13 @@ GAP_FILLING_CONFIG = {
             },
             {
                 "name": "copy_previous_week",
-                "method": "copy_period",
+                "method": "copy_periods",
                 "max_gap": "168h",
                 "source_offset": "-168h",
             },
             {
                 "name": "copy_following_week",
-                "method": "copy_period",
+                "method": "copy_periods",
                 "max_gap": "168h",
                 "source_offset": "168h",
             },

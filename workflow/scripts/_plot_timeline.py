@@ -389,7 +389,7 @@ def _build_cleaning_method_metadata(
 
 
 def _format_source_name(source_name: str) -> str:
-    mapping = {"entsoe_api": "ENTSO-E", "neso": "NESO", "opsd_api": "OPSD"}
+    mapping = {"entsoe": "ENTSO-E", "neso": "NESO", "opsd": "OPSD"}
     return mapping.get(source_name, source_name)
 
 
