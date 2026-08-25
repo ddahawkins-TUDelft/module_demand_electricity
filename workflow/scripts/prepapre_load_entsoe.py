@@ -1,10 +1,9 @@
-"""Snakemake entry point for preparing OPSD demand data."""
+"""Snakemake entry point for preparing ENTSO-E load data."""
 
-import sys
 from typing import TYPE_CHECKING, Any
 
 from cleaning.advanced.planning.manifest import get_batch, load_execution_plan
-from sources.opsd.prepare import prepare_opsd
+from sources.entsoe.prepare import prepare_entsoe
 from tclean import TimeGrid
 
 if TYPE_CHECKING:
@@ -12,7 +11,7 @@ if TYPE_CHECKING:
 
 
 def main(snakemake: Any) -> None:
-    """Prepare OPSD demand for the requested workflow period."""
+    """Prepare ENTSO-E demand for the requested workflow period."""
     plan_path = getattr(
         snakemake.input,
         "plan",
@@ -25,16 +24,16 @@ def main(snakemake: Any) -> None:
         batch = get_batch(
             plan,
             batch_id=snakemake.wildcards.batch_id,
-            source="opsd_api",
+            source="entsoe_api",
         )
 
         start = batch["start"]
         end = batch["end"]
-        country_codes = batch["countries"]
+        country_codes = list(batch["countries"])
 
     else:
-        start = snakemake.params.start
-        end = snakemake.params.end
+        start = snakemake.params.temporal_start
+        end = snakemake.params.temporal_end
         country_codes = list(
             snakemake.params.country_codes
         )
@@ -45,8 +44,8 @@ def main(snakemake: Any) -> None:
         frequency=snakemake.params.frequency,
     )
 
-    prepare_opsd(
-        input_path=snakemake.input.load,
+    prepare_entsoe(
+        input_path=snakemake.input.raw_load,
         output_path=snakemake.output.load,
         grid=grid,
         country_codes=country_codes,
@@ -54,10 +53,4 @@ def main(snakemake: Any) -> None:
 
 
 if __name__ == "__main__":
-    sys.stderr = open(
-        snakemake.log[0],
-        "w",
-        buffering=1,
-    )
-
     main(snakemake)
