@@ -6,7 +6,7 @@ resources:
     population: "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GLOBE_R2023A/GHS_POP_E2020_GLOBE_R2023A_54009_1000/V1-0/GHS_POP_E2020_GLOBE_R2023A_54009_1000_V1_0.zip"
     population_tif: "GHS_POP_E2020_GLOBE_R2023A_54009_1000_V1_0.tif"
 
-load_entsoe_api:
+load_entsoe:
   countries:
     # Download all ENTSO-E countries
     - "ALB"

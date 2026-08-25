@@ -14,31 +14,31 @@ rule validate_config_semantics:
         "../scripts/validate_config.py"
 
 
-rule download_load_entsoe_api:
+rule download_load_entsoe:
     input:
         validation="<resources>/automatic/config_validation.json",
         token_entsoe="<token_entsoe>",
     output:
-        load="<resources>/automatic/load_entsoe_api.parquet",
+        raw_load="<resources>/automatic/entsoe/raw_load.parquet",
     log:
-        "<logs>/download_load_entsoe_api.log",
+        "<logs>/download_load_entsoe.log",
     localrule: True
     conda:
         "../envs/module.yaml"
     threads:
         min(
-            internal["load_entsoe_api"]["MAX_WORKERS"],
-            len(internal["load_entsoe_api"]["countries"]),
-        )
+            internal["load_entsoe"]["MAX_WORKERS"],
+            len(internal["load_entsoe"]["countries"]),
+        ),
     params:
-        country_codes=internal["load_entsoe_api"]["countries"],
         temporal_start=config["temporal_scope"]["start"],
         temporal_end=config["temporal_scope"]["end"],
+        frequency=config["temporal_scope"]["frequency"],
+        country_codes=internal["load_entsoe"]["countries"],
     message:
         "Download electricity load from ENTSOE."
     script:
-        "../scripts/download_load_entsoe_api.py"
-
+        "../scripts/download_load_entsoe.py"
 
 rule download_load_opsd:
     output:

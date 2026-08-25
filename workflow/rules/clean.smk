@@ -17,13 +17,32 @@ def neso_raw_files(_wildcards):
         ("<resources>/automatic/neso/" f"historic_demand_{year}.csv") for year in years
     ]
 
+rule prepare_load_entsoe:
+    input:
+        raw_load=rules.download_load_entsoe.output.raw_load,
+    output:
+        load="<resources>/automatic/load_entsoe.parquet",
+    localrule: True
+    conda:
+        "../envs/module.yaml"
+    log:
+        "<logs>/prepare_load_entsoe.log",
+    params:
+        temporal_start=config["temporal_scope"]["start"],
+        temporal_end=config["temporal_scope"]["end"],
+        frequency=config["temporal_scope"]["frequency"],
+        country_codes=internal["load_entsoe"]["countries"],
+    message:
+        "Prepare electricity load from ENTSOE."
+    script:
+        "../scripts/prepare_load_entsoe.py"
 
 rule prepare_load_opsd:
     input:
         validation="<resources>/automatic/config_validation.json",
         load="<resources>/automatic/load_opsd.csv",
     output:
-        load="<resources>/automatic/load_opsd_api.parquet",
+        load="<resources>/automatic/load_opsd.parquet",
     log:
         "<logs>/prepare_load_opsd.log",
     conda:
@@ -31,7 +50,8 @@ rule prepare_load_opsd:
     params:
         start=config["temporal_scope"]["start"],
         end=config["temporal_scope"]["end"],
-        country_codes=internal["load_entsoe_api"]["countries"],
+        frequency=config["temporal_scope"]["frequency"],
+        country_codes=internal["load_entsoe"]["countries"],
     message:
         "Prepare electricity-demand data from OPSD."
     script:
@@ -51,7 +71,8 @@ rule prepare_load_neso:
     params:
         start=config["temporal_scope"]["start"],
         end=config["temporal_scope"]["end"],
-        country_codes=internal["load_entsoe_api"]["countries"],
+        country_codes=internal["load_entsoe"]["countries"],
+        frequency=config["temporal_scope"]["frequency"],
     message:
         "Prepare electricity-demand data from NESO."
     script:
@@ -59,9 +80,9 @@ rule prepare_load_neso:
 
 
 LOAD_SOURCE_PATHS = {
-    "entsoe_api": ("<resources>/automatic/" "load_entsoe_api.parquet"),
+    "entsoe": ("<resources>/automatic/" "load_entsoe.parquet"),
     "neso": ("<resources>/automatic/" "load_neso.parquet"),
-    "opsd_api": ("<resources>/automatic/" "load_opsd_api.parquet"),
+    "opsd": ("<resources>/automatic/" "load_opsd.parquet"),
 }
 
 

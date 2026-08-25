@@ -99,11 +99,11 @@ def auxiliary_entsoe_threads(wildcards):
     batch = next(
         batch
         for batch in plan["batches"]
-        if (batch["batch_id"] == wildcards.batch_id and batch["source"] == "entsoe_api")
+        if (batch["batch_id"] == wildcards.batch_id and batch["source"] == "entsoe")
     )
 
     return min(
-        internal["load_entsoe_api"]["MAX_WORKERS"],
+        internal["load_entsoe"]["MAX_WORKERS"],
         len(batch["countries"]),
     )
 
@@ -145,22 +145,57 @@ rule finalise_clean_demand:
         "../scripts/finalise_clean_demand.py"
 
 
-rule download_auxiliary_load_entsoe_api:
+rule download_auxiliary_load_entsoe:
     input:
         token_entsoe="<token_entsoe>",
         plan=auxiliary_acquisition_plan,
     output:
-        load=("<resources>/automatic/" "auxiliary/entsoe_api/" "{batch_id}.parquet"),
+        raw_load=(
+            "<resources>/automatic/"
+            "auxiliary/entsoe/raw/"
+            "{batch_id}.parquet"
+        ),
     log:
-        ("<logs>/auxiliary/" "entsoe_api/{batch_id}.log"),
+        (
+            "<logs>/auxiliary/"
+            "entsoe/download_{batch_id}.log"
+        ),
     localrule: True
     conda:
         "../envs/module.yaml"
-    threads: auxiliary_entsoe_threads
+    threads:
+        auxiliary_entsoe_threads
+    params:
+        frequency=config["temporal_scope"]["frequency"],
     message:
         "Download auxiliary electricity load from ENTSO-E."
     script:
-        "../scripts/download_load_entsoe_api.py"
+        "../scripts/download_load_entsoe.py"
+
+
+rule prepare_auxiliary_load_entsoe:
+    input:
+        plan=auxiliary_acquisition_plan,
+        raw_load=rules.download_auxiliary_load_entsoe.output.raw_load,
+    output:
+        load=(
+            "<resources>/automatic/"
+            "auxiliary/entsoe/"
+            "{batch_id}.parquet"
+        ),
+    log:
+        (
+            "<logs>/auxiliary/"
+            "entsoe/prepare_{batch_id}.log"
+        ),
+    conda:
+        "../envs/module.yaml"
+    params:
+        frequency=config["temporal_scope"]["frequency"],
+    message:
+        "Prepare auxiliary electricity-demand data from ENTSO-E."
+    script:
+        "../scripts/prepare_load_entsoe.py"
 
 
 rule prepare_auxiliary_load_opsd:
@@ -168,11 +203,13 @@ rule prepare_auxiliary_load_opsd:
         load=rules.download_load_opsd.output.load,
         plan=auxiliary_acquisition_plan,
     output:
-        load=("<resources>/automatic/" "auxiliary/opsd_api/" "{batch_id}.parquet"),
+        load=("<resources>/automatic/" "auxiliary/opsd/" "{batch_id}.parquet"),
     log:
-        ("<logs>/auxiliary/" "opsd_api/{batch_id}.log"),
+        ("<logs>/auxiliary/" "opsd/{batch_id}.log"),
     conda:
         "../envs/module.yaml"
+    params:
+        frequency=config["temporal_scope"]["frequency"],
     message:
         "Prepare auxiliary electricity-demand data from OPSD."
     script:
@@ -184,11 +221,17 @@ rule prepare_auxiliary_load_neso:
         plan=auxiliary_acquisition_plan,
         annual_files=auxiliary_neso_raw_files,
     output:
-        load=("<resources>/automatic/" "auxiliary/neso/" "{batch_id}.parquet"),
+        load=(
+            "<resources>/automatic/"
+            "auxiliary/neso/"
+            "{batch_id}.parquet"
+        ),
     log:
-        ("<logs>/auxiliary/" "neso/{batch_id}.log"),
+        "<logs>/auxiliary/neso/{batch_id}.log",
     conda:
         "../envs/module.yaml"
+    params:
+        frequency=config["temporal_scope"]["frequency"],
     message:
         "Prepare auxiliary electricity-demand data from NESO."
     script:
