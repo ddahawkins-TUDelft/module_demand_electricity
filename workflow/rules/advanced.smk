@@ -110,17 +110,18 @@ def auxiliary_entsoe_threads(wildcards):
 
 checkpoint plan_auxiliary_data:
     input:
-        fill_plan=rules.clean_demand.output.auxiliary_fill_plan,
+        gap_report=rules.clean_demand.output.gap_report,
     output:
-        plan=("<resources>/automatic/" "auxiliary/advanced_execution_plan.json"),
-    conda:
-        "../envs/module.yaml"
+        plan=(
+            "<resources>/automatic/"
+            "auxiliary/advanced_execution_plan.json"
+        ),
     params:
+        temporal_scope=config["temporal_scope"],
         gap_filling=config["gap_filling"],
         source_names=config["load_sources"],
-        start=config["temporal_scope"]["start"],
-        end=config["temporal_scope"]["end"],
-        frequency=config["temporal_scope"]["frequency"],
+    conda:
+        "../envs/module.yaml"
     message:
         "Plan auxiliary electricity-demand acquisition."
     script:

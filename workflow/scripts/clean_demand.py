@@ -1,153 +1,230 @@
-"""Combine and clean prepared electricity-demand sources."""
+"""Combine and basic-clean prepared electricity-demand sources."""
 
 import logging
-import sys
-from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
-from cleaning.pipeline import clean_demand
+from _tclean_config import build_basic_rules, build_tclean_config
+from tclean import clean
+from tclean.advanced import build_gap_report
+from tclean.provenance import build_cleaning_method_ranks, derive_cleaning_method_rank
 
 if TYPE_CHECKING:
     snakemake: Any
 
+
 logger = logging.getLogger(__name__)
 
 
-def main(
-    *,
-    input_paths: Sequence[str | Path],
-    source_names: Sequence[str],
-    gap_filling_config: Mapping[str, Any],
-    output: Any,
-) -> None:
-    """Read prepared sources, clean demand, and write provenance."""
+def main(snakemake: Any) -> None:
+    """Run the main electricity-demand cleaning stage."""
+    source_names = list(
+        snakemake.params.source_names
+    )
+
+    input_paths = list(
+        snakemake.input
+    )
+
     if len(input_paths) != len(source_names):
         raise ValueError(
-            "The number of input files must equal the number "
-            "of configured load sources."
+            "The number of prepared load inputs must match the "
+            "number of configured load sources."
         )
 
     sources = {
         source_name: _read_prepared_source(path)
-        for source_name, path in zip(source_names, input_paths, strict=True)
+        for source_name, path in zip(
+            source_names,
+            input_paths,
+            strict=True,
+        )
     }
+
+    config = build_tclean_config(
+        snakemake.params.temporal_scope
+    )
+
+    basic_rules = build_basic_rules(
+        snakemake.params.gap_filling
+    )
 
     (
         cleaned,
         data_source,
         cleaning_method,
-        cleaning_method_rank,
-        gap_report,
-        auxiliary_fill_plan,
-    ) = clean_demand(
-        sources, source_priority=source_names, gap_filling_config=gap_filling_config
+    ) = clean(
+        sources,
+        config=config,
+        basic_rules=basic_rules,
     )
 
-    cleaned.to_parquet(output.demand)
+    basic_rule_names = [
+        rule["name"]
+        for rule in basic_rules
+    ]
 
-    data_source.to_parquet(output.data_source)
-    cleaning_method.to_parquet(output.cleaning_method)
+    cleaning_method_ranks = build_cleaning_method_ranks(
+        source_names,
+        basic_rule_names=basic_rule_names,
+    )
 
-    cleaning_method_rank.to_parquet(output.cleaning_method_rank)
+    cleaning_method_rank = derive_cleaning_method_rank(
+        cleaning_method=cleaning_method,
+        ranks=cleaning_method_ranks,
+    )
 
-    gap_report.to_parquet(output.gap_report, index=False)
+    gap_report = build_gap_report(
+        cleaned,
+        grid=config.grid,
+        enabled=(
+            snakemake.params.gap_filling["mode"]
+            == "advanced"
+        ),
+    )
 
-    auxiliary_fill_plan.to_parquet(output.auxiliary_fill_plan, index=False)
+    cleaned.to_parquet(
+        snakemake.output.demand
+    )
 
-    _log_source_counts(data_source)
-    _log_cleaning_method_counts(cleaning_method, cleaning_method_rank)
-    _log_gap_report(gap_report)
+    data_source.to_parquet(
+        snakemake.output.data_source
+    )
+
+    cleaning_method.to_parquet(
+        snakemake.output.cleaning_method
+    )
+
+    cleaning_method_rank.to_parquet(
+        snakemake.output.cleaning_method_rank
+    )
+
+    gap_report.to_parquet(
+        snakemake.output.gap_report,
+        index=False,
+    )
+
+    _log_source_counts(
+        data_source
+    )
+
+    _log_cleaning_method_counts(
+        cleaning_method
+    )
+
+    _log_gap_report(
+        gap_report
+    )
 
 
-def _read_prepared_source(path: str | Path) -> pd.DataFrame:
-    """Read and validate one prepared demand source."""
-    demand = pd.read_parquet(path)
+def _read_prepared_source(
+    path: str | Path,
+) -> pd.DataFrame:
+    """Read one prepared electricity-demand source."""
+    data = pd.read_parquet(path)
 
-    if not isinstance(demand.index, pd.DatetimeIndex):
-        demand.index = pd.to_datetime(demand.index, utc=True)
+    if not isinstance(
+        data.index,
+        pd.DatetimeIndex,
+    ):
+        data.index = pd.to_datetime(
+            data.index,
+            utc=True,
+        )
 
-    elif demand.index.tz is None:
-        demand.index = demand.index.tz_localize("UTC")
+    elif data.index.tz is None:
+        data.index = data.index.tz_localize(
+            "UTC"
+        )
 
     else:
-        demand.index = demand.index.tz_convert("UTC")
+        data.index = data.index.tz_convert(
+            "UTC"
+        )
 
-    if demand.index.has_duplicates:
-        raise ValueError(f"Demand source contains duplicate timestamps: {path}")
+    data.index.name = "timestamp"
 
-    if demand.columns.has_duplicates:
-        raise ValueError(f"Demand source contains duplicate columns: {path}")
-
-    return demand.sort_index()
+    return data
 
 
-def _log_source_counts(data_source: pd.DataFrame) -> None:
-    """Log the number of cells supplied by each observed source."""
-    counts = data_source.stack().value_counts()
+def _log_source_counts(
+    data_source: pd.DataFrame,
+) -> None:
+    """Log observed-value counts by source."""
+    counts = (
+        data_source
+        .stack()
+        .value_counts()
+    )
+
+    if counts.empty:
+        logger.info(
+            "No observed source values were recorded."
+        )
+        return
 
     for source_name, count in counts.items():
-        logger.info("%s supplied %s observed values.", source_name, int(count))
-
-
-def _log_cleaning_method_counts(
-    cleaning_method: pd.DataFrame, cleaning_method_rank: pd.DataFrame
-) -> None:
-    """Log the number of cells assigned to each cleaning method."""
-    method_counts = cleaning_method.stack().value_counts()
-
-    for method_name, count in method_counts.items():
-        method_mask = cleaning_method.eq(method_name).fillna(False).to_numpy(dtype=bool)
-
-        ranks = cleaning_method_rank.to_numpy()[method_mask]
-
-        unique_ranks = pd.unique(ranks)
-
-        if len(unique_ranks) != 1:
-            raise ValueError(
-                "Cleaning method "
-                f"{method_name!r} has multiple ranks: "
-                f"{unique_ranks.tolist()}"
-            )
-
         logger.info(
-            "Cleaning method '%s' at rank %s supplied %s values.",
-            method_name,
-            int(unique_ranks[0]),
+            "%s supplied %s values.",
+            source_name,
             int(count),
         )
 
 
-def _log_gap_report(gap_report: pd.DataFrame) -> None:
-    """Log unresolved-gap counts by country."""
-    if gap_report.empty:
-        logger.info("No advanced unresolved-gap report was generated.")
-        return
-
-    logger.info("Gap report contains %s contiguous unresolved gaps.", len(gap_report))
-
-    country_summary = gap_report.groupby("country").agg(
-        gap_count=("country", "size"), missing_hours=("gap_hours", "sum")
+def _log_cleaning_method_counts(
+    cleaning_method: pd.DataFrame,
+) -> None:
+    """Log value counts by cleaning method."""
+    counts = (
+        cleaning_method
+        .stack()
+        .value_counts()
     )
 
-    for country, row in country_summary.iterrows():
+    if counts.empty:
         logger.info(
-            "%s: %s unresolved gaps covering %s hours.",
-            country,
-            int(row["gap_count"]),
-            int(row["missing_hours"]),
+            "No cleaning methods were recorded."
+        )
+        return
+
+    for method, count in counts.items():
+        logger.info(
+            "%s supplied %s values.",
+            method,
+            int(count),
+        )
+
+
+def _log_gap_report(
+    gap_report: pd.DataFrame,
+) -> None:
+    """Log unresolved-gap counts by context."""
+    if gap_report.empty:
+        logger.info(
+            "No unresolved gaps remain after basic cleaning."
+        )
+        return
+
+    logger.info(
+        "Gap report contains %s contiguous unresolved gaps.",
+        len(gap_report),
+    )
+
+    for context, context_gaps in gap_report.groupby(
+        "context"
+    ):
+        total_duration = (
+            context_gaps["gap_duration"].sum()
+        )
+
+        logger.info(
+            "%s has %s unresolved gaps covering %s.",
+            context,
+            len(context_gaps),
+            total_duration,
         )
 
 
 if __name__ == "__main__":
-    sys.stderr = open(snakemake.log[0], "w", buffering=1)
-
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
-
-    main(
-        input_paths=list(snakemake.input),
-        source_names=list(snakemake.params.source_names),
-        gap_filling_config=(snakemake.params.gap_filling),
-        output=snakemake.output,
-    )
+    main(snakemake)

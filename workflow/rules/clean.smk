@@ -94,22 +94,18 @@ rule clean_demand:
     input:
         configured_load_inputs,
     output:
-        demand=("<resources>/automatic/" "load_basic_cleaned.parquet"),
-        data_source=("<resources>/automatic/" "load_data_source.parquet"),
-        cleaning_method=("<resources>/automatic/" "load_cleaning_method.parquet"),
-        cleaning_method_rank=(
-            "<resources>/automatic/" "load_cleaning_method_rank.parquet"
-        ),
-        gap_report=("<resources>/automatic/" "load_gap_report.parquet"),
-        auxiliary_fill_plan=(
-            "<resources>/automatic/" "load_auxiliary_fill_plan.parquet"
-        ),
+        demand=("<resources>/automatic/load_basic_cleaned.parquet"),
+        data_source=("<resources>/automatic/load_data_source.parquet"),
+        cleaning_method=("<resources>/automatic/load_cleaning_method.parquet"),
+        cleaning_method_rank=("<resources>/automatic/load_cleaning_method_rank.parquet"),
+        gap_report=("<resources>/automatic/load_gap_report.parquet"),
     log:
         "<logs>/clean_demand.log",
     conda:
         "../envs/module.yaml"
     params:
         source_names=config["load_sources"],
+        temporal_scope=config["temporal_scope"],
         gap_filling=config["gap_filling"],
     message:
         "Combine and clean electricity-demand sources."
