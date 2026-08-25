@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import rioxarray as rxr
-from common.plots import map_raster, plot_national_profiles
-from common.schemas import Shapes
+from _plots import map_raster, plot_national_profiles
+from _schemas import Shapes
 
 if TYPE_CHECKING:
     snakemake: Any

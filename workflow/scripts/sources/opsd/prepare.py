@@ -5,7 +5,7 @@ from warnings import warn
 
 import pandas as pd
 import pycountry
-from common.schemas import OPSDLoad
+from _schemas import OPSDLoad
 from tclean import TimeGrid
 
 
