@@ -40,6 +40,9 @@ rioxarray = ">=0.20.0"
 pandera = ">=0.31.1"
 pyyaml = ">=6.0.3"
 
+[feature.module.pypi-dependencies]
+tclean = { path = "../../tclean", editable = true }
+
 [environments]
 module = { features = ["module"], no-default-feature = true }
 test = { features = ["module"] }
