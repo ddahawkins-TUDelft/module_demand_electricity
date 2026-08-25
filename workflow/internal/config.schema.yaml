@@ -327,10 +327,14 @@ properties:
 
       end:
         $ref: "#/$defs/iso_date"
+      
+      frequency:
+        $ref: "#/$defs/duration"
 
     required:
       - start
       - end
+      - frequency
 
     additionalProperties: false
 
