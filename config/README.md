@@ -330,102 +330,14 @@ When enabled, the configured basic cleaning rules are also applied to auxiliary 
 
 The module determines auxiliary acquisition requirements only for **active** advanced rules. Provider acquisition and preparation remain Modelblocks responsibilities; generic planning and cleaning behavior is delegated to T-Clean.
 
-## Complete example
+## End-to-end tested example
 
-```yaml
-temporal_scope:
-  start: "2017-01-01"
-  end: "2017-01-03"
-  frequency: "1h"
+For a complete configuration used by the integration workflow, see
+[`tests/integration/test_config.yaml`](../tests/integration/test_config.yaml).
 
-load_sources:
-  - entsoe
-  - neso
-  - opsd
-
-gap_filling:
-  mode: advanced
-
-  basic:
-    rules:
-      - name: interpolate_short_gaps
-        method: linear_interpolation
-        max_gap: 3h
-
-      - name: average_adjacent_weeks
-        method: average_periods
-        max_gap: 326h
-        source_offsets:
-          - -7d
-          - 7d
-
-      - name: copy_previous_week
-        method: copy_periods
-        max_gap: 168h
-        source_offset: -168h
-        require_complete_source: true
-
-      - name: copy_following_week
-        method: copy_periods
-        max_gap: 168h
-        source_offset: 168h
-        require_complete_source: true
-
-  advanced:
-    auxiliary_data:
-      basic_cleaning:
-        enabled: true
-
-    sources:
-      alb_from_alb_2024:
-        method: construct_from_sources
-        periods:
-          - country: ALB
-            start: "2024-01-01"
-            end: "2024-01-03"
-            weight: 1
-        scaling:
-          method: match_energy
-          periods:
-            - country: ALB
-              start: "2024-01-01"
-              end: "2024-01-03"
-              weight: 1
-
-      alb_external:
-        method: external_profile
-        file: inputs/external_profiles/alb_external.csv
-
-      mne_from_srb:
-        method: construct_from_sources
-        periods:
-          - country: SRB
-            start: "2022-03-01"
-            end: "2022-04-01"
-            weight: 1
-
-    rules:
-      - name: overwrite_alb_from_alb_2024
-        country: ALB
-        start: "2017-01-01"
-        end: "2017-01-03"
-        scope: overwrite
-        source: alb_from_alb_2024
-
-      - name: example_inactive_mne_rule
-        country: MNE
-        start: "2020-03-01"
-        end: "2020-04-01"
-        scope: fill_gaps
-        source: mne_from_srb
-```
-
-In this example:
-
-- the target grid is hourly from 1 January to 3 January 2017;
-- the Albania rule is active for an Albania target and overwrites the requested 2017 period with a profile constructed from 2024 data;
-- the Montenegro rule is outside the target period and is therefore inactive;
-- auxiliary acquisition is planned only where active advanced sources require it.
+This configuration is exercised by the integration test suite and therefore
+serves as the canonical end-to-end example. The examples above are intentionally
+focused on individual configuration features.
 
 ## Validation
 

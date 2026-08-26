@@ -175,6 +175,7 @@ pixi install --all
 Please be aware that this is a multi-environment project (see [pixi.toml](./pixi.toml) for details).
 - `default`: used for development and integration testing.
 Because it contains `Snakemake`, `conda` and `pytest` as dependencies it **should not be used** in `Snakemake` rules.
+- `test`: used for unit testing. It combines the `module` environment with test-only dependencies such as `pytest`.
 - `module`: contains minimal dependencies used in `Snakemake` rules.
 If modified, be sure to export it to `Snakemake` so it can be recreated by module users:
 
@@ -190,6 +191,7 @@ pixi run export-snakemake-env module
 For testing, simply run:
 
 ```shell
+pixi run test-unit
 pixi run test-integration
 ```
 

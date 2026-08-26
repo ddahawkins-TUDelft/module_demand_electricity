@@ -15,7 +15,7 @@ ipdb = ">=0.13.13"
 ipykernel = ">=6.29.5"
 jsonschema = ">=4.0.0"
 mypy = ">=1.15.0"
-pytest = ">=8.3.5"
+pytest = ">=8.3.5"  # integration/development tests
 python = ">=3.12"
 ruff = ">=0.9.9"
 snakefmt = ">=0.10.2"
@@ -43,14 +43,19 @@ pyyaml = ">=6.0.3"
 [feature.module.pypi-dependencies]
 tclean = { path = "../../tclean", editable = true }
 
+[feature.test-module.dependencies]
+pytest = ">=8.3.5" 
+jsonschema = ">=4.0.0"
+
 [environments]
 module = { features = ["module"], no-default-feature = true }
-test = { features = ["module"] }
+test = { features = ["module", "test-module"], no-default-feature = true }
+
+[feature.test-module.tasks]
+test-unit = "pytest tests/unit"
 
 [tasks]
 test-integration = {cmd = "pytest tests/integration_test.py"}
-test-unit = { cmd = "pytest tests/unit" }
-
 
 [tasks.export-snakemake-env]
 description = "Export one Pixi environment as Snakemake-compatible conda files"
