@@ -12,6 +12,7 @@ pathvars:
     # User resources
     shapes="<resources>/user/{shape}/shapes.parquet",
     token_entsoe="<resources>/user/token_entsoe.txt",
+    external_profiles="<resources>/user/external_profiles",
     # Module results
     output_data="<results>/{shape}/demand_electricity_MW.parquet",
 

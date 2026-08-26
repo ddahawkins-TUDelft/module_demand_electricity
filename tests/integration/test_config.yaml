@@ -83,7 +83,7 @@ integration_test:
 
         alb_external_test:
           method: external_profile
-          file: inputs/external_profiles/alb_external_test.csv
+          file: alb_external_test.csv
 
       rules:
         - name: build_alb_from_gbr_alb_winter
@@ -109,7 +109,7 @@ integration_test:
 
         - name: test_external_profile_overwrite
           country: ALB
-          start: "2022-01-01 00:00"
-          end: "2022-01-08 00:00"
+          start: "2017-01-01 00:00"
+          end: "2017-01-01 03:00"
           scope: overwrite
           source: alb_external_test

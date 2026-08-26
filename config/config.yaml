@@ -82,7 +82,7 @@ gap_filling:
 
       alb_external_test:
         method: external_profile
-        file: inputs/external_profiles/alb_external_test.csv
+        file: alb_external_test.csv
 
     rules:
       - name: build_alb_from_gbr_alb_winter

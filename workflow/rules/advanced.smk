@@ -89,7 +89,12 @@ def final_cleaning_method_input(_wildcards):
 def advanced_external_profile_files(_wildcards):
     plan = _read_auxiliary_plan()
 
-    return list(dict.fromkeys(plan["external_profile_files"].values()))
+    return [
+        f"<external_profiles>/{filename}"
+        for filename in dict.fromkeys(
+            plan["external_profile_files"].values()
+        )
+    ]
 
 
 def auxiliary_entsoe_threads(wildcards):

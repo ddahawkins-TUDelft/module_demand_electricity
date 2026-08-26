@@ -235,9 +235,10 @@ $defs:
       file:
         type: string
         minLength: 1
+        pattern: '^[^/\\]+\.csv$'
         description: >
-          Path to a local CSV containing timestamp and value columns for
-          the external profile.
+          Filename of the format "<filename>.csv" of a local CSV containing timestamp and value columns for
+          the external profile. The file is resolved relative to the external-profiles pathvar.
 
     required:
       - method
