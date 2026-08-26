@@ -1,6 +1,5 @@
 """Validate semantic constraints of the module configuration."""
 import json
-from collections import Counter
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -80,13 +79,6 @@ def _validate_advanced_config(
     source_definitions = advanced["sources"]
     rules = advanced["rules"]
 
-    _validate_unique_rule_names(rules)
-
-    _validate_advanced_rule_sources(
-        rules,
-        source_definitions=source_definitions,
-    )
-
     _validate_advanced_rule_periods(
         rules,
         grid=grid,
@@ -100,61 +92,6 @@ def _validate_advanced_config(
     # Ensure that the Modelblocks configuration can be represented by the
     # canonical T-Clean advanced-rule contract.
     build_advanced_rules(gap_filling)
-
-
-def _validate_unique_rule_names(
-    rules: Sequence[Mapping[str, Any]],
-) -> None:
-    """Require advanced rule names to be unique."""
-    counts = Counter(
-        rule["name"]
-        for rule in rules
-    )
-
-    duplicates = sorted(
-        name
-        for name, count in counts.items()
-        if count > 1
-    )
-
-    if duplicates:
-        raise ValueError(
-            "Advanced cleaning rule names must be unique. "
-            f"Duplicate names: {duplicates}."
-        )
-
-
-def _validate_advanced_rule_sources(
-    rules: Sequence[Mapping[str, Any]],
-    *,
-    source_definitions: Mapping[str, Mapping[str, Any]],
-) -> None:
-    """Validate references from advanced rules to advanced sources."""
-    for rule in rules:
-        rule_name = rule["name"]
-
-        if rule.get("method") == "leave_missing":
-            if "source" in rule:
-                raise ValueError(
-                    f"Advanced rule {rule_name!r} uses "
-                    "'leave_missing' and must not define a source."
-                )
-
-            continue
-
-        source_name = rule.get("source")
-
-        if source_name is None:
-            raise ValueError(
-                f"Advanced rule {rule_name!r} must reference "
-                "an advanced source."
-            )
-
-        if source_name not in source_definitions:
-            raise ValueError(
-                f"Advanced rule {rule_name!r} references unknown "
-                f"advanced source {source_name!r}."
-            )
 
 
 def _validate_advanced_rule_periods(
