@@ -305,7 +305,7 @@ def _build_external_profile_files(
                 "is not an external-profile source."
             )
 
-        result[str(rule.rule_name)] = str(
+        result[source_name] = str(
             definition["file"]
         )
 
