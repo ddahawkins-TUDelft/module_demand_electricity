@@ -10,6 +10,7 @@ Useful references are:
 - [`workflow/internal/config.schema.yaml`](../workflow/internal/config.schema.yaml): authoritative configuration schema;
 - [`INTERFACE.yaml`](../INTERFACE.yaml): module input/output interface;
 - [`tests/integration/test_config.yaml`](../tests/integration/test_config.yaml): a richer integration configuration;
+- [`tests/integration/resources/user/external_profiles`](../tests/integration/user/external_profiles): example of an external profile.
 - [`tests/integration/Snakefile`](../tests/integration/Snakefile): example module import.
 
 ## Temporal scope
@@ -274,14 +275,14 @@ Scaling periods can require auxiliary demand data outside the main target grid; 
 
 ## Advanced source: `external_profile`
 
-An `external_profile` source reads a user-supplied CSV.
+An `external_profile` source reads a user-supplied CSV. By default, external profiles are resolved from `resources/user/external_profiles/`. This location can re-wired through the `external_profiles` pathvar when importing the module.
 
 ```yaml
 advanced:
   sources:
     alb_external:
       method: external_profile
-      file: inputs/external_profiles/alb_external.csv
+      file: alb_external.csv
 ```
 
 The target country, period, and application scope belong to the **rule**, not to the source:
