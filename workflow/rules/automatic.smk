@@ -1,22 +1,42 @@
 """Rules used to download automatic resource files."""
 
 
-rule validate_config_semantics:
+rule validate_temporal_config_semantics:
     output:
-        "<resources>/automatic/config_validation.json",
+        "<resources>/automatic/temporal_config_validation.json",
     conda:
         "../envs/module.yaml"
     params:
-        validation_config=config,
+        validation_kind="temporal",
+        validation_config={
+            "temporal_scope": config["temporal_scope"],
+        },
     message:
-        "Validate module configuration semantics."
+        "Validate temporal configuration semantics."
+    script:
+        "../scripts/validate_config.py"
+
+
+rule validate_gap_filling_config_semantics:
+    output:
+        "<resources>/automatic/gap_filling_config_validation.json",
+    conda:
+        "../envs/module.yaml"
+    params:
+        validation_kind="gap_filling",
+        validation_config={
+            "temporal_scope": config["temporal_scope"],
+            "gap_filling": config["gap_filling"],
+        },
+    message:
+        "Validate gap-filling configuration semantics."
     script:
         "../scripts/validate_config.py"
 
 
 rule download_load_entsoe:
     input:
-        validation="<resources>/automatic/config_validation.json",
+        validation="<resources>/automatic/temporal_config_validation.json",
         token_entsoe="<token_entsoe>",
     output:
         raw_load="<resources>/automatic/entsoe/raw_load.parquet",
@@ -58,7 +78,7 @@ rule download_load_opsd:
 
 rule download_load_neso_year:
     input:
-        validation="<resources>/automatic/config_validation.json",
+        validation="<resources>/automatic/temporal_config_validation.json",
     output:
         annual_file=("<resources>/automatic/neso/" "historic_demand_{year}.csv"),
     log:

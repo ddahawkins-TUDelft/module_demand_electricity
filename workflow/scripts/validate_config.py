@@ -1,4 +1,5 @@
 """Validate semantic constraints of the module configuration."""
+import hashlib
 import json
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -19,10 +20,19 @@ if TYPE_CHECKING:
     snakemake: Any
 
 
-def validate_config_semantics(
+def validate_temporal_config_semantics(
     config: Mapping[str, Any],
 ) -> None:
-    """Validate module configuration semantics."""
+    """Validate temporal configuration semantics."""
+    build_time_grid(
+        config["temporal_scope"]
+    )
+
+
+def validate_gap_filling_config_semantics(
+    config: Mapping[str, Any],
+) -> None:
+    """Validate gap-filling configuration semantics."""
     gap_filling = config["gap_filling"]
 
     grid = build_time_grid(
@@ -38,6 +48,19 @@ def validate_config_semantics(
         gap_filling,
         grid=grid,
     )
+
+
+def config_hash(
+    config: Mapping[str, Any],
+) -> str:
+    """Return a deterministic hash of validated configuration."""
+    serialised = json.dumps(
+        config,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+
+    return hashlib.sha256(serialised).hexdigest()
 
 
 def _validate_basic_config(
@@ -231,6 +254,8 @@ def _validate_equal_period_lengths(
 
 def write_validation_marker(
     output_path: str | Path,
+    *,
+    validated_config: Mapping[str, Any],
 ) -> None:
     """Write a marker file when semantic validation succeeds."""
     output_path = Path(output_path)
@@ -245,17 +270,35 @@ def write_validation_marker(
         encoding="utf-8",
     ) as file:
         json.dump(
-            {"valid": True},
+            {
+                "valid": True,
+                "config_hash": config_hash(validated_config),
+            },
             file,
             indent=2,
         )
 
 
 if __name__ == "__main__":
-    validate_config_semantics(
-        snakemake.params.validation_config
-    )
+    validation_kind = snakemake.params.validation_kind
+    validation_config = snakemake.params.validation_config
+
+    if validation_kind == "temporal":
+        validate_temporal_config_semantics(
+            validation_config
+        )
+
+    elif validation_kind == "gap_filling":
+        validate_gap_filling_config_semantics(
+            validation_config
+        )
+
+    else:
+        raise ValueError(
+            f"Unsupported validation kind {validation_kind!r}."
+        )
 
     write_validation_marker(
-        snakemake.output[0]
+        snakemake.output[0],
+        validated_config=validation_config,
     )

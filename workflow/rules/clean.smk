@@ -19,6 +19,7 @@ def neso_raw_files(_wildcards):
 
 rule prepare_load_entsoe:
     input:
+        validation="<resources>/automatic/temporal_config_validation.json",
         raw_load=rules.download_load_entsoe.output.raw_load,
     output:
         load="<resources>/automatic/load_entsoe.parquet",
@@ -39,7 +40,7 @@ rule prepare_load_entsoe:
 
 rule prepare_load_opsd:
     input:
-        validation="<resources>/automatic/config_validation.json",
+        validation="<resources>/automatic/temporal_config_validation.json",
         load="<resources>/automatic/load_opsd.csv",
     output:
         load="<resources>/automatic/load_opsd.parquet",
@@ -60,7 +61,7 @@ rule prepare_load_opsd:
 
 rule prepare_load_neso:
     input:
-        validation="<resources>/automatic/config_validation.json",
+        validation="<resources>/automatic/temporal_config_validation.json",
         annual_files=neso_raw_files,
     output:
         load="<resources>/automatic/load_neso.parquet",
@@ -93,6 +94,7 @@ def configured_load_inputs(_wildcards):
 rule clean_demand:
     input:
         configured_load_inputs,
+        validation="<resources>/automatic/gap_filling_config_validation.json",
     output:
         demand=("<resources>/automatic/load_basic_cleaned.parquet"),
         data_source=("<resources>/automatic/load_data_source.parquet"),
