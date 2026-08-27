@@ -138,7 +138,7 @@ def download_entsoe(
                 country_data
             )
 
-            logger.info(
+            logger.debug(
                 "[%s/%s] Finished %s in %.1fs.",
                 completed,
                 total_countries,

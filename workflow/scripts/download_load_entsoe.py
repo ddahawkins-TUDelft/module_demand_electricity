@@ -1,6 +1,7 @@
 """Snakemake entry point for downloading ENTSO-E load data."""
 
 import logging
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from _advanced_execution import get_batch, load_execution_plan
@@ -56,9 +57,33 @@ def main(snakemake: Any) -> None:
 
 
 if __name__ == "__main__":
+    formatter = logging.Formatter(
+        "%(levelname)s: %(message)s"
+    )
+
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(formatter)
+
+    log_path = Path(snakemake.log[0])
+    log_path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    file_handler = logging.FileHandler(
+        log_path,
+        mode="w",
+    )
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+
     logging.basicConfig(
-        level=logging.INFO,
-        format="%(levelname)s: %(message)s",
+        level=logging.DEBUG,
+        handlers=[
+            console_handler,
+            file_handler,
+        ],
     )
 
     main(snakemake)
