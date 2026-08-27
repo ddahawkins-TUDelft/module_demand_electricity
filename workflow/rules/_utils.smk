@@ -10,12 +10,12 @@ def additional_config_validation():
 
     advanced = gap_filling["advanced"]
     sources = advanced["sources"]
-    rules = advanced["rules"]
+    advanced_rules = advanced["rules"]
 
     seen_rule_names = set()
     duplicate_rule_names = set()
 
-    for rule in rules:
+    for rule in advanced_rules:
         rule_name = rule["name"]
 
         if rule_name in seen_rule_names:
@@ -29,7 +29,7 @@ def additional_config_validation():
             f"Duplicate names: {sorted(duplicate_rule_names)}."
         )
 
-    for rule in rules:
+    for rule in advanced_rules:
         source_name = rule.get("source")
 
         # A rule without a source explicitly leaves the target values missing.
