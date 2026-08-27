@@ -24,7 +24,7 @@ pathvars:
         Target shapes used to spatially aggregate electricity demand.
         The supplied shapes must collectively cover the full spatial extent
         of the corresponding country.
-    
+
     external_profiles:
       default: "<resources>/user/external_profiles"
       description: >
