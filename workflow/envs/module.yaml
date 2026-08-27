@@ -2,6 +2,7 @@ name: module
 channels:
 - conda-forge
 - bioconda
+- https://conda.anaconda.org/ddahawkins/label/dev
 - nodefaults
 dependencies:
 - curl >=8.9.1
@@ -20,3 +21,4 @@ dependencies:
 - rioxarray >=0.20.0
 - pandera >=0.31.1
 - pyyaml >=6.0.3
+- ddahawkins/label/dev::tclean ==0.1.0

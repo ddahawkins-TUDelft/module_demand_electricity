@@ -4,7 +4,11 @@ authors = ["See AUTHORS file"]
 description = "This module prepares electricity demand timeseries for Europe at arbitrary resolution"
 license = "Apache-2.0"
 readme = "README.md"
-channels = ["conda-forge", "bioconda"]
+channels = [
+  "conda-forge", 
+  "bioconda",
+  "https://conda.anaconda.org/ddahawkins/label/dev",
+]
 platforms = ["win-64", "linux-64", "osx-arm64"]
 homepage = "https://www.modelblocks.org/"
 
@@ -39,9 +43,10 @@ matplotlib = ">=3.10.9"
 rioxarray = ">=0.20.0"
 pandera = ">=0.31.1"
 pyyaml = ">=6.0.3"
-
-[feature.module.pypi-dependencies]
-tclean = { path = "../../tclean", editable = true }
+tclean = {
+    version = "==0.1.0",
+    channel = "https://conda.anaconda.org/ddahawkins/label/dev",
+}
 
 [feature.test-module.dependencies]
 pytest = ">=8.3.5" 

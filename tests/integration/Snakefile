@@ -8,8 +8,8 @@ configfile: workflow.source_path("./test_config.yaml")
 module module_demand_electricity:
     pathvars:
         shapes="resources/user/{shape}/shapes.parquet",
-        token_entsoe="resources/user/token_entsoe.txt",
-        external_profiles="resources/user/external_profiles",
+        token_entsoe=workflow.source_path("resources/user/token_entsoe.txt"),
+        external_profiles=workflow.source_path("resources/user/external_profiles"),
         # test the re-routing of resources, results and logs
         resources="resources/module/resources",
         results="resources/module/results",
