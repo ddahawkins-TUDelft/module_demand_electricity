@@ -13,21 +13,13 @@ if TYPE_CHECKING:
 def main(snakemake: Any) -> None:
     """Download one annual NESO historic-demand file."""
     download_annual_file(
-        year=int(snakemake.params.year),
-        output_path=snakemake.output.annual_file,
+        year=int(snakemake.params.year), output_path=snakemake.output.annual_file
     )
 
 
 if __name__ == "__main__":
-    sys.stderr = open(
-        snakemake.log[0],
-        "w",
-        buffering=1,
-    )
+    sys.stderr = open(snakemake.log[0], "w", buffering=1)
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(levelname)s: %(message)s",
-    )
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
     main(snakemake)

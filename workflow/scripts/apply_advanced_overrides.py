@@ -54,17 +54,13 @@ for path in snakemake.input.constructed_profiles:
     advanced_sources[source_name] = profile.iloc[:, 0]
 
 external_profile_paths = {
-    Path(path).name: path
-    for path in snakemake.input.external_profiles
+    Path(path).name: path for path in snakemake.input.external_profiles
 }
 
 for source_name, filename in plan["external_profile_files"].items():
     path = external_profile_paths[filename]
 
-    advanced_sources[source_name] = read_external_profile(
-        path,
-        grid=grid,
-    )
+    advanced_sources[source_name] = read_external_profile(path, grid=grid)
 
 filled, _, cleaning_method = apply_advanced_rules(
     data,

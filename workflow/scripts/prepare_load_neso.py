@@ -15,20 +15,12 @@ if TYPE_CHECKING:
 
 def main(snakemake: Any) -> None:
     """Prepare NESO demand for the requested workflow period."""
-    plan_path = getattr(
-        snakemake.input,
-        "plan",
-        None,
-    )
+    plan_path = getattr(snakemake.input, "plan", None)
 
     if plan_path is not None:
         plan = load_execution_plan(plan_path)
 
-        batch = get_batch(
-            plan,
-            batch_id=snakemake.wildcards.batch_id,
-            source="neso",
-        )
+        batch = get_batch(plan, batch_id=snakemake.wildcards.batch_id, source="neso")
 
         start = batch["start"]
         end = batch["end"]
@@ -38,17 +30,10 @@ def main(snakemake: Any) -> None:
         end = snakemake.params.end
         countries = snakemake.params.country_codes
 
-    grid = TimeGrid(
-        start=start,
-        end=end,
-        frequency=snakemake.params.frequency,
-    )
+    grid = TimeGrid(start=start, end=end, frequency=snakemake.params.frequency)
 
     prepare_neso(
-        input_paths=[
-            Path(path)
-            for path in snakemake.input.annual_files
-        ],
+        input_paths=[Path(path) for path in snakemake.input.annual_files],
         output_path=snakemake.output.load,
         target_index=grid.target_index,
         countries=countries,
@@ -56,15 +41,8 @@ def main(snakemake: Any) -> None:
 
 
 if __name__ == "__main__":
-    sys.stderr = open(
-        snakemake.log[0],
-        "w",
-        buffering=1,
-    )
+    sys.stderr = open(snakemake.log[0], "w", buffering=1)
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(levelname)s: %(message)s",
-    )
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
     main(snakemake)

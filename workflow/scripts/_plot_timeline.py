@@ -353,24 +353,17 @@ def _build_cleaning_method_metadata(
     basic_rules = build_basic_rules(gap_filling_config)
     advanced_rules = build_advanced_rules(gap_filling_config)
 
-    rule_names = [
-        rule["name"]
-        for rule in basic_rules
-    ]
+    rule_names = [rule["name"] for rule in basic_rules]
 
     if not advanced_rules.empty:
-        rule_names.extend(
-            advanced_rules["rule_name"].tolist()
-        )
+        rule_names.extend(advanced_rules["rule_name"].tolist())
 
     for rule_name in rule_names:
         rows.append(
             {
                 "cleaning_method": rule_name,
                 "cleaning_method_rank": rank,
-                "label": (
-                    f"Rank {rank}: {_format_rule_name(rule_name)}"
-                ),
+                "label": (f"Rank {rank}: {_format_rule_name(rule_name)}"),
                 "category": "imputed",
             }
         )

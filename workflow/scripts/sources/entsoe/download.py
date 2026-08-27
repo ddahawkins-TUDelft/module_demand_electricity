@@ -19,38 +19,22 @@ def load_token(filepath: str | Path) -> str:
 
 
 def download_country(
-    *,
-    country_alpha_3: str,
-    start: pd.Timestamp,
-    end: pd.Timestamp,
-    token: str,
+    *, country_alpha_3: str, start: pd.Timestamp, end: pd.Timestamp, token: str
 ) -> tuple[str, pd.Series, float]:
     """Download ENTSO-E load for one country."""
-    country = pycountry.countries.get(
-        alpha_3=country_alpha_3
-    )
+    country = pycountry.countries.get(alpha_3=country_alpha_3)
 
     if country is None:
-        raise ValueError(
-            f"Unknown ISO alpha-3 country code: "
-            f"{country_alpha_3!r}."
-        )
+        raise ValueError(f"Unknown ISO alpha-3 country code: {country_alpha_3!r}.")
 
     country_alpha_2 = country.alpha_2
 
-    client = EntsoePandasClient(
-        api_key=token,
-        timeout=60,
-    )
+    client = EntsoePandasClient(api_key=token, timeout=60)
 
     country_start = perf_counter()
 
     try:
-        data = client.query_load(
-            country_code=country_alpha_2,
-            start=start,
-            end=end,
-        )
+        data = client.query_load(country_code=country_alpha_2, start=start, end=end)
 
         data = data["Actual Load"]
         data.name = country_alpha_3
@@ -64,10 +48,7 @@ def download_country(
             end,
         )
 
-        data = pd.Series(
-            name=country_alpha_3,
-            dtype=float,
-        )
+        data = pd.Series(name=country_alpha_3, dtype=float)
 
     elapsed = perf_counter() - country_start
 
@@ -101,9 +82,7 @@ def download_entsoe(
 
     data_by_country: dict[str, pd.Series] = {}
 
-    with ThreadPoolExecutor(
-        max_workers=workers
-    ) as executor:
+    with ThreadPoolExecutor(max_workers=workers) as executor:
         futures = {
             executor.submit(
                 download_country,
@@ -115,28 +94,18 @@ def download_entsoe(
             for country_code in country_codes
         }
 
-        for completed, future in enumerate(
-            as_completed(futures),
-            start=1,
-        ):
+        for completed, future in enumerate(as_completed(futures), start=1):
             country_code = futures[future]
 
             try:
-                (
-                    country_code,
-                    country_data,
-                    elapsed,
-                ) = future.result()
+                (country_code, country_data, elapsed) = future.result()
 
             except Exception as exc:
                 raise RuntimeError(
-                    "Failed to download ENTSO-E load for "
-                    f"{country_code!r}."
+                    f"Failed to download ENTSO-E load for {country_code!r}."
                 ) from exc
 
-            data_by_country[country_code] = (
-                country_data
-            )
+            data_by_country[country_code] = country_data
 
             logger.debug(
                 "[%s/%s] Finished %s in %.1fs.",
@@ -146,23 +115,16 @@ def download_entsoe(
                 elapsed,
             )
 
-    data = [
-        data_by_country[country_code]
-        for country_code in country_codes
-    ]
+    data = [data_by_country[country_code] for country_code in country_codes]
 
     raw = pd.concat(data, axis=1)
 
-    output_path.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     raw.to_parquet(output_path)
 
     logger.info(
-        "Finished ENTSO-E downloads in %.1fs. "
-        "Saved raw data to %s.",
+        "Finished ENTSO-E downloads in %.1fs. Saved raw data to %s.",
         perf_counter() - download_start,
         output_path,
     )

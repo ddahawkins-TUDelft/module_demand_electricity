@@ -12,20 +12,12 @@ if TYPE_CHECKING:
 
 def main(snakemake: Any) -> None:
     """Prepare ENTSO-E demand for the requested workflow period."""
-    plan_path = getattr(
-        snakemake.input,
-        "plan",
-        None,
-    )
+    plan_path = getattr(snakemake.input, "plan", None)
 
     if plan_path is not None:
         plan = load_execution_plan(plan_path)
 
-        batch = get_batch(
-            plan,
-            batch_id=snakemake.wildcards.batch_id,
-            source="entsoe",
-        )
+        batch = get_batch(plan, batch_id=snakemake.wildcards.batch_id, source="entsoe")
 
         start = batch["start"]
         end = batch["end"]
@@ -34,15 +26,9 @@ def main(snakemake: Any) -> None:
     else:
         start = snakemake.params.temporal_start
         end = snakemake.params.temporal_end
-        country_codes = list(
-            snakemake.params.country_codes
-        )
+        country_codes = list(snakemake.params.country_codes)
 
-    grid = TimeGrid(
-        start=start,
-        end=end,
-        frequency=snakemake.params.frequency,
-    )
+    grid = TimeGrid(start=start, end=end, frequency=snakemake.params.frequency)
 
     prepare_entsoe(
         input_path=snakemake.input.raw_load,

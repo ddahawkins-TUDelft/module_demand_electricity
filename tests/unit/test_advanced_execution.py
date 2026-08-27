@@ -99,9 +99,7 @@ def test_load_execution_plan_and_get_batch(tmp_path) -> None:
     path.write_text(json.dumps(plan), encoding="utf-8")
 
     loaded = load_execution_plan(path)
-    selected = get_batch(
-        loaded, batch_id=batch["batch_id"], source=batch["source"]
-    )
+    selected = get_batch(loaded, batch_id=batch["batch_id"], source=batch["source"])
     assert selected == batch
 
 

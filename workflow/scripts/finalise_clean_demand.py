@@ -6,29 +6,19 @@ import pandas as pd
 from _tclean_config import build_advanced_rules, build_basic_rules
 from tclean.provenance import build_cleaning_method_ranks, derive_cleaning_method_rank
 
-shutil.copyfile(
-    snakemake.input.demand,
-    snakemake.output.demand,
-)
+shutil.copyfile(snakemake.input.demand, snakemake.output.demand)
 
-cleaning_method = pd.read_parquet(
-    snakemake.input.cleaning_method
-)
+cleaning_method = pd.read_parquet(snakemake.input.cleaning_method)
 
 gap_filling = snakemake.params.gap_filling
 
 basic_rules = build_basic_rules(gap_filling)
 advanced_rules = build_advanced_rules(gap_filling)
 
-basic_rule_names = [
-    rule["name"]
-    for rule in basic_rules
-]
+basic_rule_names = [rule["name"] for rule in basic_rules]
 
 advanced_rule_names = (
-    advanced_rules["rule_name"].tolist()
-    if not advanced_rules.empty
-    else []
+    advanced_rules["rule_name"].tolist() if not advanced_rules.empty else []
 )
 
 ranks = build_cleaning_method_ranks(
@@ -38,14 +28,9 @@ ranks = build_cleaning_method_ranks(
 )
 
 cleaning_method_rank = derive_cleaning_method_rank(
-    cleaning_method=cleaning_method,
-    ranks=ranks,
+    cleaning_method=cleaning_method, ranks=ranks
 )
 
-cleaning_method.to_parquet(
-    snakemake.output.cleaning_method
-)
+cleaning_method.to_parquet(snakemake.output.cleaning_method)
 
-cleaning_method_rank.to_parquet(
-    snakemake.output.cleaning_method_rank
-)
+cleaning_method_rank.to_parquet(snakemake.output.cleaning_method_rank)

@@ -13,20 +13,12 @@ if TYPE_CHECKING:
 
 def main(snakemake: Any) -> None:
     """Prepare OPSD demand for the requested workflow period."""
-    plan_path = getattr(
-        snakemake.input,
-        "plan",
-        None,
-    )
+    plan_path = getattr(snakemake.input, "plan", None)
 
     if plan_path is not None:
         plan = load_execution_plan(plan_path)
 
-        batch = get_batch(
-            plan,
-            batch_id=snakemake.wildcards.batch_id,
-            source="opsd",
-        )
+        batch = get_batch(plan, batch_id=snakemake.wildcards.batch_id, source="opsd")
 
         start = batch["start"]
         end = batch["end"]
@@ -35,15 +27,9 @@ def main(snakemake: Any) -> None:
     else:
         start = snakemake.params.start
         end = snakemake.params.end
-        country_codes = list(
-            snakemake.params.country_codes
-        )
+        country_codes = list(snakemake.params.country_codes)
 
-    grid = TimeGrid(
-        start=start,
-        end=end,
-        frequency=snakemake.params.frequency,
-    )
+    grid = TimeGrid(start=start, end=end, frequency=snakemake.params.frequency)
 
     prepare_opsd(
         input_path=snakemake.input.load,
@@ -54,10 +40,6 @@ def main(snakemake: Any) -> None:
 
 
 if __name__ == "__main__":
-    sys.stderr = open(
-        snakemake.log[0],
-        "w",
-        buffering=1,
-    )
+    sys.stderr = open(snakemake.log[0], "w", buffering=1)
 
     main(snakemake)

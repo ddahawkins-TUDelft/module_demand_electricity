@@ -13,23 +13,14 @@ import pandas as pd
 EXECUTION_PLAN_VERSION = 1
 
 
-def build_source_batches(
-    requests: pd.DataFrame,
-) -> list[dict[str, object]]:
+def build_source_batches(requests: pd.DataFrame) -> list[dict[str, object]]:
     """Group T-Clean source requests into executable provider batches."""
     if requests.empty:
         return []
 
-    required_columns = {
-        "source",
-        "context",
-        "start",
-        "end",
-    }
+    required_columns = {"source", "context", "start", "end"}
 
-    missing_columns = (
-        required_columns - set(requests.columns)
-    )
+    missing_columns = required_columns - set(requests.columns)
 
     if missing_columns:
         raise ValueError(
@@ -39,45 +30,21 @@ def build_source_batches(
 
     batches: list[dict[str, object]] = []
 
-    grouped = requests.groupby(
-        [
-            "source",
-            "start",
-            "end",
-        ],
-        sort=False,
-    )
+    grouped = requests.groupby(["source", "start", "end"], sort=False)
 
-    for (
-        source,
-        start,
-        end,
-    ), group in grouped:
+    for (source, start, end), group in grouped:
         start = pd.Timestamp(start)
         end = pd.Timestamp(end)
 
         if end <= start:
-            raise ValueError(
-                "Auxiliary batch end must be later than "
-                "its start."
-            )
+            raise ValueError("Auxiliary batch end must be later than its start.")
 
-        countries = sorted(
-            group["context"]
-            .drop_duplicates()
-            .tolist()
-        )
+        countries = sorted(group["context"].drop_duplicates().tolist())
 
-        group_id = build_group_id(
-            start=start,
-            end=end,
-        )
+        group_id = build_group_id(start=start, end=end)
 
         batch_id = build_batch_id(
-            source=str(source),
-            start=start,
-            end=end,
-            countries=countries,
+            source=str(source), start=start, end=end, countries=countries
         )
 
         batches.append(
@@ -94,63 +61,36 @@ def build_source_batches(
     return batches
 
 
-def serialize_batch(
-    batch: Mapping[str, object],
-) -> dict[str, object]:
+def serialize_batch(batch: Mapping[str, object]) -> dict[str, object]:
     """Convert one auxiliary batch to JSON-compatible values."""
     start = pd.Timestamp(batch["start"])
     end = pd.Timestamp(batch["end"])
 
     if end <= start:
-        raise ValueError(
-            "Auxiliary batch end must be later than "
-            "its start."
-        )
+        raise ValueError("Auxiliary batch end must be later than its start.")
 
-    final_included_time = (
-        end - pd.Timedelta(nanoseconds=1)
-    )
+    final_included_time = end - pd.Timedelta(nanoseconds=1)
 
     return {
         **batch,
         "start": start.isoformat(),
         "end": end.isoformat(),
-        "years": list(
-            range(
-                start.year,
-                final_included_time.year + 1,
-            )
-        ),
+        "years": list(range(start.year, final_included_time.year + 1)),
     }
 
 
-def build_group_id(
-    *,
-    start: pd.Timestamp,
-    end: pd.Timestamp,
-) -> str:
+def build_group_id(*, start: pd.Timestamp, end: pd.Timestamp) -> str:
     """Build a deterministic identifier for one auxiliary period."""
-    return (
-        f"{start.strftime('%Y%m%dT%H%M')}__"
-        f"{end.strftime('%Y%m%dT%H%M')}"
-    )
+    return f"{start.strftime('%Y%m%dT%H%M')}__{end.strftime('%Y%m%dT%H%M')}"
 
 
 def build_batch_id(
-    *,
-    source: str,
-    start: pd.Timestamp,
-    end: pd.Timestamp,
-    countries: Sequence[str],
+    *, source: str, start: pd.Timestamp, end: pd.Timestamp, countries: Sequence[str]
 ) -> str:
     """Build a deterministic identifier for one provider batch."""
-    countries_key = ",".join(
-        sorted(countries)
-    )
+    countries_key = ",".join(sorted(countries))
 
-    countries_hash = hashlib.sha1(
-        countries_key.encode("utf-8")
-    ).hexdigest()[:8]
+    countries_hash = hashlib.sha1(countries_key.encode("utf-8")).hexdigest()[:8]
 
     return (
         f"{source}__"
@@ -170,10 +110,7 @@ def index_batch_ids_by_source(
         source = str(batch["source"])
         batch_id = str(batch["batch_id"])
 
-        result.setdefault(
-            source,
-            [],
-        ).append(batch_id)
+        result.setdefault(source, []).append(batch_id)
 
     return result
 
@@ -188,32 +125,21 @@ def index_batch_ids_by_group(
         group_id = str(batch["group_id"])
         batch_id = str(batch["batch_id"])
 
-        result.setdefault(
-            group_id,
-            [],
-        ).append(batch_id)
+        result.setdefault(group_id, []).append(batch_id)
 
     return result
 
 
 def resolve_required_group_ids(
-    batches: Sequence[Mapping[str, object]],
-    *,
-    source_periods: pd.DataFrame,
+    batches: Sequence[Mapping[str, object]], *, source_periods: pd.DataFrame
 ) -> list[str]:
     """Resolve source periods to acquired auxiliary period groups."""
     if source_periods.empty:
         return []
 
-    required_columns = {
-        "context",
-        "start",
-        "end",
-    }
+    required_columns = {"context", "start", "end"}
 
-    missing_columns = (
-        required_columns - set(source_periods.columns)
-    )
+    missing_columns = required_columns - set(source_periods.columns)
 
     if missing_columns:
         raise ValueError(
@@ -223,9 +149,7 @@ def resolve_required_group_ids(
 
     group_ids: list[str] = []
 
-    for period in source_periods.itertuples(
-        index=False
-    ):
+    for period in source_periods.itertuples(index=False):
         start = pd.Timestamp(period.start)
         end = pd.Timestamp(period.end)
 
@@ -233,12 +157,9 @@ def resolve_required_group_ids(
             str(batch["group_id"])
             for batch in batches
             if (
-                period.context
-                in batch["countries"]
-                and pd.Timestamp(batch["start"])
-                <= start
-                and pd.Timestamp(batch["end"])
-                >= end
+                period.context in batch["countries"]
+                and pd.Timestamp(batch["start"]) <= start
+                and pd.Timestamp(batch["end"]) >= end
             )
         }
 
@@ -250,9 +171,7 @@ def resolve_required_group_ids(
                 f"{sorted(matching_group_ids)}."
             )
 
-        group_id = next(
-            iter(matching_group_ids)
-        )
+        group_id = next(iter(matching_group_ids))
 
         if group_id not in group_ids:
             group_ids.append(group_id)
@@ -274,17 +193,13 @@ def empty_execution_plan() -> dict[str, object]:
     }
 
 
-def load_execution_plan(
-    path: str | Path,
-) -> dict[str, Any]:
+def load_execution_plan(path: str | Path) -> dict[str, Any]:
     """Load one compiled advanced execution plan."""
     with open(path, encoding="utf-8") as file:
         plan = json.load(file)
 
     if not isinstance(plan, dict):
-        raise TypeError(
-            "Advanced execution plan must contain a JSON object."
-        )
+        raise TypeError("Advanced execution plan must contain a JSON object.")
 
     if plan.get("version") != EXECUTION_PLAN_VERSION:
         raise ValueError(
@@ -297,10 +212,7 @@ def load_execution_plan(
 
 
 def get_batch(
-    plan: Mapping[str, Any],
-    *,
-    batch_id: str,
-    source: str | None = None,
+    plan: Mapping[str, Any], *, batch_id: str, source: str | None = None
 ) -> Mapping[str, Any]:
     """Return exactly one compiled auxiliary batch."""
     matches = [
@@ -308,19 +220,12 @@ def get_batch(
         for batch in plan["batches"]
         if (
             batch["batch_id"] == batch_id
-            and (
-                source is None
-                or batch["source"] == source
-            )
+            and (source is None or batch["source"] == source)
         )
     ]
 
     if len(matches) != 1:
-        source_text = (
-            f" for source {source!r}"
-            if source is not None
-            else ""
-        )
+        source_text = f" for source {source!r}" if source is not None else ""
 
         raise ValueError(
             "Expected exactly one auxiliary batch "

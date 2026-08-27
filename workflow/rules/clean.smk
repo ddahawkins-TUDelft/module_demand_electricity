@@ -17,17 +17,18 @@ def neso_raw_files(_wildcards):
         ("<resources>/automatic/neso/" f"historic_demand_{year}.csv") for year in years
     ]
 
+
 rule prepare_load_entsoe:
     input:
         validation="<resources>/automatic/temporal_config_validation.json",
         raw_load=rules.download_load_entsoe.output.raw_load,
     output:
         load="<resources>/automatic/load_entsoe.parquet",
+    log:
+        "<logs>/prepare_load_entsoe.log",
     localrule: True
     conda:
         "../envs/module.yaml"
-    log:
-        "<logs>/prepare_load_entsoe.log",
     params:
         temporal_start=config["temporal_scope"]["start"],
         temporal_end=config["temporal_scope"]["end"],
@@ -37,6 +38,7 @@ rule prepare_load_entsoe:
         "Prepare electricity load from ENTSOE."
     script:
         "../scripts/prepare_load_entsoe.py"
+
 
 rule prepare_load_opsd:
     input:

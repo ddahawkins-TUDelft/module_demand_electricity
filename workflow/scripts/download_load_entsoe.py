@@ -14,20 +14,12 @@ if TYPE_CHECKING:
 
 def main(snakemake: Any) -> None:
     """Download ENTSO-E data for the requested workflow period."""
-    plan_path = getattr(
-        snakemake.input,
-        "plan",
-        None,
-    )
+    plan_path = getattr(snakemake.input, "plan", None)
 
     if plan_path is not None:
         plan = load_execution_plan(plan_path)
 
-        batch = get_batch(
-            plan,
-            batch_id=snakemake.wildcards.batch_id,
-            source="entsoe",
-        )
+        batch = get_batch(plan, batch_id=snakemake.wildcards.batch_id, source="entsoe")
 
         start = batch["start"]
         end = batch["end"]
@@ -36,15 +28,9 @@ def main(snakemake: Any) -> None:
     else:
         start = snakemake.params.temporal_start
         end = snakemake.params.temporal_end
-        country_codes = list(
-            snakemake.params.country_codes
-        )
+        country_codes = list(snakemake.params.country_codes)
 
-    grid = TimeGrid(
-        start=start,
-        end=end,
-        frequency=snakemake.params.frequency,
-    )
+    grid = TimeGrid(start=start, end=end, frequency=snakemake.params.frequency)
 
     download_entsoe(
         start=grid.start,
@@ -57,33 +43,19 @@ def main(snakemake: Any) -> None:
 
 
 if __name__ == "__main__":
-    formatter = logging.Formatter(
-        "%(levelname)s: %(message)s"
-    )
+    formatter = logging.Formatter("%(levelname)s: %(message)s")
 
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(formatter)
 
     log_path = Path(snakemake.log[0])
-    log_path.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
+    log_path.parent.mkdir(parents=True, exist_ok=True)
 
-    file_handler = logging.FileHandler(
-        log_path,
-        mode="w",
-    )
+    file_handler = logging.FileHandler(log_path, mode="w")
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
 
-    logging.basicConfig(
-        level=logging.DEBUG,
-        handlers=[
-            console_handler,
-            file_handler,
-        ],
-    )
+    logging.basicConfig(level=logging.DEBUG, handlers=[console_handler, file_handler])
 
     main(snakemake)

@@ -5,7 +5,7 @@ description = "This module prepares electricity demand timeseries for Europe at 
 license = "Apache-2.0"
 readme = "README.md"
 channels = [
-  "conda-forge", 
+  "conda-forge",
   "bioconda",
   "https://conda.anaconda.org/ddahawkins/label/dev",
 ]
@@ -46,7 +46,7 @@ pyyaml = ">=6.0.3"
 tclean = {version = "==0.1.0", channel = "https://conda.anaconda.org/ddahawkins/label/dev"}
 
 [feature.test-module.dependencies]
-pytest = ">=8.3.5" 
+pytest = ">=8.3.5"
 jsonschema = ">=4.0.0"
 
 [environments]
