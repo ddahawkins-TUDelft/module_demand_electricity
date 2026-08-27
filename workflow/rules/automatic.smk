@@ -41,8 +41,6 @@ rule download_load_entsoe:
         "../scripts/download_load_entsoe.py"
 
 rule download_load_opsd:
-    input:
-        validation="<resources>/automatic/config_validation.json", #OPSD is not affected by validation, but we still want to check validation passes before triggering this 1GB+ download.
     output:
         load=update("<resources>/automatic/load_opsd.csv"),
     log:
@@ -77,8 +75,6 @@ rule download_load_neso_year:
 
 
 rule download_population:
-    input:
-        validation="<resources>/automatic/config_validation.json",
     output:
         population=update("<resources>/automatic/population.zip"),
     log:
