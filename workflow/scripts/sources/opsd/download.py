@@ -5,7 +5,9 @@ import shutil
 from pathlib import Path
 from urllib.request import Request, urlopen
 
-import pandas as pd
+import pyarrow as pa
+import pyarrow.csv as pacsv
+import pyarrow.parquet as pq
 
 logger = logging.getLogger(__name__)
 
@@ -21,16 +23,38 @@ REQUIRED_COLUMNS = {
 
 
 def _is_valid_cached_snapshot(path: Path) -> bool:
-    """Return whether an existing OPSD snapshot is suitable for reuse."""
+    """Return whether an existing OPSD Parquet snapshot is suitable for reuse."""
     if not path.exists() or path.stat().st_size == 0:
         return False
 
     try:
-        columns = set(pd.read_csv(path, nrows=0).columns)
-    except (OSError, ValueError):
+        columns = set(pq.read_schema(path).names)
+    except (OSError, pa.ArrowInvalid):
         return False
 
     return REQUIRED_COLUMNS.issubset(columns)
+
+
+def _convert_csv_to_parquet(
+    csv_path: Path,
+    parquet_path: Path,
+) -> None:
+    """Convert an OPSD CSV snapshot to Parquet without loading it fully into memory."""
+    reader = pacsv.open_csv(csv_path)
+
+    if not REQUIRED_COLUMNS.issubset(reader.schema.names):
+        raise RuntimeError(
+            "Downloaded OPSD snapshot does not contain "
+            "the expected CSV structure."
+        )
+
+    with pq.ParquetWriter(
+        parquet_path,
+        reader.schema,
+        compression="zstd",
+    ) as writer:
+        for batch in reader:
+            writer.write_batch(batch)
 
 
 def download_opsd(
@@ -56,10 +80,11 @@ def download_opsd(
         exist_ok=True,
     )
 
-    temporary_path = output_path.with_suffix(
-        output_path.suffix + ".part"
-    )
-    temporary_path.unlink(missing_ok=True)
+    temporary_csv_path = output_path.with_suffix(".csv.part")
+    temporary_parquet_path = output_path.with_suffix(output_path.suffix + ".part")
+
+    temporary_csv_path.unlink(missing_ok=True)
+    temporary_parquet_path.unlink(missing_ok=True)
 
     logger.info(
         "Downloading OPSD snapshot from %s.",
@@ -74,7 +99,7 @@ def download_opsd(
     try:
         with (
             urlopen(request, timeout=300) as response,
-            temporary_path.open("wb") as output_file,
+            temporary_csv_path.open("wb") as output_file,
         ):
             content_length = response.headers.get(
                 "Content-Length"
@@ -85,7 +110,7 @@ def download_opsd(
                 output_file,
             )
 
-        downloaded_size = temporary_path.stat().st_size
+        downloaded_size = temporary_csv_path.stat().st_size
 
         if (
             content_length is not None
@@ -97,18 +122,25 @@ def download_opsd(
                 f"of {content_length} bytes."
             )
 
+        _convert_csv_to_parquet(
+            temporary_csv_path,
+            temporary_parquet_path,
+        )
+
         if not _is_valid_cached_snapshot(
-            temporary_path
+            temporary_parquet_path
         ):
             raise RuntimeError(
-                "Downloaded OPSD snapshot does not contain "
-                "the expected CSV structure."
+                "Converted OPSD snapshot does not contain "
+                "the expected Parquet structure."
             )
 
-        temporary_path.replace(output_path)
+        temporary_parquet_path.replace(output_path)
+        temporary_csv_path.unlink()
 
     except Exception:
-        temporary_path.unlink(missing_ok=True)
+        temporary_csv_path.unlink(missing_ok=True)
+        temporary_parquet_path.unlink(missing_ok=True)
         raise
 
     logger.info(

@@ -62,7 +62,7 @@ rule download_load_entsoe:
 
 rule download_load_opsd:
     output:
-        load=update("<resources>/automatic/load_opsd.csv"),
+        load=update("<resources>/automatic/opsd/raw_load.parquet"),
     log:
         "<logs>/download_load_opsd.log",
     localrule: True

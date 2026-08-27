@@ -41,7 +41,7 @@ rule prepare_load_entsoe:
 rule prepare_load_opsd:
     input:
         validation="<resources>/automatic/temporal_config_validation.json",
-        load="<resources>/automatic/load_opsd.csv",
+        load="<resources>/automatic/opsd/raw_load.parquet",
     output:
         load="<resources>/automatic/load_opsd.parquet",
     log:

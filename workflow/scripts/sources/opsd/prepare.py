@@ -39,7 +39,7 @@ def prepare_opsd(
     country_codes: list[str],
 ) -> None:
     """Prepare OPSD demand on the requested canonical target index."""
-    load = pd.read_csv(input_path)
+    load = pd.read_parquet(input_path)
     load = OPSDLoad.validate(load)
 
     load = load.loc[
