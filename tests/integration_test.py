@@ -56,6 +56,7 @@ def integration_path(user_path: Path, module_path: Path, token_entsoe: Path):
     files_to_copy = {
         "EUROPE_S_C1_ADM1/shapes.parquet": Path("EUROPE_S_C1_ADM1/shapes.parquet"),
         "token_entsoe.txt": Path("token_entsoe.txt"),
+        "external_profiles/alb_external_test.csv": Path("external_profiles/alb_external_test.csv"),
     }
     for source_file, destination in files_to_copy.items():
         destination_file = user_integ_dir / destination
