@@ -1,23 +1,33 @@
 integration_test:
+  # The integration test uses a deliberately short hourly period to keep
+  # provider downloads and workflow execution reasonably small.
   temporal_scope:
     start: "2017-01-01"
     end: "2017-01-03"
     frequency: "1h"
-  # provide a list of sources and set their priority order. Options include: entsoe, neso, opsd
+
+  # Load sources are listed in priority order. Where multiple sources provide
+  # data for the same country and timestamp, the earlier source takes priority.
+  # Supported sources include: entsoe, neso, opsd.
   load_sources:
     - entsoe
     - neso
     - opsd
 
+  # Exercise the full advanced gap-filling workflow. See config/README.md for
+  # the complete configuration reference and method descriptions.
   gap_filling:
     mode: advanced
 
     basic:
       rules:
+        # Fill short internal gaps by linear interpolation.
         - name: interpolate_short_gaps
           method: linear_interpolation
           max_gap: 3h
 
+        # Fill longer gaps using the mean of the corresponding periods one
+        # week before and one week after the missing period.
         - name: average_adjacent_weeks
           method: average_periods
           max_gap: 326h
@@ -25,12 +35,16 @@ integration_test:
             - -7d
             - 7d
 
+        # If averaging cannot fill the gap, try copying the corresponding
+        # period from the previous week.
         - name: copy_previous_week
           method: copy_periods
           max_gap: 168h
           source_offset: -168h
           require_complete_source: true
 
+        # Finally, try copying the corresponding period from the following
+        # week when a complete source period is available.
         - name: copy_following_week
           method: copy_periods
           max_gap: 168h
@@ -39,10 +53,16 @@ integration_test:
 
     advanced:
       auxiliary_data:
+        # Apply the same basic cleaning rules to acquired auxiliary data before
+        # it is used to construct advanced replacement profiles.
         basic_cleaning:
           enabled: true
 
       sources:
+        # Construct an Albanian replacement profile from a winter period of
+        # British data, then scale it to match Albanian energy over the
+        # specified scaling period. This source is defined to exercise
+        # cross-country construction and scaling.
         alb_from_gbr_alb_winter:
           method: construct_from_sources
           periods:
@@ -58,6 +78,10 @@ integration_test:
                 end: "2024-02-01"
                 weight: 1
 
+        # Construct an Albanian profile from a later period of Albanian data.
+        # The corresponding rule below overwrites the integration-test target
+        # period, ensuring construction, auxiliary acquisition, scaling, and
+        # overwrite behavior are exercised end to end.
         alb_from_alb_2024:
           method: construct_from_sources
           periods:
@@ -73,6 +97,9 @@ integration_test:
                 end: "2024-01-03"
                 weight: 1
 
+        # Define a Montenegro profile constructed from Serbian data. Its rule
+        # deliberately lies outside the target temporal scope, testing that
+        # inactive advanced rules do not trigger unnecessary acquisition.
         mne_from_srb:
           method: construct_from_sources
           periods:
@@ -81,11 +108,16 @@ integration_test:
               end: "2022-04-01"
               weight: 1
 
+        # Read a small committed CSV fixture to exercise the external_profile
+        # source type and external_profiles pathvar resolution.
         alb_external_test:
           method: external_profile
           file: alb_external_test.csv
 
       rules:
+        # Fill Albanian gaps in January 2022 using the cross-country constructed
+        # winter profile. This rule is outside the integration-test target
+        # period and therefore tests inactive-rule selection.
         - name: build_alb_from_gbr_alb_winter
           country: ALB
           start: "2022-01-01"
@@ -93,6 +125,9 @@ integration_test:
           scope: fill_gaps
           source: alb_from_gbr_alb_winter
 
+        # Overwrite the full Albanian integration-test period using the
+        # constructed 2024 Albanian profile. This is the main active
+        # construct_from_sources integration case.
         - name: build_alb_from_alb_2024
           country: ALB
           start: "2017-01-01"
@@ -100,6 +135,9 @@ integration_test:
           scope: overwrite
           source: alb_from_alb_2024
 
+        # Deliberately inactive rule: both its target period and source data are
+        # outside the integration-test scope. It verifies that an inactive rule
+        # does not create unnecessary auxiliary acquisition jobs.
         - name: example_inactive_mne_override
           country: MNE
           start: "2020-03-01"
@@ -107,6 +145,8 @@ integration_test:
           scope: fill_gaps
           source: mne_from_srb
 
+        # Overwrite the first three Albanian hours from the external CSV fixture,
+        # exercising external_profile loading and overwrite application.
         - name: test_external_profile_overwrite
           country: ALB
           start: "2017-01-01 00:00"
