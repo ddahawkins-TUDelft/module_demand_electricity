@@ -49,7 +49,7 @@ rule download_load_entsoe:
         min(
             internal["load_entsoe"]["MAX_WORKERS"],
             len(internal["load_entsoe"]["countries"]),
-        ),
+        )
     params:
         temporal_start=config["temporal_scope"]["start"],
         temporal_end=config["temporal_scope"]["end"],
@@ -59,6 +59,7 @@ rule download_load_entsoe:
         "Download electricity load from ENTSOE."
     script:
         "../scripts/download_load_entsoe.py"
+
 
 rule download_load_opsd:
     output:

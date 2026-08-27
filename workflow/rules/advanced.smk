@@ -91,9 +91,7 @@ def advanced_external_profile_files(_wildcards):
 
     return [
         f"<external_profiles>/{filename}"
-        for filename in dict.fromkeys(
-            plan["external_profile_files"].values()
-        )
+        for filename in dict.fromkeys(plan["external_profile_files"].values())
     ]
 
 
@@ -117,16 +115,13 @@ checkpoint plan_auxiliary_data:
     input:
         demand=rules.clean_demand.output.demand,
     output:
-        plan=(
-            "<resources>/automatic/"
-            "auxiliary/advanced_execution_plan.json"
-        ),
+        plan=("<resources>/automatic/" "auxiliary/advanced_execution_plan.json"),
+    conda:
+        "../envs/module.yaml"
     params:
         temporal_scope=config["temporal_scope"],
         gap_filling=config["gap_filling"],
         source_names=config["load_sources"],
-    conda:
-        "../envs/module.yaml"
     message:
         "Plan auxiliary electricity-demand acquisition."
     script:
@@ -159,21 +154,13 @@ rule download_auxiliary_load_entsoe:
         token_entsoe="<token_entsoe>",
         plan=auxiliary_acquisition_plan,
     output:
-        raw_load=(
-            "<resources>/automatic/"
-            "auxiliary/entsoe/raw/"
-            "{batch_id}.parquet"
-        ),
+        raw_load=("<resources>/automatic/" "auxiliary/entsoe/raw/" "{batch_id}.parquet"),
     log:
-        (
-            "<logs>/auxiliary/"
-            "entsoe/download_{batch_id}.log"
-        ),
+        ("<logs>/auxiliary/" "entsoe/download_{batch_id}.log"),
     localrule: True
     conda:
         "../envs/module.yaml"
-    threads:
-        auxiliary_entsoe_threads
+    threads: auxiliary_entsoe_threads
     params:
         frequency=config["temporal_scope"]["frequency"],
     message:
@@ -187,16 +174,9 @@ rule prepare_auxiliary_load_entsoe:
         plan=auxiliary_acquisition_plan,
         raw_load=rules.download_auxiliary_load_entsoe.output.raw_load,
     output:
-        load=(
-            "<resources>/automatic/"
-            "auxiliary/entsoe/"
-            "{batch_id}.parquet"
-        ),
+        load=("<resources>/automatic/" "auxiliary/entsoe/" "{batch_id}.parquet"),
     log:
-        (
-            "<logs>/auxiliary/"
-            "entsoe/prepare_{batch_id}.log"
-        ),
+        ("<logs>/auxiliary/" "entsoe/prepare_{batch_id}.log"),
     conda:
         "../envs/module.yaml"
     params:
@@ -230,11 +210,7 @@ rule prepare_auxiliary_load_neso:
         plan=auxiliary_acquisition_plan,
         annual_files=auxiliary_neso_raw_files,
     output:
-        load=(
-            "<resources>/automatic/"
-            "auxiliary/neso/"
-            "{batch_id}.parquet"
-        ),
+        load=("<resources>/automatic/" "auxiliary/neso/" "{batch_id}.parquet"),
     log:
         "<logs>/auxiliary/neso/{batch_id}.log",
     conda:
@@ -252,11 +228,7 @@ rule clean_auxiliary_group:
         plan=auxiliary_acquisition_plan,
         sources=auxiliary_group_source_files,
     output:
-        demand=(
-            "<resources>/automatic/"
-            "auxiliary/cleaned/"
-            "{group_id}.parquet"
-        ),
+        demand=("<resources>/automatic/" "auxiliary/cleaned/" "{group_id}.parquet"),
         data_source=(
             "<resources>/automatic/"
             "auxiliary/cleaned/"
@@ -267,18 +239,16 @@ rule clean_auxiliary_group:
             "auxiliary/cleaned/"
             "{group_id}_cleaning_method.parquet"
         ),
+    conda:
+        "../envs/module.yaml"
     params:
         frequency=config["temporal_scope"]["frequency"],
         basic_rules=config["gap_filling"]["basic"]["rules"],
         basic_cleaning_enabled=(
-            config["gap_filling"]
-            ["advanced"]
-            ["auxiliary_data"]
-            ["basic_cleaning"]
-            ["enabled"]
+            config["gap_filling"]["advanced"]["auxiliary_data"]["basic_cleaning"][
+                "enabled"
+            ]
         ),
-    conda:
-        "../envs/module.yaml"
     message:
         "Combine and clean auxiliary electricity-demand sources."
     script:
@@ -291,19 +261,13 @@ rule construct_auxiliary_profile:
         sources=auxiliary_rule_cleaned_files,
     output:
         profile=(
-            "<resources>/automatic/"
-            "auxiliary/constructed/"
-            "{rule_name}.parquet"
-        ),
-    params:
-        frequency=config["temporal_scope"]["frequency"],
-        advanced_sources=(
-            config["gap_filling"]
-            ["advanced"]
-            ["sources"]
+            "<resources>/automatic/" "auxiliary/constructed/" "{rule_name}.parquet"
         ),
     conda:
         "../envs/module.yaml"
+    params:
+        frequency=config["temporal_scope"]["frequency"],
+        advanced_sources=(config["gap_filling"]["advanced"]["sources"]),
     message:
         "Construct auxiliary demand profile for {wildcards.rule_name}."
     script:
@@ -323,10 +287,10 @@ rule apply_advanced_overrides:
         cleaning_method=(
             "<resources>/automatic/" "load_advanced_cleaning_method.parquet"
         ),
-    params:
-        temporal_scope=config["temporal_scope"],
     conda:
         "../envs/module.yaml"
+    params:
+        temporal_scope=config["temporal_scope"],
     message:
         "Apply advanced electricity-demand overrides."
     script:
