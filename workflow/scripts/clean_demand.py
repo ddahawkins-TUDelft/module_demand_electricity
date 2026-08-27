@@ -24,7 +24,7 @@ def main(snakemake: Any) -> None:
     )
 
     input_paths = list(
-        snakemake.input
+        snakemake.input.load_inputs
     )
 
     if len(input_paths) != len(source_names):

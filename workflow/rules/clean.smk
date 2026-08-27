@@ -93,7 +93,7 @@ def configured_load_inputs(_wildcards):
 
 rule clean_demand:
     input:
-        configured_load_inputs,
+        load_inputs=configured_load_inputs,
         validation="<resources>/automatic/gap_filling_config_validation.json",
     output:
         demand=("<resources>/automatic/load_basic_cleaned.parquet"),
