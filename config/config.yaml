@@ -1,6 +1,6 @@
 temporal_scope:
-  start: "2017-01-01"
-  end: "2017-01-03"
+  start: "2010-01-01"
+  end: "2026-01-01"
   frequency: "1h"
 
 # Load sources are listed in priority order. Where multiple sources provide
@@ -14,7 +14,7 @@ load_sources:
 # Exercise the full advanced gap-filling workflow. See config/README.md for
 # the complete configuration reference and method descriptions.
 gap_filling:
-  mode: advanced
+  mode: basic
 
   basic:
     rules:
