@@ -96,7 +96,7 @@ integration_test:
                 start: "2024-01-01"
                 end: "2024-01-03"
                 weight: 1
-        
+
         # Construct a second Albanian profile from the same 2024 source period,
         # normalised so that its arithmetic mean equals one. This exercises
         # profile normalisation without requiring additional scaling data.
@@ -147,7 +147,7 @@ integration_test:
           end: "2017-01-03"
           scope: overwrite
           source: alb_from_alb_2024
-        
+
         # Overwrite one target hour with a mean-normalised constructed profile.
         # This exercises normalise_mean end to end while leaving the main
         # match_total construction case in place.

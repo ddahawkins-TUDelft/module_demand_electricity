@@ -66,17 +66,13 @@ def test_build_advanced_rules_returns_canonical_columns_when_empty() -> None:
         "scope",
     ]
 
+
 def test_build_scaling_source_periods_builds_match_total_periods() -> None:
     """Check match_total scaling periods are translated for T-Clean."""
     definition = {
         "method": "construct_from_sources",
         "periods": [
-            {
-                "country": "GBR",
-                "start": "2024-01-01",
-                "end": "2024-02-01",
-                "weight": 1,
-            }
+            {"country": "GBR", "start": "2024-01-01", "end": "2024-02-01", "weight": 1}
         ],
         "scaling": {
             "method": "match_total",
@@ -96,12 +92,8 @@ def test_build_scaling_source_periods_builds_match_total_periods() -> None:
     assert result is not None
     assert result["context"].tolist() == ["ALB"]
     assert result["weight"].tolist() == [1]
-    assert result["start"].tolist() == [
-        pd.Timestamp("2023-01-01", tz="UTC")
-    ]
-    assert result["end"].tolist() == [
-        pd.Timestamp("2023-02-01", tz="UTC")
-    ]
+    assert result["start"].tolist() == [pd.Timestamp("2023-01-01", tz="UTC")]
+    assert result["end"].tolist() == [pd.Timestamp("2023-02-01", tz="UTC")]
 
 
 def test_build_scaling_source_periods_returns_none_for_normalise_mean() -> None:
@@ -124,6 +116,7 @@ def test_build_scaling_source_periods_returns_none_for_normalise_max() -> None:
     }
 
     assert build_scaling_source_periods(definition) is None
+
 
 def test_normalisation_scaling_does_not_add_auxiliary_periods() -> None:
     """Check normalisation methods do not add scaling acquisition periods."""
@@ -164,6 +157,7 @@ def test_normalisation_scaling_does_not_add_auxiliary_periods() -> None:
     assert set(result) == {"mean_source", "max_source"}
     assert result["mean_source"]["context"].tolist() == ["GBR"]
     assert result["max_source"]["context"].tolist() == ["FRA"]
+
 
 def test_match_total_scaling_adds_auxiliary_periods() -> None:
     """Check match_total adds reference periods to auxiliary acquisition."""
