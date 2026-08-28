@@ -1,0 +1,36 @@
+# Emulate a user configuring the module.
+configfile: workflow.source_path("europe_config.yaml")
+
+
+# Import the module and configure it.
+module module_demand_electricity:
+    pathvars:
+        shapes="dev/europe/resources/user/{shape}/shapes.parquet",
+        token_entsoe=workflow.source_path(
+            "resources/user/token_entsoe.txt"
+        ),
+        external_profiles=workflow.source_path(
+            "resources/user/external_profiles"
+        ),
+        resources="dev/europe/resources/module/resources",
+        results="dev/europe/resources/module/results",
+        logs="dev/europe/resources/module/logs",
+    snakefile:
+        "../../workflow/Snakefile"
+    config:
+        config
+
+
+# Rename all module rules with a prefix, to avoid naming conflicts.
+use rule * from module_demand_electricity as module_demand_electricity_*
+
+
+rule europe_gap_fill_dev:
+    default_target: True
+    input:
+        (
+            "dev/europe/resources/module/results/"
+            "EUROPE_L_C34_ADM1/load_cleaning_timeline.pdf"
+        ),
+    message:
+        "Dev case for European config file."
