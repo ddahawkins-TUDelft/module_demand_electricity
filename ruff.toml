@@ -20,7 +20,6 @@ max-complexity = 10
 [lint.per-file-ignores]
 "__init__.py" = ["E402", "F401", "D104"]
 "*.ipynb" = ["E402"]
-"tests/**/*.py" = ["D100", "D103"]
 
 [lint.flake8-quotes]
 docstring-quotes = "double"

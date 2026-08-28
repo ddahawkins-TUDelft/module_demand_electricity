@@ -71,7 +71,7 @@ integration_test:
               end: "2024-02-01"
               weight: 1
           scaling:
-            method: match_energy
+            method: match_total
             periods:
               - country: ALB
                 start: "2024-01-01"
@@ -90,12 +90,25 @@ integration_test:
               end: "2024-01-03"
               weight: 1
           scaling:
-            method: match_energy
+            method: match_total
             periods:
               - country: ALB
                 start: "2024-01-01"
                 end: "2024-01-03"
                 weight: 1
+        
+        # Construct a second Albanian profile from the same 2024 source period,
+        # normalised so that its arithmetic mean equals one. This exercises
+        # profile normalisation without requiring additional scaling data.
+        alb_from_alb_2024_normalised:
+          method: construct_from_sources
+          periods:
+            - country: ALB
+              start: "2024-01-01"
+              end: "2024-01-02"
+              weight: 1
+          scaling:
+            method: normalise_mean
 
         # Define a Montenegro profile constructed from Serbian data. Its rule
         # deliberately lies outside the target temporal scope, testing that
@@ -134,6 +147,16 @@ integration_test:
           end: "2017-01-03"
           scope: overwrite
           source: alb_from_alb_2024
+        
+        # Overwrite one target hour with a mean-normalised constructed profile.
+        # This exercises normalise_mean end to end while leaving the main
+        # match_total construction case in place.
+        - name: test_normalise_mean
+          country: ALB
+          start: "2017-01-02"
+          end: "2017-01-03"
+          scope: overwrite
+          source: alb_from_alb_2024_normalised
 
         # Deliberately inactive rule: both its target period and source data are
         # outside the integration-test scope. It verifies that an inactive rule

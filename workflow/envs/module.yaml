@@ -21,4 +21,4 @@ dependencies:
 - rioxarray >=0.20.0
 - pandera >=0.31.1
 - pyyaml >=6.0.3
-- ddahawkins/label/dev::tclean ==0.1.0
+- ddahawkins/label/dev::tclean ==0.1.1

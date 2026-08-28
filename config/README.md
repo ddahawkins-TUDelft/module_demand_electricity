@@ -234,7 +234,7 @@ advanced:
           weight: 1
 
       scaling:
-        method: match_energy
+        method: match_total
         periods:
           - country: ALB
             start: "2024-01-01"
@@ -261,7 +261,7 @@ The currently configured scaling strategy is:
 
 ```yaml
 scaling:
-  method: match_energy
+  method: match_total
   periods:
     - country: ALB
       start: "2024-01-01"
@@ -269,7 +269,7 @@ scaling:
       weight: 1
 ```
 
-`match_energy` uses the configured scaling periods to align the overall energy level of the constructed profile with a more representative reference.
+`match_total` uses the configured scaling periods to align the overall energy level of the constructed profile with a more representative reference.
 
 Scaling periods can require auxiliary demand data outside the main target grid; the workflow includes them when compiling acquisition requirements.
 

@@ -21,6 +21,7 @@ FORBIDDEN_HOST_PATTERNS = (
 
 
 def test_snakemake_host_code_has_no_module_runtime_dependencies() -> None:
+    """Check for runtime dependencies."""
     workflow_files = [Path("workflow/Snakefile"), *Path("workflow/rules").glob("*.smk")]
     violations = []
     for path in workflow_files:
@@ -35,6 +36,7 @@ def test_snakemake_host_code_has_no_module_runtime_dependencies() -> None:
 
 
 def test_removed_legacy_packages_are_not_reintroduced() -> None:
+    """Test legacy package removal."""
     assert not Path("workflow/scripts/cleaning").exists()
     assert not Path("workflow/scripts/common").exists()
 

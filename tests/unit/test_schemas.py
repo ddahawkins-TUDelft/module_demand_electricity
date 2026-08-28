@@ -7,6 +7,7 @@ from pandera.errors import SchemaError
 
 
 def test_opsd_schema_accepts_provider_rows() -> None:
+    """Test OPSD schema accepts provider rows."""
     frame = pd.DataFrame(
         {
             "region": ["GB"],
@@ -21,6 +22,7 @@ def test_opsd_schema_accepts_provider_rows() -> None:
 
 
 def test_shapes_schema_rejects_unknown_shape_class() -> None:
+    """Tests shapes schema rejects unknown shape class."""
     frame = pd.DataFrame(
         {
             "shape_id": ["x"],

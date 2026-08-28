@@ -32,12 +32,14 @@ def _requests() -> pd.DataFrame:
 
 
 def test_group_id_depends_only_on_period() -> None:
+    """Test group id depends only on period."""
     start = pd.Timestamp("2020-01-01", tz="UTC")
     end = pd.Timestamp("2020-02-01", tz="UTC")
     assert build_group_id(start=start, end=end) == "20200101T0000__20200201T0000"
 
 
 def test_batch_id_is_independent_of_country_order() -> None:
+    """Test Batch ignores country order."""
     start = pd.Timestamp("2020-01-01", tz="UTC")
     end = pd.Timestamp("2020-02-01", tz="UTC")
     first = build_batch_id(
@@ -51,6 +53,7 @@ def test_batch_id_is_independent_of_country_order() -> None:
 
 
 def test_source_batches_group_countries_by_source_and_period() -> None:
+    """Test sources group countries by source and period."""
     batches = build_source_batches(_requests())
     assert len(batches) == 2
     assert batches[0]["source"] == "entsoe"
@@ -61,6 +64,7 @@ def test_source_batches_group_countries_by_source_and_period() -> None:
 
 
 def test_batch_indexes_preserve_compiled_ids() -> None:
+    """Test indexes preserve ids."""
     batches = build_source_batches(_requests())
     by_source = index_batch_ids_by_source(batches)
     by_group = index_batch_ids_by_group(batches)
@@ -71,6 +75,7 @@ def test_batch_indexes_preserve_compiled_ids() -> None:
 
 
 def test_serialize_batch_produces_json_safe_values() -> None:
+    """Test for json safety."""
     batch = build_source_batches(_requests())[0]
     serialized = serialize_batch(batch)
     json.dumps(serialized)
@@ -79,6 +84,7 @@ def test_serialize_batch_produces_json_safe_values() -> None:
 
 
 def test_empty_execution_plan_has_stable_contract() -> None:
+    """Test empty execution plan."""
     assert empty_execution_plan() == {
         "version": EXECUTION_PLAN_VERSION,
         "active_rule_names": [],
@@ -92,6 +98,7 @@ def test_empty_execution_plan_has_stable_contract() -> None:
 
 
 def test_load_execution_plan_and_get_batch(tmp_path) -> None:
+    """Test load execution plan."""
     batch = serialize_batch(build_source_batches(_requests())[0])
     plan = empty_execution_plan()
     plan["batches"] = [batch]
@@ -104,5 +111,6 @@ def test_load_execution_plan_and_get_batch(tmp_path) -> None:
 
 
 def test_get_batch_requires_exactly_one_match() -> None:
+    """Test get batch requires a single match."""
     with pytest.raises(ValueError, match="Expected exactly one auxiliary batch"):
         get_batch(empty_execution_plan(), batch_id="missing")

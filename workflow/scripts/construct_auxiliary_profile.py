@@ -25,6 +25,9 @@ source_definition = snakemake.params.advanced_sources[source_name]
 sources = build_constructed_source_periods(source_definition)
 scaling_sources = build_scaling_source_periods(source_definition)
 
+scaling = source_definition.get("scaling")
+scaling_method = None if scaling is None else scaling["method"]
+
 grid = TimeGrid(
     start=rule["start"], end=rule["end"], frequency=snakemake.params.frequency
 )
@@ -50,6 +53,7 @@ profile = construct_from_sources(
     source_data,
     target_index=grid.target_index,
     sources=sources,
+    scaling_method=scaling_method,
     scaling_sources=scaling_sources,
     grid=grid,
 )

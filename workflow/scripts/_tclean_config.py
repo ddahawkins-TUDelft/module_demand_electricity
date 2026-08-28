@@ -84,18 +84,18 @@ def build_constructed_source_periods(
 
 
 def build_scaling_source_periods(
-    source_definition: Mapping[str, Any],
-) -> pd.DataFrame | None:
-    """Build optional T-Clean scaling periods for a constructed source."""
-    scaling = source_definition.get("scaling")
+        source_definition: Mapping[str, Any],
+    ) -> pd.DataFrame | None:
+        """Build scaling source periods for a constructed advanced source."""
+        scaling = source_definition.get("scaling")
 
-    if scaling is None:
-        return None
+        if scaling is None:
+            return None
 
-    if scaling["method"] != "match_energy":
-        raise ValueError(f"Unsupported scaling method: {scaling['method']!r}.")
+        if scaling["method"] != "match_total":
+            return None
 
-    return _build_source_periods(scaling["periods"])
+        return _build_source_periods(scaling["periods"])
 
 
 def build_all_constructed_source_periods(

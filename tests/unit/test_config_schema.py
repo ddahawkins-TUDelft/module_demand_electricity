@@ -23,6 +23,7 @@ def _validate(config: dict) -> list[ValidationError]:
 
 
 def test_default_config_matches_schema() -> None:
+    """Check default config matches schema."""
     with CONFIG_PATH.open(encoding="utf-8") as config_file:
         config = yaml.safe_load(config_file)
     errors = _validate(config)
@@ -30,6 +31,7 @@ def test_default_config_matches_schema() -> None:
 
 
 def test_advanced_mode_allows_no_sources_or_rules() -> None:
+    """Check advanced mode permits no arguments."""
     config = {
         "temporal_scope": {
             "start": "2021-01-01",
@@ -49,3 +51,121 @@ def test_advanced_mode_allows_no_sources_or_rules() -> None:
     }
     errors = _validate(config)
     assert not errors, "\n".join(_format_validation_error(error) for error in errors)
+
+
+def _advanced_config_with_scaling(scaling: dict) -> dict:
+    return {
+        "temporal_scope": {
+            "start": "2021-01-01",
+            "end": "2022-01-01",
+            "frequency": "1h",
+        },
+        "load_sources": ["entsoe"],
+        "gap_filling": {
+            "mode": "advanced",
+            "basic": {"rules": []},
+            "advanced": {
+                "auxiliary_data": {"basic_cleaning": {"enabled": True}},
+                "sources": {
+                    "constructed": {
+                        "method": "construct_from_sources",
+                        "periods": [
+                            {
+                                "country": "ALB",
+                                "start": "2020-01-01",
+                                "end": "2020-01-02",
+                                "weight": 1,
+                            }
+                        ],
+                        "scaling": scaling,
+                    }
+                },
+                "rules": [],
+            },
+        },
+    }
+
+
+def test_constructed_source_allows_match_total_scaling() -> None:
+    """Check for match_total method."""
+    config = _advanced_config_with_scaling(
+        {
+            "method": "match_total",
+            "periods": [
+                {
+                    "country": "ALB",
+                    "start": "2020-01-01",
+                    "end": "2020-01-02",
+                    "weight": 1,
+                }
+            ],
+        }
+    )
+
+    assert not _validate(config)
+
+
+def test_constructed_source_allows_normalise_mean_scaling() -> None:
+    """Check normalise mean method."""
+    config = _advanced_config_with_scaling({"method": "normalise_mean"})
+
+    assert not _validate(config)
+
+
+def test_constructed_source_allows_normalise_max_scaling() -> None:
+    """Check normalise max method."""
+    config = _advanced_config_with_scaling({"method": "normalise_max"})
+
+    assert not _validate(config)
+
+
+def test_match_total_scaling_requires_periods() -> None:
+    """Check match_total required periods."""
+    config = _advanced_config_with_scaling({"method": "match_total"})
+
+    assert _validate(config)
+
+
+def test_normalise_mean_scaling_rejects_periods() -> None:
+    """Check norm mean rejects additional args."""
+    config = _advanced_config_with_scaling(
+        {
+            "method": "normalise_mean",
+            "periods": [
+                {
+                    "country": "ALB",
+                    "start": "2020-01-01",
+                    "end": "2020-01-02",
+                    "weight": 1,
+                }
+            ],
+        }
+    )
+
+    assert _validate(config)
+
+
+def test_normalise_max_scaling_rejects_periods() -> None:
+    """Check norm max rejects additional args."""
+    config = _advanced_config_with_scaling(
+        {
+            "method": "normalise_max",
+            "periods": [
+                {
+                    "country": "ALB",
+                    "start": "2020-01-01",
+                    "end": "2020-01-02",
+                    "weight": 1,
+                }
+            ],
+        }
+    )
+
+    assert _validate(config)
+
+
+def test_constructed_source_rejects_unknown_scaling_method() -> None:
+    """Check rejection of unknown methods."""
+    config = _advanced_config_with_scaling({"method": "something_else"})
+
+    assert _validate(config)

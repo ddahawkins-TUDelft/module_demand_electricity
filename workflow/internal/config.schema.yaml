@@ -189,22 +189,44 @@ $defs:
       source.
 
   constructed_source_scaling:
-    type: object
-    properties:
-      method:
-        const: match_energy
+    oneOf:
 
-      periods:
-        $ref: "#/$defs/source_periods"
-        description: >
-          Reference periods whose weighted-mean energy determines the
-          energy total of the constructed profile.
+      - type: object
+        properties:
+          method:
+            const: match_total
 
-    required:
-      - method
-      - periods
+          periods:
+            $ref: "#/$defs/source_periods"
+            description: >
+              Reference periods whose weighted-mean total determines the
+              total of the constructed profile.
 
-    additionalProperties: false
+        required:
+          - method
+          - periods
+
+        additionalProperties: false
+
+      - type: object
+        properties:
+          method:
+            const: normalise_mean
+
+        required:
+          - method
+
+        additionalProperties: false
+
+      - type: object
+        properties:
+          method:
+            const: normalise_max
+
+        required:
+          - method
+
+        additionalProperties: false
 
   construct_from_sources_definition:
     type: object
