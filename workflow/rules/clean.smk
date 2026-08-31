@@ -1,3 +1,10 @@
+LOAD_SOURCE_PATHS = {
+    "entsoe": ("<resources>/automatic/" "load_entsoe.parquet"),
+    "neso": ("<resources>/automatic/" "load_neso.parquet"),
+    "opsd": ("<resources>/automatic/" "load_opsd.parquet"),
+    "entsoe_power_statistics": ("<resources>/automatic/" "load_entsoe_power_statistics.parquet")
+}
+
 def entsoe_raw_files(_wildcards):
     """Return ENTSO-E country-year files required by the configured period."""
     years = years_for_period(
@@ -17,6 +24,17 @@ def neso_raw_files(_wildcards):
 
     return neso_annual_files(years)
 
+
+def entsoe_power_statistics_raw_files(_wildcards):
+    """Return Power Statistics annual files required by the target period."""
+    years = years_for_period(
+        config["temporal_scope"]["start"],
+        config["temporal_scope"]["end"],
+    )
+
+    return entsoe_power_statistics_annual_files(
+        years
+    )
 
 rule prepare_load_entsoe:
     input:
@@ -82,11 +100,32 @@ rule prepare_load_neso:
         "../scripts/prepare_load_neso.py"
 
 
-LOAD_SOURCE_PATHS = {
-    "entsoe": ("<resources>/automatic/" "load_entsoe.parquet"),
-    "neso": ("<resources>/automatic/" "load_neso.parquet"),
-    "opsd": ("<resources>/automatic/" "load_opsd.parquet"),
-}
+rule prepare_load_entsoe_power_statistics:
+    input:
+        validation=(
+            "<resources>/automatic/"
+            "temporal_config_validation.json"
+        ),
+        annual_files=entsoe_power_statistics_raw_files,
+    output:
+        load=(
+            "<resources>/automatic/"
+            "load_entsoe_power_statistics.parquet"
+        ),
+    params:
+        temporal_start=config["temporal_scope"]["start"],
+        temporal_end=config["temporal_scope"]["end"],
+        frequency=config["temporal_scope"]["frequency"],
+        country_codes=internal["load_entsoe"]["countries"],
+    log:
+        "<logs>/prepare_load_entsoe_power_statistics.log",
+    conda:
+        "../envs/module.yaml"
+    message:
+        "Prepare electricity-demand data from ENTSO-E Power Statistics."
+    script:
+        "../scripts/prepare_load_entsoe_power_statistics.py"
+
 
 
 def configured_load_inputs(_wildcards):

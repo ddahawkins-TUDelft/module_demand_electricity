@@ -62,6 +62,33 @@ rule download_load_entsoe_country_year:
         "../scripts/download_load_entsoe.py"
 
 
+rule download_load_entsoe_power_statistics_year:
+    output:
+        annual_file=(
+            "<resources>/automatic/entsoe_power_statistics/raw/{year}.parquet"
+        ),
+    log:
+        (
+            "<logs>/download_load_entsoe_power_statistics_{year}.log"
+        ),
+    wildcard_constraints:
+        year="2019|2020|2021|2022|2023|2024|2025",
+    localrule: True
+    conda:
+        "../envs/module.yaml"
+    threads: 1
+    resources:
+        entsoe_download=1
+    params:
+        year=lambda wildcards: int(wildcards.year),
+    message:
+        (
+            "Download ENTSO-E Power Statistics "
+            "electricity load for {wildcards.year}."
+        )
+    script:
+        "../scripts/download_load_entsoe_power_statistics.py"
+
 rule download_load_opsd:
     output:
         load=update("<resources>/automatic/opsd/raw_load.parquet"),

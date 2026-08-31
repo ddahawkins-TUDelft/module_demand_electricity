@@ -3,6 +3,11 @@
 from datetime import datetime, timedelta, timezone
 
 
+ENTSOE_POWER_STATISTICS_YEARS = set(
+    range(2019, 2026)
+)
+
+
 def _as_utc(value):
     """Interpret naive timestamps as UTC and convert aware timestamps to UTC. Mirrors tclean logic."""
     parsed = datetime.fromisoformat(str(value))
@@ -42,6 +47,18 @@ def entsoe_annual_files(countries, years):
         for year in years
     ]
 
+
+def entsoe_power_statistics_annual_files(years):
+    """Return supported annual ENTSO-E Power Statistics files."""
+    return [
+        (
+            "<resources>/automatic/"
+            "entsoe_power_statistics/raw/"
+            f"{int(year)}.parquet"
+        )
+        for year in years
+        if int(year) in ENTSOE_POWER_STATISTICS_YEARS
+    ]
 
 def additional_config_validation():
     """Validate configuration relationships that require no module dependencies."""
