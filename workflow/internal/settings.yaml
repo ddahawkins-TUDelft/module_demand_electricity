@@ -44,4 +44,3 @@ load_entsoe:
     - "SVN"
     - "SVK"
     # - "TUR"   #Data is unavailable for Turkey
-  MAX_WORKERS: 3
