@@ -54,6 +54,8 @@ rule download_load_entsoe_country_year:
     params:
         country_code=lambda wildcards: wildcards.country,
         year=lambda wildcards: int(wildcards.year),
+    resources:
+        entsoe_download=1
     message:
         (
             "Download ENTSO-E electricity load for "
@@ -89,6 +91,10 @@ rule download_load_neso_year:
         "../envs/module.yaml"
     params:
         year=lambda wildcards: int(wildcards.year),
+    threads:
+        1
+    resources:
+        neso_download=1
     message:
         "Download NESO historic electricity demand for {wildcards.year}."
     script:
