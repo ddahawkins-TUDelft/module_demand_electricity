@@ -137,6 +137,7 @@ checkpoint plan_auxiliary_data:
         temporal_scope=config["temporal_scope"],
         gap_filling=config["gap_filling"],
         source_names=config["load_sources"],
+        source_registry=SOURCE_REGISTRY,
     message:
         "Plan auxiliary electricity-demand acquisition."
     script:

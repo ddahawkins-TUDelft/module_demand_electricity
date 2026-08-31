@@ -72,7 +72,9 @@ rule download_load_entsoe_power_statistics_year:
             "<logs>/download_load_entsoe_power_statistics_{year}.log"
         ),
     wildcard_constraints:
-        year="2019|2020|2021|2022|2023|2024|2025",
+        year=source_year_pattern(
+            "entsoe_power_statistics"
+        ),
     localrule: True
     conda:
         "../envs/module.yaml"

@@ -1,10 +1,3 @@
-LOAD_SOURCE_PATHS = {
-    "entsoe": ("<resources>/automatic/" "load_entsoe.parquet"),
-    "neso": ("<resources>/automatic/" "load_neso.parquet"),
-    "opsd": ("<resources>/automatic/" "load_opsd.parquet"),
-    "entsoe_power_statistics": ("<resources>/automatic/" "load_entsoe_power_statistics.parquet")
-}
-
 def entsoe_raw_files(_wildcards):
     """Return ENTSO-E country-year files required by the configured period."""
     years = years_for_period(
@@ -129,7 +122,14 @@ rule prepare_load_entsoe_power_statistics:
 
 
 def configured_load_inputs(_wildcards):
-    return [LOAD_SOURCE_PATHS[source_name] for source_name in config["load_sources"]]
+    """Return prepared demand files for configured sources."""
+    return [
+        (
+            "<resources>/automatic/"
+            f"load_{source_name}.parquet"
+        )
+        for source_name in config["load_sources"]
+    ]
 
 
 rule clean_demand:
@@ -172,6 +172,7 @@ rule plot_cleaning_timeline:
     params:
         source_names=config["load_sources"],
         gap_filling=config["gap_filling"],
+        source_registry=SOURCE_REGISTRY,
     message:
         "Plot electricity-demand cleaning provenance."
     script:

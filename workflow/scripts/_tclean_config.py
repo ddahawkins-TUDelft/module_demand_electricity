@@ -135,24 +135,43 @@ def build_all_constructed_source_periods(
     return result
 
 
-def build_source_capabilities(source_names: Sequence[str]) -> pd.DataFrame:
+def build_source_capabilities(
+    source_names: Sequence[str],
+    *,
+    source_registry: Mapping[str, Mapping[str, Any]],
+) -> pd.DataFrame:
     """Describe which contexts configured providers can supply."""
     if len(source_names) != len(set(source_names)):
-        raise ValueError("Configured load source names must be unique.")
+        raise ValueError(
+            "Configured load source names must be unique."
+        )
 
     capabilities: list[dict[str, object]] = []
 
     for source_name in source_names:
-        if source_name == "neso":
-            capabilities.append({"source": "neso", "context": "GBR"})
+        if source_name not in source_registry:
+            raise ValueError(
+                "Unsupported electricity-demand source: "
+                f"{source_name!r}."
+            )
 
-        elif source_name in {"entsoe", "entsoe_power_statistics","opsd"}:
-            capabilities.append({"source": source_name, "context": None})
+        contexts = (
+            source_registry[source_name].get("contexts")
+            or [None]
+        )
 
-        else:
-            raise ValueError(f"Unsupported electricity-demand source: {source_name!r}.")
+        capabilities.extend(
+            {
+                "source": source_name,
+                "context": context,
+            }
+            for context in contexts
+        )
 
-    return pd.DataFrame(capabilities, columns=["source", "context"])
+    return pd.DataFrame(
+        capabilities,
+        columns=["source", "context"],
+    )
 
 
 def get_advanced_source_definitions(

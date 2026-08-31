@@ -117,7 +117,7 @@ Available provider identifiers are:
 
 Three modes are available:
 
-- `off`: do not fill gaps;
+- `"off"`: do not fill gaps. Please note that quotation marks are necessary here (i.e. "not") otherwise python reads this as a falsey boolean value;
 - `basic`: apply configured deterministic rules;
 - `advanced`: run basic cleaning first, then execute active advanced rules.
 

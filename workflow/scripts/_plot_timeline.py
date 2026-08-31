@@ -1,6 +1,7 @@
 """Plot electricity demand and cleaning-method provenance through time."""
 
 import logging
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +25,7 @@ def main(
     output_path: str | Path,
     source_names: list[str],
     gap_filling_config: dict[str, Any],
+    source_registry: Mapping[str, Mapping[str, Any]],
 ) -> None:
     """Create the electricity-demand cleaning diagnostic."""
     demand = pd.read_parquet(demand_path)
@@ -37,7 +39,9 @@ def main(
     )
 
     metadata = _build_cleaning_method_metadata(
-        source_names=source_names, gap_filling_config=gap_filling_config
+        source_names=source_names,
+        source_registry=source_registry,
+        gap_filling_config=gap_filling_config,
     )
 
     rank_colours = _build_rank_colours(metadata)
@@ -331,7 +335,7 @@ def _add_mean_load_labels(
 
 
 def _build_cleaning_method_metadata(
-    *, source_names: list[str], gap_filling_config: dict[str, Any]
+    *, source_names: list[str], gap_filling_config: dict[str, Any],source_registry: Mapping[str, Mapping[str, Any]],
 ) -> pd.DataFrame:
     """Build complete method metadata in configured rank order."""
     rows: list[dict[str, Any]] = []
@@ -343,7 +347,9 @@ def _build_cleaning_method_metadata(
                 "cleaning_method": (f"observed_{source_name}"),
                 "cleaning_method_rank": rank,
                 "label": (
-                    f"Rank {rank}: Observed ({_format_source_name(source_name)})"
+                    "Rank "
+                    f"{rank}: Observed "
+                    f"({_format_source_name(source_name, source_registry)})"
                 ),
                 "category": "observed",
             }
@@ -381,9 +387,19 @@ def _build_cleaning_method_metadata(
     return pd.DataFrame(rows)
 
 
-def _format_source_name(source_name: str) -> str:
-    mapping = {"entsoe": "ENTSO-E", "entsoe_power_statistics": "ENTSO-E Power Stats.", "neso": "NESO", "opsd": "OPSD"}
-    return mapping.get(source_name, source_name)
+def _format_source_name(
+    source_name: str,
+    source_registry: Mapping[str, Mapping[str, Any]],
+) -> str:
+    """Return the configured human-readable source name."""
+    metadata = source_registry.get(source_name, {})
+
+    return str(
+        metadata.get(
+            "display_name",
+            source_name,
+        )
+    )
 
 
 def _format_rule_name(name: str) -> str:

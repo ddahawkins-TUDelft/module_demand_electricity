@@ -1,0 +1,31 @@
+# This registry defines the data sources currently integrated into
+# Module Demand Electricity.
+#
+# Sources may optionally declare:
+# - display_name: human-readable name used for display and plotting.
+# - temporal_scope: valid source interval [start, end). 
+#   Either bound may be omitted to indicate no declared bound.
+# - contexts: eligible contexts for this source.
+#   If omitted or empty, no context restriction is declared.
+
+entsoe:
+  display_name: ENTSO-E
+  temporal_scope:
+    start: "2005-01-01"
+
+entsoe_power_statistics:
+  display_name: ENTSO-E Power Statistics
+  temporal_scope:
+    start: "2019-01-01"
+    end: "2026-01-01"
+
+neso:
+  display_name: NESO
+  contexts:
+    - GBR
+
+opsd:
+  display_name: OPSD
+  temporal_scope:
+    start: "2005-01-01"
+    end: "2019-03-01"

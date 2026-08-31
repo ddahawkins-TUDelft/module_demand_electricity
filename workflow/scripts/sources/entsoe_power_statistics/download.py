@@ -13,8 +13,6 @@ from tclean import TimeGrid
 
 logger = logging.getLogger(__name__)
 
-FIRST_SUPPORTED_YEAR = 2019
-LAST_SUPPORTED_YEAR = 2025
 
 URL_TEMPLATE = (
     "https://www.entsoe.eu/publications/data/power-stats/"
@@ -25,16 +23,6 @@ USER_AGENT = (
     "modelblocks-module-demand-electricity/"
     "ENTSO-E-Power-Statistics"
 )
-
-
-def _validate_year(year: int) -> None:
-    """Validate that a Power Statistics annual file is supported."""
-    if not FIRST_SUPPORTED_YEAR <= year <= LAST_SUPPORTED_YEAR:
-        raise ValueError(
-            "ENTSO-E Power Statistics annual downloads are supported "
-            f"for {FIRST_SUPPORTED_YEAR}-{LAST_SUPPORTED_YEAR}, "
-            f"received {year}."
-        )
 
 
 def _detect_delimiter(path: Path) -> str:
@@ -149,8 +137,6 @@ def harmonise_entsoe_power_statistics_csv(
     year: int,
 ) -> None:
     """Convert one annual Power Statistics CSV to canonical Parquet."""
-    _validate_year(year)
-
     input_path = Path(input_path)
     output_path = Path(output_path)
 
@@ -206,7 +192,12 @@ def harmonise_entsoe_power_statistics_csv(
         examples = (
             data.loc[
                 duplicate_mask,
-                ["country", "DateUTC"],
+                [
+                    "country",
+                    "timestamp",
+                    "DateShort",
+                    "TimeFrom",
+                ],
             ]
             .drop_duplicates()
             .head(10)
@@ -234,7 +225,7 @@ def harmonise_entsoe_power_statistics_csv(
         examples = (
             data.loc[
                 outside_year,
-                "DateUTC",
+                "timestamp",
             ]
             .drop_duplicates()
             .sort_values()
@@ -304,8 +295,6 @@ def download_entsoe_power_statistics_year(
     output_path: str | Path,
 ) -> None:
     """Download and harmonise one annual Power Statistics file."""
-    _validate_year(year)
-
     output_path = Path(output_path)
 
     url = URL_TEMPLATE.format(

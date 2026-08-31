@@ -415,6 +415,7 @@ properties:
     additionalProperties: false
 
 
+  # Load Sources are validated against ./source_registry.yaml
   load_sources:
     type: array
     description: >
@@ -426,11 +427,6 @@ properties:
 
     items:
       type: string
-      enum:
-        - entsoe
-        - entsoe_power_statistics
-        - neso
-        - opsd
 
 
   gap_filling:

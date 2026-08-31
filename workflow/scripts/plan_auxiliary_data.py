@@ -39,6 +39,7 @@ def build_advanced_execution_plan(
     temporal_scope: Mapping[str, Any],
     gap_filling_config: Mapping[str, Any],
     source_names: Sequence[str],
+    source_registry: Mapping[str, Mapping[str, Any]],
 ) -> dict[str, object]:
     """Build the advanced Snakemake execution manifest."""
     if gap_filling_config["mode"] != "advanced":
@@ -74,7 +75,10 @@ def build_advanced_execution_plan(
         ),
     )
 
-    source_capabilities = build_source_capabilities(source_names)
+    source_capabilities = build_source_capabilities(
+        source_names,
+        source_registry=source_registry,
+    )
 
     requests = build_auxiliary_source_requests(
         requirements, source_capabilities=source_capabilities, grid=grid
@@ -219,9 +223,10 @@ def main(snakemake: Any) -> None:
 
     plan = build_advanced_execution_plan(
         target_contexts=target_contexts,
-        temporal_scope=(snakemake.params.temporal_scope),
-        gap_filling_config=(snakemake.params.gap_filling),
-        source_names=(snakemake.params.source_names),
+        temporal_scope=snakemake.params.temporal_scope,
+        gap_filling_config=snakemake.params.gap_filling,
+        source_names=snakemake.params.source_names,
+        source_registry=snakemake.params.source_registry,
     )
 
     write_execution_plan(plan=plan, output_path=snakemake.output.plan)
