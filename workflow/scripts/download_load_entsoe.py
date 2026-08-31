@@ -1,44 +1,32 @@
-"""Snakemake entry point for downloading ENTSO-E load data."""
+"""Snakemake entry point for downloading one ENTSO-E country-year chunk."""
 
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from _advanced_execution import get_batch, load_execution_plan
+import pandas as pd
+
 from sources.entsoe.download import download_entsoe
-from tclean import TimeGrid
 
 if TYPE_CHECKING:
     snakemake: Any
 
 
 def main(snakemake: Any) -> None:
-    """Download ENTSO-E data for the requested workflow period."""
-    plan_path = getattr(snakemake.input, "plan", None)
+    """Download one UTC calendar year of ENTSO-E data for one country."""
+    year = int(snakemake.params.year)
+    country_code = str(snakemake.params.country_code)
 
-    if plan_path is not None:
-        plan = load_execution_plan(plan_path)
-
-        batch = get_batch(plan, batch_id=snakemake.wildcards.batch_id, source="entsoe")
-
-        start = batch["start"]
-        end = batch["end"]
-        country_codes = list(batch["countries"])
-
-    else:
-        start = snakemake.params.temporal_start
-        end = snakemake.params.temporal_end
-        country_codes = list(snakemake.params.country_codes)
-
-    grid = TimeGrid(start=start, end=end, frequency=snakemake.params.frequency)
+    start = pd.Timestamp(year=year, month=1, day=1, tz="UTC")
+    end = pd.Timestamp(year=year + 1, month=1, day=1, tz="UTC")
 
     download_entsoe(
-        start=grid.start,
-        end=grid.end,
-        country_codes=country_codes,
+        start=start,
+        end=end,
+        country_codes=[country_code],
         token_path=snakemake.input.token_entsoe,
-        output_path=snakemake.output.raw_load,
-        workers=snakemake.threads,
+        output_path=snakemake.output.annual_file,
+        workers=1,
     )
 
 

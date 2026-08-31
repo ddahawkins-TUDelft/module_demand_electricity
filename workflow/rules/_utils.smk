@@ -1,5 +1,47 @@
 """Collection of auxiliary functions for this module."""
 
+from datetime import datetime, timedelta, timezone
+
+
+def _as_utc(value):
+    """Interpret naive timestamps as UTC and convert aware timestamps to UTC. Mirros tclean logic."""
+    parsed = datetime.fromisoformat(str(value))
+
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+
+    return parsed.astimezone(timezone.utc)
+
+
+def years_for_period(start, end):
+    """Return UTC calendar years intersected by the half-open period [start, end). Mirros tclean logic."""
+    start = _as_utc(start)
+    end = _as_utc(end)
+
+    if end <= start:
+        raise ValueError("Temporal period end must be later than its start.")
+
+    final_included_time = end - timedelta(microseconds=1)
+
+    return list(range(start.year, final_included_time.year + 1))
+
+
+def neso_annual_files(years):
+    """Return reusable annual NESO raw-file paths for the requested years."""
+    return [
+        "<resources>/automatic/neso/" f"historic_demand_{int(year)}.csv"
+        for year in years
+    ]
+
+
+def entsoe_annual_files(countries, years):
+    """Return reusable ENTSO-E country-year raw-file paths."""
+    return [
+        "<resources>/automatic/entsoe/raw/" f"{country}/{int(year)}.parquet"
+        for country in countries
+        for year in years
+    ]
+
 
 def additional_config_validation():
     """Validate configuration relationships that require no module dependencies."""

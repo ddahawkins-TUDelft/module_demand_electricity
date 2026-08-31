@@ -34,29 +34,31 @@ rule validate_gap_filling_config_semantics:
         "../scripts/validate_config.py"
 
 
-rule download_load_entsoe:
+rule download_load_entsoe_country_year:
     input:
-        validation="<resources>/automatic/temporal_config_validation.json",
         token_entsoe="<token_entsoe>",
     output:
-        raw_load="<resources>/automatic/entsoe/raw_load.parquet",
+        annual_file=(
+            "<resources>/automatic/entsoe/raw/"
+            "{country}/{year}.parquet"
+        ),
     log:
-        "<logs>/download_load_entsoe.log",
+        "<logs>/download_load_entsoe_{country}_{year}.log",
+    wildcard_constraints:
+        country="[A-Z]{3}",
+        year="[0-9]{4}",
     localrule: True
     conda:
         "../envs/module.yaml"
-    threads:
-        min(
-            internal["load_entsoe"]["MAX_WORKERS"],
-            len(internal["load_entsoe"]["countries"]),
-        )
+    threads: 1
     params:
-        temporal_start=config["temporal_scope"]["start"],
-        temporal_end=config["temporal_scope"]["end"],
-        frequency=config["temporal_scope"]["frequency"],
-        country_codes=internal["load_entsoe"]["countries"],
+        country_code=lambda wildcards: wildcards.country,
+        year=lambda wildcards: int(wildcards.year),
     message:
-        "Download electricity load from ENTSOE."
+        (
+            "Download ENTSO-E electricity load for "
+            "{wildcards.country} in {wildcards.year}."
+        )
     script:
         "../scripts/download_load_entsoe.py"
 
@@ -78,8 +80,6 @@ rule download_load_opsd:
 
 
 rule download_load_neso_year:
-    input:
-        validation="<resources>/automatic/temporal_config_validation.json",
     output:
         annual_file=("<resources>/automatic/neso/" "historic_demand_{year}.csv"),
     log:

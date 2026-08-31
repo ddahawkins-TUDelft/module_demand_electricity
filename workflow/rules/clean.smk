@@ -1,27 +1,27 @@
-from datetime import datetime, timedelta
+def entsoe_raw_files(_wildcards):
+    """Return ENTSO-E country-year files required by the configured period."""
+    years = years_for_period(
+        config["temporal_scope"]["start"],
+        config["temporal_scope"]["end"],
+    )
+
+    return entsoe_annual_files(internal["load_entsoe"]["countries"], years)
 
 
 def neso_raw_files(_wildcards):
     """Return annual NESO input files for the configured period."""
-    start = datetime.fromisoformat(config["temporal_scope"]["start"])
-    end = datetime.fromisoformat(config["temporal_scope"]["end"])
-
-    final_included_time = end - timedelta(microseconds=1)
-
-    years = range(
-        start.year,
-        final_included_time.year + 1,
+    years = years_for_period(
+        config["temporal_scope"]["start"],
+        config["temporal_scope"]["end"],
     )
 
-    return [
-        ("<resources>/automatic/neso/" f"historic_demand_{year}.csv") for year in years
-    ]
+    return neso_annual_files(years)
 
 
 rule prepare_load_entsoe:
     input:
         validation="<resources>/automatic/temporal_config_validation.json",
-        raw_load=rules.download_load_entsoe.output.raw_load,
+        annual_files=entsoe_raw_files,
     output:
         load="<resources>/automatic/load_entsoe.parquet",
     log:

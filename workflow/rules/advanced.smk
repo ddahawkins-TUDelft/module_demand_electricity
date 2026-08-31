@@ -24,10 +24,20 @@ def auxiliary_neso_raw_files(wildcards):
         if (batch["batch_id"] == wildcards.batch_id and batch["source"] == "neso")
     )
 
-    return [
-        ("<resources>/automatic/neso/" f"historic_demand_{year}.csv")
-        for year in batch["years"]
-    ]
+    return neso_annual_files(batch["years"])
+
+
+def auxiliary_entsoe_raw_files(wildcards):
+    """Return ENTSO-E country-year files required by one auxiliary batch."""
+    plan = _read_auxiliary_plan()
+
+    batch = next(
+        batch
+        for batch in plan["batches"]
+        if (batch["batch_id"] == wildcards.batch_id and batch["source"] == "entsoe")
+    )
+
+    return entsoe_annual_files(batch["countries"], batch["years"])
 
 
 def auxiliary_group_source_files(wildcards):
@@ -95,22 +105,6 @@ def advanced_external_profile_files(_wildcards):
     ]
 
 
-def auxiliary_entsoe_threads(wildcards):
-    """Return useful ENTSO-E threads for one auxiliary batch."""
-    plan = _read_auxiliary_plan()
-
-    batch = next(
-        batch
-        for batch in plan["batches"]
-        if (batch["batch_id"] == wildcards.batch_id and batch["source"] == "entsoe")
-    )
-
-    return min(
-        internal["load_entsoe"]["MAX_WORKERS"],
-        len(batch["countries"]),
-    )
-
-
 checkpoint plan_auxiliary_data:
     input:
         demand=rules.clean_demand.output.demand,
@@ -149,30 +143,10 @@ rule finalise_clean_demand:
         "../scripts/finalise_clean_demand.py"
 
 
-rule download_auxiliary_load_entsoe:
-    input:
-        token_entsoe="<token_entsoe>",
-        plan=auxiliary_acquisition_plan,
-    output:
-        raw_load=("<resources>/automatic/" "auxiliary/entsoe/raw/" "{batch_id}.parquet"),
-    log:
-        ("<logs>/auxiliary/" "entsoe/download_{batch_id}.log"),
-    localrule: True
-    conda:
-        "../envs/module.yaml"
-    threads: auxiliary_entsoe_threads
-    params:
-        frequency=config["temporal_scope"]["frequency"],
-    message:
-        "Download auxiliary electricity load from ENTSO-E."
-    script:
-        "../scripts/download_load_entsoe.py"
-
-
 rule prepare_auxiliary_load_entsoe:
     input:
         plan=auxiliary_acquisition_plan,
-        raw_load=rules.download_auxiliary_load_entsoe.output.raw_load,
+        annual_files=auxiliary_entsoe_raw_files,
     output:
         load=("<resources>/automatic/" "auxiliary/entsoe/" "{batch_id}.parquet"),
     log:

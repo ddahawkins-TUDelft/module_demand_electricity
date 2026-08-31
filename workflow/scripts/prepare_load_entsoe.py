@@ -1,5 +1,6 @@
 """Snakemake entry point for preparing ENTSO-E load data."""
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from _advanced_execution import get_batch, load_execution_plan
@@ -31,7 +32,7 @@ def main(snakemake: Any) -> None:
     grid = TimeGrid(start=start, end=end, frequency=snakemake.params.frequency)
 
     prepare_entsoe(
-        input_path=snakemake.input.raw_load,
+        input_paths=[Path(path) for path in snakemake.input.annual_files],
         output_path=snakemake.output.load,
         grid=grid,
         country_codes=country_codes,
