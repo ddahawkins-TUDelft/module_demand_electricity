@@ -40,6 +40,26 @@ def auxiliary_entsoe_raw_files(wildcards):
     return entsoe_annual_files(batch["countries"], batch["years"])
 
 
+def auxiliary_entsoe_power_statistics_raw_files(
+    wildcards,
+):
+    """Return Power Statistics annual files required by one auxiliary batch."""
+    plan = _read_auxiliary_plan()
+
+    batch = next(
+        batch
+        for batch in plan["batches"]
+        if (
+            batch["batch_id"] == wildcards.batch_id
+            and batch["source"] == "entsoe_power_statistics"
+        )
+    )
+
+    return entsoe_power_statistics_annual_files(
+        batch["years"]
+    )
+
+
 def auxiliary_group_source_files(wildcards):
     """Return prepared source files for one auxiliary group."""
     plan = _read_auxiliary_plan()
@@ -103,6 +123,7 @@ def advanced_external_profile_files(_wildcards):
         f"<external_profiles>/{filename}"
         for filename in dict.fromkeys(plan["external_profile_files"].values())
     ]
+
 
 
 checkpoint plan_auxiliary_data:
@@ -197,6 +218,35 @@ rule prepare_auxiliary_load_neso:
         "../scripts/prepare_load_neso.py"
 
 
+rule prepare_auxiliary_load_entsoe_power_statistics:
+    input:
+        plan=auxiliary_acquisition_plan,
+        annual_files=auxiliary_entsoe_power_statistics_raw_files,
+    output:
+        load=(
+            "<resources>/automatic/"
+            "auxiliary/entsoe_power_statistics/"
+            "{batch_id}.parquet"
+        ),
+    log:
+        (
+            "<logs>/auxiliary/"
+            "entsoe_power_statistics/"
+            "prepare_{batch_id}.log"
+        ),
+    conda:
+        "../envs/module.yaml"
+    params:
+        frequency=config["temporal_scope"]["frequency"],
+    message:
+        (
+            "Prepare auxiliary electricity-demand data "
+            "from ENTSO-E Power Statistics."
+        )
+    script:
+        "../scripts/prepare_load_entsoe_power_statistics.py"
+
+        
 rule clean_auxiliary_group:
     input:
         plan=auxiliary_acquisition_plan,

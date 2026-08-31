@@ -146,7 +146,7 @@ def build_source_capabilities(source_names: Sequence[str]) -> pd.DataFrame:
         if source_name == "neso":
             capabilities.append({"source": "neso", "context": "GBR"})
 
-        elif source_name in {"entsoe", "opsd"}:
+        elif source_name in {"entsoe", "entsoe_power_statistics","opsd"}:
             capabilities.append({"source": source_name, "context": None})
 
         else:

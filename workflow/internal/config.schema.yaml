@@ -428,6 +428,7 @@ properties:
       type: string
       enum:
         - entsoe
+        - entsoe_power_statistics
         - neso
         - opsd
 
@@ -444,7 +445,7 @@ properties:
       mode:
         type: string
         enum:
-          - off
+          - "off"
           - basic
           - advanced
         description: >

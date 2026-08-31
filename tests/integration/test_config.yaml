@@ -10,14 +10,15 @@ integration_test:
   # data for the same country and timestamp, the earlier source takes priority.
   # Supported sources include: entsoe, neso, opsd.
   load_sources:
-    - entsoe
+    # - entsoe
+    - entsoe_power_statistics
     - neso
     - opsd
 
   # Exercise the full advanced gap-filling workflow. See config/README.md for
   # the complete configuration reference and method descriptions.
   gap_filling:
-    mode: advanced
+    mode: "advanced"
 
     basic:
       rules:

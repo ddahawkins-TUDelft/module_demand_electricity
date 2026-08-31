@@ -5,9 +5,11 @@ temporal_scope:
 
 # Load sources are listed in priority order. Where multiple sources provide
 # data for the same country and timestamp, the earlier source takes priority.
-# Supported sources include: entsoe, neso, opsd.
+# Supported sources include: entsoe, entsoe_power_statistics, neso, opsd.
+# NOTE: Power Statistics is a backup for ENTSOE and both are not necessary together.
 load_sources:
   - entsoe
+  # - entsoe_power_statistics
   - neso
   - opsd
 
