@@ -71,7 +71,7 @@ def download_entsoe(
     total_countries = len(country_codes)
     download_start = perf_counter()
 
-    logger.info(
+    logger.debug(
         "Downloading ENTSO-E load for %s countries "
         "from %s to %s using %s parallel workers.",
         total_countries,
