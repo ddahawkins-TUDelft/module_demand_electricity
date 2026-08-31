@@ -6,7 +6,12 @@ use-conda: True
 #Cores: conservative but useful default value
 cores: 2
 
-#Download Resources: conservative defaults to minimise API traffic.
+# Download Resources: conservative defaults to minimise API traffic.
+# IMPORTANT: ENTSO-E imposes bans on tokens which exceed 400 requests/min.
 resources:
   entsoe_download: 2
   neso_download: 2
+
+# Safety margin below ENTSO-E's 400 requests/minute API limit.
+# Limit applies to all jobs but unlikely to impact workflow.
+max-jobs-per-timespan: 300/1m
