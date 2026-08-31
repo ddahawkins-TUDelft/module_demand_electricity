@@ -200,7 +200,19 @@ To test a minimal example of a workflow using this module:
 ```shell
 pixi shell    # activate this project's environment
 cd tests/integration/  # navigate to the integration example
-snakemake --use-conda --cores 2  # run the workflow!
+snakemake  # run the workflow!
+```
+
+The integration workflow's default Snakemake profile enables Conda, uses 2 cores, and limits concurrent ENTSO-E and NESO downloads to 2 each. These execution settings can be overridden with the corresponding Snakemake command-line options:
+
+- **Cores**: Defaults can be overridden using the `--cores` flag.
+- **ENTSOE Downloads**: Defaults can be overridden using the `--enstoe_download` flag.
+- **NESO Downloads**: Defaults can be overridden using the `--neso_download` flag.
+
+A complete example:
+
+```shell
+snakemake --cores 4 --resources entsoe_download=1 neso_download=1
 ```
 
 ## References
