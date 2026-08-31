@@ -1,4 +1,4 @@
-"""Rules used to download automatic resource files."""
+"""Rules used for generic automatic resources and validation."""
 
 
 rule validate_temporal_config_semantics:
@@ -32,98 +32,6 @@ rule validate_gap_filling_config_semantics:
         "Validate gap-filling configuration semantics."
     script:
         "../scripts/validate_config.py"
-
-
-rule download_load_entsoe_country_year:
-    input:
-        token_entsoe="<token_entsoe>",
-    output:
-        annual_file=("<resources>/automatic/entsoe/raw/" "{country}/{year}.parquet"),
-    log:
-        "<logs>/download_load_entsoe_{country}_{year}.log",
-    wildcard_constraints:
-        country="[A-Z]{3}",
-        year="[0-9]{4}",
-    localrule: True
-    conda:
-        "../envs/module.yaml"
-    threads: 1
-    resources:
-        entsoe_download=1,
-    params:
-        country_code=lambda wildcards: wildcards.country,
-        year=lambda wildcards: int(wildcards.year),
-    message:
-        (
-            "Download ENTSO-E electricity load for "
-            "{wildcards.country} in {wildcards.year}."
-        )
-    script:
-        "../scripts/download_load_entsoe.py"
-
-
-rule download_load_entsoe_power_statistics_year:
-    output:
-        annual_file=(
-            "<resources>/automatic/entsoe_power_statistics/raw/{year}.parquet"
-        ),
-    log:
-        (
-            "<logs>/download_load_entsoe_power_statistics_{year}.log"
-        ),
-    wildcard_constraints:
-        year=source_year_pattern(
-            "entsoe_power_statistics"
-        ),
-    localrule: True
-    conda:
-        "../envs/module.yaml"
-    threads: 1
-    resources:
-        entsoe_download=1
-    params:
-        year=lambda wildcards: int(wildcards.year),
-    message:
-        (
-            "Download ENTSO-E Power Statistics "
-            "electricity load for {wildcards.year}."
-        )
-    script:
-        "../scripts/download_load_entsoe_power_statistics.py"
-
-rule download_load_opsd:
-    output:
-        load=update("<resources>/automatic/opsd/raw_load.parquet"),
-    log:
-        "<logs>/download_load_opsd.log",
-    localrule: True
-    conda:
-        "../envs/module.yaml"
-    params:
-        url=internal["resources"]["automatic"]["load_opsd"],
-    message:
-        "Download load profiles from Open Power System Data (OPSD)."
-    script:
-        "../scripts/download_load_opsd.py"
-
-
-rule download_load_neso_year:
-    output:
-        annual_file=("<resources>/automatic/neso/" "historic_demand_{year}.csv"),
-    log:
-        "<logs>/download_load_neso_{year}.log",
-    localrule: True
-    conda:
-        "../envs/module.yaml"
-    threads: 1
-    resources:
-        neso_download=1,
-    params:
-        year=lambda wildcards: int(wildcards.year),
-    message:
-        "Download NESO historic electricity demand for {wildcards.year}."
-    script:
-        "../scripts/download_load_neso.py"
 
 
 rule download_population:

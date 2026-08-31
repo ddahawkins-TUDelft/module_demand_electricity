@@ -14,52 +14,6 @@ def auxiliary_acquisition_plan(_wildcards):
     return checkpoints.plan_auxiliary_data.get().output.plan
 
 
-def auxiliary_neso_raw_files(wildcards):
-    """Return annual NESO files required by one auxiliary batch."""
-    plan = _read_auxiliary_plan()
-
-    batch = next(
-        batch
-        for batch in plan["batches"]
-        if (batch["batch_id"] == wildcards.batch_id and batch["source"] == "neso")
-    )
-
-    return neso_annual_files(batch["years"])
-
-
-def auxiliary_entsoe_raw_files(wildcards):
-    """Return ENTSO-E country-year files required by one auxiliary batch."""
-    plan = _read_auxiliary_plan()
-
-    batch = next(
-        batch
-        for batch in plan["batches"]
-        if (batch["batch_id"] == wildcards.batch_id and batch["source"] == "entsoe")
-    )
-
-    return entsoe_annual_files(batch["countries"], batch["years"])
-
-
-def auxiliary_entsoe_power_statistics_raw_files(
-    wildcards,
-):
-    """Return Power Statistics annual files required by one auxiliary batch."""
-    plan = _read_auxiliary_plan()
-
-    batch = next(
-        batch
-        for batch in plan["batches"]
-        if (
-            batch["batch_id"] == wildcards.batch_id
-            and batch["source"] == "entsoe_power_statistics"
-        )
-    )
-
-    return entsoe_power_statistics_annual_files(
-        batch["years"]
-    )
-
-
 def auxiliary_group_source_files(wildcards):
     """Return prepared source files for one auxiliary group."""
     plan = _read_auxiliary_plan()
@@ -125,7 +79,6 @@ def advanced_external_profile_files(_wildcards):
     ]
 
 
-
 checkpoint plan_auxiliary_data:
     input:
         demand=rules.clean_demand.output.demand,
@@ -165,89 +118,6 @@ rule finalise_clean_demand:
         "../scripts/finalise_clean_demand.py"
 
 
-rule prepare_auxiliary_load_entsoe:
-    input:
-        plan=auxiliary_acquisition_plan,
-        annual_files=auxiliary_entsoe_raw_files,
-    output:
-        load=("<resources>/automatic/" "auxiliary/entsoe/" "{batch_id}.parquet"),
-    log:
-        ("<logs>/auxiliary/" "entsoe/prepare_{batch_id}.log"),
-    conda:
-        "../envs/module.yaml"
-    params:
-        frequency=config["temporal_scope"]["frequency"],
-    message:
-        "Prepare auxiliary electricity-demand data from ENTSO-E."
-    script:
-        "../scripts/prepare_load_entsoe.py"
-
-
-rule prepare_auxiliary_load_opsd:
-    input:
-        load=rules.download_load_opsd.output.load,
-        plan=auxiliary_acquisition_plan,
-    output:
-        load=("<resources>/automatic/" "auxiliary/opsd/" "{batch_id}.parquet"),
-    log:
-        ("<logs>/auxiliary/" "opsd/{batch_id}.log"),
-    conda:
-        "../envs/module.yaml"
-    params:
-        frequency=config["temporal_scope"]["frequency"],
-    message:
-        "Prepare auxiliary electricity-demand data from OPSD."
-    script:
-        "../scripts/prepare_load_opsd.py"
-
-
-rule prepare_auxiliary_load_neso:
-    input:
-        plan=auxiliary_acquisition_plan,
-        annual_files=auxiliary_neso_raw_files,
-    output:
-        load=("<resources>/automatic/" "auxiliary/neso/" "{batch_id}.parquet"),
-    log:
-        "<logs>/auxiliary/neso/{batch_id}.log",
-    conda:
-        "../envs/module.yaml"
-    params:
-        frequency=config["temporal_scope"]["frequency"],
-    message:
-        "Prepare auxiliary electricity-demand data from NESO."
-    script:
-        "../scripts/prepare_load_neso.py"
-
-
-rule prepare_auxiliary_load_entsoe_power_statistics:
-    input:
-        plan=auxiliary_acquisition_plan,
-        annual_files=auxiliary_entsoe_power_statistics_raw_files,
-    output:
-        load=(
-            "<resources>/automatic/"
-            "auxiliary/entsoe_power_statistics/"
-            "{batch_id}.parquet"
-        ),
-    log:
-        (
-            "<logs>/auxiliary/"
-            "entsoe_power_statistics/"
-            "prepare_{batch_id}.log"
-        ),
-    conda:
-        "../envs/module.yaml"
-    params:
-        frequency=config["temporal_scope"]["frequency"],
-    message:
-        (
-            "Prepare auxiliary electricity-demand data "
-            "from ENTSO-E Power Statistics."
-        )
-    script:
-        "../scripts/prepare_load_entsoe_power_statistics.py"
-
-        
 rule clean_auxiliary_group:
     input:
         plan=auxiliary_acquisition_plan,

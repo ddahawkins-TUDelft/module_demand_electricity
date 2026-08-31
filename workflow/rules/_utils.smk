@@ -91,40 +91,6 @@ def source_year_pattern(source_name):
         str(year)
         for year in years_for_period(start, end)
     )
-    
-
-def neso_annual_files(years):
-    """Return reusable annual NESO raw-file paths for the requested years."""
-    return [
-        "<resources>/automatic/neso/" f"historic_demand_{int(year)}.csv"
-        for year in years
-    ]
-
-
-def entsoe_annual_files(countries, years):
-    """Return reusable ENTSO-E country-year raw-file paths."""
-    return [
-        "<resources>/automatic/entsoe/raw/" f"{country}/{int(year)}.parquet"
-        for country in countries
-        for year in years
-    ]
-
-
-def entsoe_power_statistics_annual_files(years):
-    """Return supported annual ENTSO-E Power Statistics files."""
-    return [
-        (
-            "<resources>/automatic/"
-            "entsoe_power_statistics/raw/"
-            f"{int(year)}.parquet"
-        )
-        for year in years
-        if source_overlaps_period(
-            "entsoe_power_statistics",
-            f"{int(year)}-01-01",
-            f"{int(year) + 1}-01-01",
-        )
-    ]
 
 
 def additional_config_validation():
