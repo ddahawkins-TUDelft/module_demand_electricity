@@ -38,10 +38,7 @@ rule download_load_entsoe_country_year:
     input:
         token_entsoe="<token_entsoe>",
     output:
-        annual_file=(
-            "<resources>/automatic/entsoe/raw/"
-            "{country}/{year}.parquet"
-        ),
+        annual_file=("<resources>/automatic/entsoe/raw/" "{country}/{year}.parquet"),
     log:
         "<logs>/download_load_entsoe_{country}_{year}.log",
     wildcard_constraints:
@@ -51,11 +48,11 @@ rule download_load_entsoe_country_year:
     conda:
         "../envs/module.yaml"
     threads: 1
+    resources:
+        entsoe_download=1,
     params:
         country_code=lambda wildcards: wildcards.country,
         year=lambda wildcards: int(wildcards.year),
-    resources:
-        entsoe_download=1
     message:
         (
             "Download ENTSO-E electricity load for "
@@ -89,12 +86,11 @@ rule download_load_neso_year:
     localrule: True
     conda:
         "../envs/module.yaml"
+    threads: 1
+    resources:
+        neso_download=1,
     params:
         year=lambda wildcards: int(wildcards.year),
-    threads:
-        1
-    resources:
-        neso_download=1
     message:
         "Download NESO historic electricity demand for {wildcards.year}."
     script:

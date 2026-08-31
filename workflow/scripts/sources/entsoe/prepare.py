@@ -8,9 +8,7 @@ import pandas as pd
 from tclean import TimeGrid
 
 
-def _read_country_year_files(
-    input_paths: Iterable[str | Path],
-) -> dict[str, pd.Series]:
+def _read_country_year_files(input_paths: Iterable[str | Path]) -> dict[str, pd.Series]:
     """Read and combine reusable ENTSO-E country-year files by country."""
     annual_series: dict[str, list[pd.Series]] = defaultdict(list)
 

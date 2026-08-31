@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
-
 from sources.entsoe.download import download_entsoe
 
 if TYPE_CHECKING:
