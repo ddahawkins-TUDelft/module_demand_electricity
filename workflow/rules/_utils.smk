@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 
 def _as_utc(value):
-    """Interpret naive timestamps as UTC and convert aware timestamps to UTC. Mirros tclean logic."""
+    """Interpret naive timestamps as UTC and convert aware timestamps to UTC. Mirrors tclean logic."""
     parsed = datetime.fromisoformat(str(value))
 
     if parsed.tzinfo is None:
@@ -14,7 +14,7 @@ def _as_utc(value):
 
 
 def years_for_period(start, end):
-    """Return UTC calendar years intersected by the half-open period [start, end). Mirros tclean logic."""
+    """Return UTC calendar years intersected by the half-open period [start, end). Mirrors tclean logic."""
     start = _as_utc(start)
     end = _as_utc(end)
 
