@@ -8,6 +8,7 @@ Useful references are:
 
 - [`config/config.yaml`](./config.yaml): example configuration;
 - [`workflow/internal/config.schema.yaml`](../workflow/internal/config.schema.yaml): authoritative configuration schema;
+- [`workflow/internal/source_registry.yaml`](../workflow/internal/source_registry.yaml): available demand providers and their metadata;
 - [`INTERFACE.yaml`](../INTERFACE.yaml): module input/output interface;
 - [`tests/integration/test_config.yaml`](../tests/integration/test_config.yaml): a richer integration configuration;
 - [`tests/integration/resources/user/external_profiles`](../tests/integration/user/external_profiles): example of an external profile.
@@ -44,16 +45,20 @@ Date-only timestamps represent midnight. Date-time strings may be used when the 
 load_sources:
   - entsoe
   - neso
+  - entsoe_power_statistics
   - opsd
 ```
 
 Available identifiers are:
 
-- `entsoe`: ENTSO-E Transparency Platform;
-- `neso`: National Energy System Operator historic demand;
-- `opsd`: Open Power System Data.
+- `entsoe`: ENTSO-E Transparency Platform API. The module declares availability from 2005-01-01 onward; a valid ENTSO-E API token is required when this source is configured;
+- `entsoe_power_statistics`: official ENTSO-E Power Statistics historical archive, currently integrated for 2019–2025; no API token is required;
+- `neso`: National Energy System Operator historic demand, restricted to Great Britain (`GBR`);
+- `opsd`: Open Power System Data, with module-declared coverage from 2005-01-01 up to, but not including, 2019-03-01.
 
 Sources are combined in the listed order. When more than one provider supplies a value for the same country and timestamp, the higher-priority provider is retained.
+
+The authoritative list of provider identifiers and source metadata is [`workflow/internal/source_registry.yaml`](../workflow/internal/source_registry.yaml). Its `temporal_scope` bounds use the same half-open `[start, end)` convention as the model time grid. An omitted bound means no restriction is declared in that direction, and omitted or empty `contexts` means no context restriction is declared.
 
 ## Gap filling
 
@@ -66,7 +71,7 @@ gap_filling:
 
 Three modes are available:
 
-- `off`: no gap filling;
+- `"off"`: no gap filling. Quotation marks are required because YAML may interpret an unquoted `off` as the boolean value `false`;
 - `basic`: apply deterministic basic rules in configured order;
 - `advanced`: run basic cleaning first and then apply configured advanced rules that are active for the current target countries and time grid.
 
@@ -275,7 +280,7 @@ Scaling periods can require auxiliary demand data outside the main target grid; 
 
 ## Advanced source: `external_profile`
 
-An `external_profile` source reads a user-supplied CSV. By default, external profiles are resolved from `resources/user/external_profiles/`. This location can re-wired through the `external_profiles` pathvar when importing the module.
+An `external_profile` source reads a user-supplied CSV. By default, external profiles are resolved from `resources/user/external_profiles/`. This location can be re-wired through the `external_profiles` pathvar when importing the module.
 
 ```yaml
 advanced:

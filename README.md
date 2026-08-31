@@ -2,7 +2,7 @@
 
 This Modelblocks module prepares regular electricity-demand time series for European target regions. National demand observations from multiple providers are combined and cleaned on a user-defined time grid, then spatially disaggregated using population data and aggregated to user-provided shapes.
 
-Demand cleaning is performed with T-Clean, while this module remains responsible for electricity-demand providers, Modelblocks configuration, auxiliary-data acquisition, workflow orchestration, spatial disaggregation, and diagnostic outputs.
+Demand cleaning is performed with tlean, while this module remains responsible for electricity-demand providers, Modelblocks configuration, auxiliary-data acquisition, workflow orchestration, spatial disaggregation, and diagnostic outputs.
 
 <p align="center">
   <img src="./figures/readme_cleaning_timeline.png">
@@ -26,7 +26,7 @@ The workflow first prepares a cleaned national electricity-demand time series on
 
 The main processing stages are:
 
-1. Download demand data from the configured providers: ENTSO-E, NESO, and/or OPSD.
+1. Download demand data from the configured providers.
 2. Prepare each provider dataset on the configured time grid.
 3. Combine available providers according to the configured source-priority order.
 4. Apply deterministic basic cleaning rules.
@@ -102,6 +102,7 @@ The configured start timestamp also defines the phase of the grid. Provider and 
 load_sources:
   - entsoe
   - neso
+  - entsoe_power_statistics
   - opsd
 ```
 
@@ -109,15 +110,18 @@ Where multiple providers supply a value for the same country and timestamp, the 
 
 Available provider identifiers are:
 
-- `entsoe`: ENTSO-E Transparency Platform;
-- `neso`: National Energy System Operator historic demand;
-- `opsd`: Open Power System Data.
+- `entsoe`: ENTSO-E Transparency Platform API. A valid ENTSO-E API token is required when this source is configured;
+- `entsoe_power_statistics`: official ENTSO-E Power Statistics historical archive, currently integrated for 2019–2025. No API token is required;
+- `neso`: National Energy System Operator historic demand, restricted to Great Britain (`GBR`);
+- `opsd`: Open Power System Data, with the currently integrated historical coverage ending at 2019-03-01.
+
+Source identifiers, human-readable names, declared temporal bounds, and context restrictions are defined centrally in [`workflow/internal/source_registry.yaml`](./workflow/internal/source_registry.yaml). Missing temporal bounds or context restrictions in the registry mean that the module declares no corresponding restriction.
 
 ## Cleaning and gap handling
 
 Three modes are available:
 
-- `"off"`: do not fill gaps. Please note that quotation marks are necessary here (i.e. "not") otherwise python reads this as a falsey boolean value;
+- `"off"`: do not fill gaps. Quotation marks are required because YAML may interpret an unquoted `off` as the boolean value `false`;
 - `basic`: apply configured deterministic rules;
 - `advanced`: run basic cleaning first, then execute active advanced rules.
 
@@ -203,11 +207,11 @@ cd tests/integration/  # navigate to the integration example
 snakemake  # run the workflow!
 ```
 
-The integration workflow's default Snakemake profile enables Conda, uses 2 cores, and limits concurrent ENTSO-E and NESO downloads to 2 each. These execution settings can be overridden with the corresponding Snakemake command-line options:
+The integration workflow's default Snakemake profile enables Conda, uses 2 cores, and limits concurrent ENTSO-E downloads (including Transparency Platform and Power Statistics acquisition) and NESO downloads to 2 each. These execution settings can be overridden with the corresponding Snakemake command-line options:
 
 - **Cores**: Defaults can be overridden using the `--cores` flag.
-- **ENTSOE Downloads**: Defaults can be overridden using the `--entsoe_download` flag.
-- **NESO Downloads**: Defaults can be overridden using the `--neso_download` flag.
+- **ENTSO-E downloads**: Override with `--resources entsoe_download=<n>`.
+- **NESO downloads**: Override with `--resources neso_download=<n>`.
 
 A complete example:
 
@@ -215,12 +219,30 @@ A complete example:
 snakemake --cores 4 --resources entsoe_download=1 neso_download=1
 ```
 
+## Adding a demand source
+
+Demand-provider metadata is registered centrally in [`workflow/internal/source_registry.yaml`](./workflow/internal/source_registry.yaml), while provider-specific workflow behaviour lives in a matching `workflow/rules/source_<source>.smk` file.
+
+A new provider normally requires:
+
+1. Add the source identifier and metadata to `workflow/internal/source_registry.yaml`. `display_name` gives the human-readable label; optional `temporal_scope` uses the module-wide half-open convention `[start, end)`; optional `contexts` restricts the source to listed country contexts.
+2. Add `workflow/rules/source_<source>.smk` containing the provider-specific acquisition, main preparation, and auxiliary preparation rules and helpers that are required.
+3. Add the provider implementation under `workflow/scripts/sources/<source>/` together with any thin Snakemake wrapper scripts needed by the rules.
+4. Include the new source rule file directly from `workflow/Snakefile`.
+5. Add credentials or other user-facing inputs to `INTERFACE.yaml` only when the provider requires them.
+6. Add tests covering the provider and, where applicable, both main-period and advanced auxiliary acquisition.
+
+Prepared national-demand outputs follow the `load_<source>.parquet` naming convention. Generic source validation, display names, and tlean source capabilities are derived from the registry where applicable, so adding a provider should not require separate source-name mappings in those parts of the workflow.
+
+Provider-specific behaviour should remain explicit rather than being encoded as generic registry metadata: APIs, raw cache layouts, download resources, preparation logic, and auxiliary-file resolution belong in the provider implementation and its source rule file.
+
 ## References
 <!-- Please provide thorough referencing below -->
 
 This module is based on the following research and datasets:
 
 * ENTSOE Transparency Platform (https://transparency.entsoe.eu)
+* ENTSO-E Power Statistics (https://www.entsoe.eu/data/power-stats/)
 * Open Power System Data (https://data.open-power-system-data.org)
 * NESO Data Portal (https://www.neso.energy/data-portal/historic-demand-data)
 * Schiavina M., Freire S., Carioli A., MacManus K. (2023):
