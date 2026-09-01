@@ -11,9 +11,9 @@ integration_test:
   # Supported sources include: entsoe, neso, opsd.
   load_sources:
     # - entsoe
-    - entsoe_power_statistics
     - neso
     - opsd
+    - entsoe_power_statistics
 
   # Exercise the full advanced gap-filling workflow. See config/README.md for
   # the complete configuration reference and method descriptions.
@@ -75,8 +75,8 @@ integration_test:
             method: match_total
             periods:
               - country: ALB
-                start: "2024-01-01"
-                end: "2024-02-01"
+                start: "2024-02-01"
+                end: "2024-03-01"
                 weight: 1
 
         # Construct an Albanian profile from a later period of Albanian data.
@@ -94,8 +94,8 @@ integration_test:
             method: match_total
             periods:
               - country: ALB
-                start: "2024-01-01"
-                end: "2024-01-03"
+                start: "2024-02-01"
+                end: "2024-03-01"
                 weight: 1
 
         # Construct a second Albanian profile from the same 2024 source period,
