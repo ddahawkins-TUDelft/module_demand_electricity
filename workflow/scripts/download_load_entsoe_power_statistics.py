@@ -16,21 +16,13 @@ if TYPE_CHECKING:
 def main(snakemake: Any) -> None:
     """Download and harmonise one ENTSO-E Power Statistics year."""
     download_entsoe_power_statistics_year(
-        year=int(snakemake.params.year),
-        output_path=Path(snakemake.output.annual_file),
+        year=int(snakemake.params.year), output_path=Path(snakemake.output.annual_file)
     )
 
 
 if __name__ == "__main__":
-    sys.stderr = open(
-        snakemake.log[0],
-        "w",
-        buffering=1,
-    )
+    sys.stderr = open(snakemake.log[0], "w", buffering=1)
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(levelname)s: %(message)s",
-    )
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
     main(snakemake)

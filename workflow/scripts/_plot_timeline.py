@@ -335,7 +335,10 @@ def _add_mean_load_labels(
 
 
 def _build_cleaning_method_metadata(
-    *, source_names: list[str], gap_filling_config: dict[str, Any],source_registry: Mapping[str, Mapping[str, Any]],
+    *,
+    source_names: list[str],
+    gap_filling_config: dict[str, Any],
+    source_registry: Mapping[str, Mapping[str, Any]],
 ) -> pd.DataFrame:
     """Build complete method metadata in configured rank order."""
     rows: list[dict[str, Any]] = []
@@ -388,18 +391,12 @@ def _build_cleaning_method_metadata(
 
 
 def _format_source_name(
-    source_name: str,
-    source_registry: Mapping[str, Mapping[str, Any]],
+    source_name: str, source_registry: Mapping[str, Mapping[str, Any]]
 ) -> str:
     """Return the configured human-readable source name."""
     metadata = source_registry.get(source_name, {})
 
-    return str(
-        metadata.get(
-            "display_name",
-            source_name,
-        )
-    )
+    return str(metadata.get("display_name", source_name))
 
 
 def _format_rule_name(name: str) -> str:

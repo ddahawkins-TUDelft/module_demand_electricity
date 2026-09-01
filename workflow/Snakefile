@@ -37,22 +37,23 @@ workflow.source_path("scripts/_schemas.py")
 
 # Add all your includes here.
 
+
 # IMPORTANT: General .smk files must be included after _utils.smk
 include: "rules/_utils.smk"
 
+
 additional_config_validation()
+
 
 # Generic demand workflow rules.
 include: "rules/automatic.smk"
 include: "rules/clean.smk"
 include: "rules/advanced.smk"
-
 # Source-specific acquisition and preparation rules.
 include: "rules/source_entsoe.smk"
 include: "rules/source_entsoe_power_statistics.smk"
 include: "rules/source_neso.smk"
 include: "rules/source_opsd.smk"
-
 # Spatial demand preparation.
 include: "rules/prepare_demand.smk"
 

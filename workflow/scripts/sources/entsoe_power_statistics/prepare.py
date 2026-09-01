@@ -15,40 +15,25 @@ def prepare_entsoe_power_statistics(
     country_codes: list[str],
 ) -> None:
     """Prepare ENTSO-E Power Statistics demand on the target grid."""
-    input_paths = [
-        Path(path)
-        for path in input_paths
-    ]
+    input_paths = [Path(path) for path in input_paths]
 
     frames = []
 
     for input_path in input_paths:
         frame = pd.read_parquet(input_path)
 
-        frame.index = pd.to_datetime(
-            frame.index,
-            utc=True,
-        )
+        frame.index = pd.to_datetime(frame.index, utc=True)
 
         frames.append(frame)
 
     if frames:
-        data = pd.concat(
-            frames,
-            axis=0,
-            sort=False,
-        ).sort_index()
+        data = pd.concat(frames, axis=0, sort=False).sort_index()
 
-        duplicate_mask = data.index.duplicated(
-            keep=False,
-        )
+        duplicate_mask = data.index.duplicated(keep=False)
 
         if duplicate_mask.any():
             duplicate_timestamps = (
-                data.index[duplicate_mask]
-                .unique()
-                .astype(str)
-                .tolist()
+                data.index[duplicate_mask].unique().astype(str).tolist()
             )
 
             raise ValueError(
@@ -58,24 +43,14 @@ def prepare_entsoe_power_statistics(
             )
 
     else:
-        data = pd.DataFrame(
-            dtype=float,
-        )
+        data = pd.DataFrame(dtype=float)
 
-    data = data.reindex(
-        index=grid.target_index,
-        columns=country_codes,
-    )
+    data = data.reindex(index=grid.target_index, columns=country_codes)
 
     data = data.astype(float)
 
     output_path = Path(output_path)
 
-    output_path.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    data.to_parquet(
-        output_path,
-    )
+    data.to_parquet(output_path)

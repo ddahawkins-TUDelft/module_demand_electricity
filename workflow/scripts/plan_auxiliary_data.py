@@ -76,8 +76,7 @@ def build_advanced_execution_plan(
     )
 
     source_capabilities = build_source_capabilities(
-        source_names,
-        source_registry=source_registry,
+        source_names, source_registry=source_registry
     )
 
     requests = build_auxiliary_source_requests(

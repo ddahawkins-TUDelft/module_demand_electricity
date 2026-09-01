@@ -1,10 +1,7 @@
 def configured_load_inputs(_wildcards):
     """Return prepared demand files for configured sources."""
     return [
-        (
-            "<resources>/automatic/"
-            f"load_{source_name}.parquet"
-        )
+        ("<resources>/automatic/" f"load_{source_name}.parquet")
         for source_name in config["load_sources"]
     ]
 
