@@ -5,7 +5,7 @@ This Modelblocks module prepares regular electricity-demand time series for Euro
 Demand cleaning is performed with tlean, while this module remains responsible for electricity-demand providers, Modelblocks configuration, auxiliary-data acquisition, workflow orchestration, spatial disaggregation, and diagnostic outputs.
 
 <p align="center">
-  <img src="./figures/readme_cleaning_timeline.png">
+  <img src="./figures/readme_cleaning_timeline.jpg">
 </p>
 <p align="center">
   <em>Example diagnostic showing electricity-demand provenance and basic gap filling for selected countries (May–October 2021).</em>
