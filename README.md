@@ -8,7 +8,7 @@ Demand cleaning is performed with tlean, while this module remains responsible f
   <img src="./figures/readme_cleaning_timeline.jpg">
 </p>
 <p align="center">
-  <em>Example diagnostic showing electricity-demand provenance, basic, and advanced gap filling.</em>
+  <em>Example diagnostic showing electricity-demand data provenance.</em>
 </p>
 
 ## About
