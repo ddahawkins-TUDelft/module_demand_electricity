@@ -67,6 +67,19 @@ def main(snakemake: Any) -> None:
 
         sources[source_name] = _read_prepared_source(path)
 
+    contexts = sorted(
+        {
+            context
+            for data in sources.values()
+            for context in data.columns
+        }
+    )
+
+    sources = {
+        source_name: data.reindex(columns=contexts)
+        for source_name, data in sources.items()
+    }
+
     basic_rules = (
         list(snakemake.params.basic_rules)
         if snakemake.params.basic_cleaning_enabled
