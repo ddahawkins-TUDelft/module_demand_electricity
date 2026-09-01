@@ -36,12 +36,14 @@ rule clean_demand:
 rule plot_cleaning_timeline:
     input:
         demand=("<resources>/automatic/" "load_cleaned.parquet"),
+        basic_cleaning_method=("<resources>/automatic/" "load_cleaning_method.parquet"),
         cleaning_method=("<resources>/automatic/" "load_final_cleaning_method.parquet"),
         cleaning_method_rank=(
             "<resources>/automatic/" "load_final_cleaning_method_rank.parquet"
         ),
     output:
         plot=("<results>/{shape}/" "load_cleaning_timeline.pdf"),
+        summary=("<results>/{shape}/" "load_cleaning_summary.html"),
     log:
         "<logs>/{shape}/plot_cleaning_timeline.log",
     conda:
@@ -51,7 +53,7 @@ rule plot_cleaning_timeline:
         gap_filling=config["gap_filling"],
         source_registry=SOURCE_REGISTRY,
     message:
-        "Plot electricity-demand cleaning provenance."
+        "Plot electricity-demand cleaning provenance and summarise completeness."
     script:
         "../scripts/plot_cleaning_timeline.py"
 
