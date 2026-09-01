@@ -66,28 +66,19 @@ def main(
     )
 
     logger.info(
-        "Loaded %s timestamps for %s countries.",
-        len(demand),
-        len(demand.columns),
+        "Loaded %s timestamps for %s countries.", len(demand), len(demand.columns)
     )
 
     logger.info("Cleaning-method ranks:\n%s", metadata.to_string(index=False))
 
     figure, axis, summary_axis, legend_axis = _plot_cleaning_background(
-        demand=demand,
-        background=background,
-        background_cmap=background_cmap,
+        demand=demand, background=background, background_cmap=background_cmap
     )
 
-    _add_normalised_demand_traces(
-        axis=axis,
-        demand=demand,
-    )
+    _add_normalised_demand_traces(axis=axis, demand=demand)
 
     _add_summary_panel(
-        axis=summary_axis,
-        summary=summary,
-        gap_filling_config=gap_filling_config,
+        axis=summary_axis, summary=summary, gap_filling_config=gap_filling_config
     )
 
     legend_handles = _build_legend_handles(metadata, rank_colours)
@@ -123,8 +114,7 @@ def main(
 
 
 def _build_legend_handles(
-    metadata: pd.DataFrame,
-    rank_colours: dict[int, tuple[float, float, float, float]],
+    metadata: pd.DataFrame, rank_colours: dict[int, tuple[float, float, float, float]]
 ) -> list[Patch]:
     """Create handles for every configured rank."""
     handles: list[Patch] = []
@@ -229,10 +219,7 @@ def _encode_rank_background(
 
 
 def _plot_cleaning_background(
-    *,
-    demand: pd.DataFrame,
-    background: np.ndarray,
-    background_cmap: ListedColormap,
+    *, demand: pd.DataFrame, background: np.ndarray, background_cmap: ListedColormap
 ) -> tuple[plt.Figure, plt.Axes, plt.Axes, plt.Axes]:
     """Plot cleaning-method ranks over time by country."""
     country_count = len(demand.columns)
@@ -308,10 +295,7 @@ def _plot_cleaning_background(
 
     axis.xaxis.set_major_locator(date_locator)
     axis.xaxis.set_major_formatter(
-        mdates.ConciseDateFormatter(
-            date_locator,
-            show_offset=False,
-        )
+        mdates.ConciseDateFormatter(date_locator, show_offset=False)
     )
     axis.tick_params(axis="x", labelsize=7)
 
@@ -329,25 +313,11 @@ def _plot_cleaning_background(
         spine.set_visible(False)
 
     for boundary in row_boundaries:
-        summary_axis.axhline(
-            boundary,
-            linewidth=0.4,
-            alpha=0.35,
-            color="0.5",
-            zorder=0,
-        )
+        summary_axis.axhline(boundary, linewidth=0.4, alpha=0.35, color="0.5", zorder=0)
 
-    summary_axis.axvline(
-        0.0,
-        linewidth=0.6,
-        color="0.7",
-    )
+    summary_axis.axvline(0.0, linewidth=0.6, color="0.7")
 
-    figure.suptitle(
-        "Electricity demand and cleaning provenance",
-        fontsize=11,
-        y=0.965,
-    )
+    figure.suptitle("Electricity demand and cleaning provenance", fontsize=11, y=0.965)
 
     return figure, axis, summary_axis, legend_axis
 
@@ -381,12 +351,7 @@ def _add_normalised_demand_traces(
             plotted_y = row_index - scaled * half_height
 
         axis.plot(
-            series.index,
-            plotted_y,
-            color="black",
-            linewidth=0.55,
-            alpha=0.9,
-            zorder=3,
+            series.index, plotted_y, color="black", linewidth=0.55, alpha=0.9, zorder=3
         )
 
 
@@ -402,40 +367,25 @@ def _build_country_summary(
 
     summary.index.name = "country"
 
-    summary["mean_load_gw"] = (
-        demand.mean(axis=0, skipna=True) / 1000
-    )
+    summary["mean_load_gw"] = demand.mean(axis=0, skipna=True) / 1000
 
     raw_present = basic_cleaning_method.apply(
-        lambda column: column.str.startswith(
-            "observed_",
-            na=False,
-        )
+        lambda column: column.str.startswith("observed_", na=False)
     )
 
-    basic_present = (
-        basic_cleaning_method.notna()
-        & basic_cleaning_method.ne("missing")
-    )
+    basic_present = basic_cleaning_method.notna() & basic_cleaning_method.ne("missing")
 
-    final_present = (
-        cleaning_method.notna()
-        & cleaning_method.ne("missing")
-    )
+    final_present = cleaning_method.notna() & cleaning_method.ne("missing")
 
     summary["raw_completion"] = raw_present.mean(axis=0)
 
     mode = gap_filling_config["mode"]
 
     if mode in {"basic", "advanced"}:
-        summary["basic_completion"] = (
-            basic_present.mean(axis=0)
-        )
+        summary["basic_completion"] = basic_present.mean(axis=0)
 
     if mode == "advanced":
-        summary["advanced_completion"] = (
-            final_present.mean(axis=0)
-        )
+        summary["advanced_completion"] = final_present.mean(axis=0)
 
     summary["final_complete"] = final_present.all(axis=0)
 
@@ -443,10 +393,7 @@ def _build_country_summary(
 
 
 def _add_summary_panel(
-    *,
-    axis: plt.Axes,
-    summary: pd.DataFrame,
-    gap_filling_config: dict[str, Any],
+    *, axis: plt.Axes, summary: pd.DataFrame, gap_filling_config: dict[str, Any]
 ) -> None:
     """Add paper-friendly completeness columns beside the timeline."""
     columns: list[tuple[str, str, str]] = [
@@ -457,28 +404,16 @@ def _add_summary_panel(
     mode = gap_filling_config["mode"]
 
     if mode in {"basic", "advanced"}:
-        columns.append(
-            ("Basic\n(%)", "basic_completion", "completion")
-        )
+        columns.append(("Basic\n(%)", "basic_completion", "completion"))
 
     if mode == "advanced":
-        columns.append(
-            ("Advanced\n(%)", "advanced_completion", "completion")
-        )
+        columns.append(("Advanced\n(%)", "advanced_completion", "completion"))
 
     columns.append(("Status", "final_complete", "status"))
 
-    x_positions = np.linspace(
-        0.08,
-        0.92,
-        len(columns),
-    )
+    x_positions = np.linspace(0.08, 0.92, len(columns))
 
-    for x_position, (header, _, _) in zip(
-        x_positions,
-        columns,
-        strict=True,
-    ):
+    for x_position, (header, _, _) in zip(x_positions, columns, strict=True):
         axis.text(
             x_position,
             1.01,
@@ -491,27 +426,14 @@ def _add_summary_panel(
         )
 
     for row_index, (_, row) in enumerate(summary.iterrows()):
-        for x_position, (_, field, kind) in zip(
-            x_positions,
-            columns,
-            strict=True,
-        ):
+        for x_position, (_, field, kind) in zip(x_positions, columns, strict=True):
             if kind == "mean":
                 value = row[field]
 
-                label = (
-                    "—"
-                    if pd.isna(value)
-                    else f"{float(value):.1f}"
-                )
+                label = "—" if pd.isna(value) else f"{float(value):.1f}"
 
                 axis.text(
-                    x_position,
-                    row_index,
-                    label,
-                    ha="center",
-                    va="center",
-                    fontsize=7,
+                    x_position, row_index, label, ha="center", va="center", fontsize=7
                 )
 
             elif kind == "completion":
@@ -535,11 +457,7 @@ def _add_summary_panel(
                     va="center",
                     fontsize=9,
                     fontweight="bold",
-                    color=(
-                        "#2e7d32"
-                        if complete
-                        else "#c62828"
-                    ),
+                    color=("#2e7d32" if complete else "#c62828"),
                 )
 
 
@@ -574,8 +492,7 @@ def _write_summary_html(
                 for value in summary["mean_load_gw"]
             ],
             "Raw completion": [
-                f"{_format_completion(value)}%"
-                for value in summary["raw_completion"]
+                f"{_format_completion(value)}%" for value in summary["raw_completion"]
             ],
         }
     )
@@ -584,14 +501,12 @@ def _write_summary_html(
 
     if mode in {"basic", "advanced"}:
         table["Basic completion"] = [
-            f"{_format_completion(value)}%"
-            for value in summary["basic_completion"]
+            f"{_format_completion(value)}%" for value in summary["basic_completion"]
         ]
 
     if mode == "advanced":
         table["Advanced completion"] = [
-            f"{_format_completion(value)}%"
-            for value in summary["advanced_completion"]
+            f"{_format_completion(value)}%" for value in summary["advanced_completion"]
         ]
 
     table["Status"] = [
@@ -605,16 +520,10 @@ def _write_summary_html(
 
     output_path = Path(output_path)
 
-    output_path.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     table_html = table.to_html(
-        index=False,
-        border=0,
-        escape=False,
-        classes="summary-table",
+        index=False, border=0, escape=False, classes="summary-table"
     )
 
     document = f"""<!doctype html>
@@ -672,10 +581,7 @@ can never be displayed as 100.0%.
 </html>
 """
 
-    output_path.write_text(
-        document,
-        encoding="utf-8",
-    )
+    output_path.write_text(document, encoding="utf-8")
 
 
 def _build_cleaning_method_metadata(
@@ -707,25 +613,17 @@ def _build_cleaning_method_metadata(
     basic_rules = build_basic_rules(gap_filling_config)
     advanced_rules = build_advanced_rules(gap_filling_config)
 
-    rule_names = [
-        rule["name"]
-        for rule in basic_rules
-    ]
+    rule_names = [rule["name"] for rule in basic_rules]
 
     if not advanced_rules.empty:
-        rule_names.extend(
-            advanced_rules["rule_name"].tolist()
-        )
+        rule_names.extend(advanced_rules["rule_name"].tolist())
 
     for rule_name in rule_names:
         rows.append(
             {
                 "cleaning_method": rule_name,
                 "cleaning_method_rank": rank,
-                "label": (
-                    f"Rank {rank}: "
-                    f"{_format_rule_name(rule_name)}"
-                ),
+                "label": (f"Rank {rank}: {_format_rule_name(rule_name)}"),
                 "category": "imputed",
             }
         )
@@ -748,10 +646,7 @@ def _format_source_name(
     source_name: str, source_registry: Mapping[str, Mapping[str, Any]]
 ) -> str:
     """Return the configured human-readable source name."""
-    metadata = source_registry.get(
-        source_name,
-        {},
-    )
+    metadata = source_registry.get(source_name, {})
 
     return str(metadata.get("display_name", source_name))
 
