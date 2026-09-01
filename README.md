@@ -146,12 +146,12 @@ The workflow retains cleaning provenance alongside national demand so observed v
 
 Important diagnostic outputs include:
 
-- **Gap report**: unresolved missing periods after cleaning;
+- **Gap report**: in `advanced` mode, provides a complete record of the contiguous gaps that remain after basic cleaning, including the affected country, start and end timestamps, gap duration, and whether the gap reaches a boundary of the requested time series. This report can be used to identify which periods still require attention and to inform the design of targeted advanced rules;
 - **Cleaning method**: the source or rule responsible for each output value;
 - **Cleaning-method rank**: numeric ordering used to represent cleaning provenance consistently;
-- **Cleaning timeline**: a visual diagnostic of demand and provenance through time.
+- **Cleaning timeline and summary**: visual and tabular diagnostics showing demand provenance and completeness through the raw, basic, and advanced cleaning stages.
 
-These diagnostics are intended to make gap handling explicit rather than conceal unresolved data behind automatic imputation.
+Together, these diagnostics are intended to make gap handling explicit rather than conceal unresolved data behind automatic imputation. A typical advanced workflow is therefore to run the basic cleaning stage, inspect the gap report to identify any remaining missing periods, and then configure advanced rules for gaps that require explicit reconstruction or replacement.
 
 ## Input / output structure
 
