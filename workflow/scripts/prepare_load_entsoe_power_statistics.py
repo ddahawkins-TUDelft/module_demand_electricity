@@ -6,9 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from _advanced_execution import get_batch, load_execution_plan
-from sources.entsoe_power_statistics.prepare import (
-    prepare_entsoe_power_statistics,
-)
+from sources.entsoe_power_statistics.prepare import prepare_entsoe_power_statistics
 from tclean import TimeGrid
 
 if TYPE_CHECKING:
@@ -17,11 +15,7 @@ if TYPE_CHECKING:
 
 def main(snakemake: Any) -> None:
     """Prepare ENTSO-E Power Statistics for the requested workflow period."""
-    plan_path = getattr(
-        snakemake.input,
-        "plan",
-        None,
-    )
+    plan_path = getattr(snakemake.input, "plan", None)
 
     if plan_path is not None:
         plan = load_execution_plan(plan_path)
@@ -39,21 +33,12 @@ def main(snakemake: Any) -> None:
     else:
         start = snakemake.params.temporal_start
         end = snakemake.params.temporal_end
-        country_codes = list(
-            snakemake.params.country_codes
-        )
+        country_codes = list(snakemake.params.country_codes)
 
-    grid = TimeGrid(
-        start=start,
-        end=end,
-        frequency=snakemake.params.frequency,
-    )
+    grid = TimeGrid(start=start, end=end, frequency=snakemake.params.frequency)
 
     prepare_entsoe_power_statistics(
-        input_paths=[
-            Path(path)
-            for path in snakemake.input.annual_files
-        ],
+        input_paths=[Path(path) for path in snakemake.input.annual_files],
         output_path=snakemake.output.load,
         grid=grid,
         country_codes=country_codes,
@@ -61,15 +46,8 @@ def main(snakemake: Any) -> None:
 
 
 if __name__ == "__main__":
-    sys.stderr = open(
-        snakemake.log[0],
-        "w",
-        buffering=1,
-    )
+    sys.stderr = open(snakemake.log[0], "w", buffering=1)
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(levelname)s: %(message)s",
-    )
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
     main(snakemake)

@@ -3,10 +3,7 @@
 from datetime import datetime, timedelta, timezone
 import yaml
 
-
-SOURCE_REGISTRY_PATH = workflow.source_path(
-    "../internal/source_registry.yaml"
-)
+SOURCE_REGISTRY_PATH = workflow.source_path("../internal/source_registry.yaml")
 
 with open(
     SOURCE_REGISTRY_PATH,
@@ -16,8 +13,7 @@ with open(
 
 if not isinstance(SOURCE_REGISTRY, dict):
     raise ValueError(
-        "Source registry must contain a mapping "
-        "of source identifiers to metadata."
+        "Source registry must contain a mapping " "of source identifiers to metadata."
     )
 
 
@@ -76,10 +72,7 @@ def years_for_period(start, end):
 
 def source_year_pattern(source_name):
     """Return a year wildcard pattern for a bounded source."""
-    temporal_scope = (
-        SOURCE_REGISTRY[source_name].get("temporal_scope")
-        or {}
-    )
+    temporal_scope = SOURCE_REGISTRY[source_name].get("temporal_scope") or {}
 
     start = temporal_scope.get("start")
     end = temporal_scope.get("end")
@@ -87,10 +80,7 @@ def source_year_pattern(source_name):
     if start is None or end is None:
         return "[0-9]{4}"
 
-    return "|".join(
-        str(year)
-        for year in years_for_period(start, end)
-    )
+    return "|".join(str(year) for year in years_for_period(start, end))
 
 
 def additional_config_validation():

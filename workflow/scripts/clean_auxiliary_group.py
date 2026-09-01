@@ -68,11 +68,7 @@ def main(snakemake: Any) -> None:
         sources[source_name] = _read_prepared_source(path)
 
     contexts = sorted(
-        {
-            context
-            for data in sources.values()
-            for context in data.columns
-        }
+        {context for data in sources.values() for context in data.columns}
     )
 
     sources = {

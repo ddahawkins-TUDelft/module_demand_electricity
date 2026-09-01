@@ -745,8 +745,7 @@ def _build_cleaning_method_metadata(
 
 
 def _format_source_name(
-    source_name: str,
-    source_registry: Mapping[str, Mapping[str, Any]],
+    source_name: str, source_registry: Mapping[str, Mapping[str, Any]]
 ) -> str:
     """Return the configured human-readable source name."""
     metadata = source_registry.get(
@@ -754,12 +753,7 @@ def _format_source_name(
         {},
     )
 
-    return str(
-        metadata.get(
-            "display_name",
-            source_name,
-        )
-    )
+    return str(metadata.get("display_name", source_name))
 
 
 def _format_rule_name(name: str) -> str:
