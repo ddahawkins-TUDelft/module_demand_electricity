@@ -86,6 +86,49 @@ def supported_target_contexts(
     ]
 
 
+def uncovered_temporal_intervals(
+    intervals: Sequence[tuple[object, object]],
+    *,
+    start: object,
+    end: object,
+) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
+    """Return gaps in the requested period not covered by any interval."""
+    requested_start = _as_utc(start)
+    requested_end = _as_utc(end)
+
+    covered_intervals = sorted(
+        (
+            max(_as_utc(interval_start), requested_start),
+            min(_as_utc(interval_end), requested_end),
+        )
+        for interval_start, interval_end in intervals
+        if (
+            _as_utc(interval_start) < requested_end
+            and _as_utc(interval_end) > requested_start
+        )
+    )
+
+    gaps: list[tuple[pd.Timestamp, pd.Timestamp]] = []
+    cursor = requested_start
+
+    for interval_start, interval_end in covered_intervals:
+        if interval_end <= cursor:
+            continue
+
+        if interval_start > cursor:
+            gaps.append((cursor, interval_start))
+
+        cursor = max(cursor, interval_end)
+
+        if cursor >= requested_end:
+            break
+
+    if cursor < requested_end:
+        gaps.append((cursor, requested_end))
+
+    return gaps
+
+
 def build_target_data_plan(
     *,
     target_contexts: Sequence[str],
@@ -135,21 +178,52 @@ def build_target_data_plan(
         if contexts:
             active_sources.append(source_name)
 
-    covered_contexts = {
-        context
-        for contexts in source_contexts.values()
-        for context in contexts
-    }
+    uncovered_by_context: dict[
+        str,
+        list[tuple[pd.Timestamp, pd.Timestamp]],
+    ] = {}
 
-    uncovered_contexts = sorted(
-        set(target_contexts).difference(covered_contexts)
-    )
+    for context in target_contexts:
+        intervals = []
 
-    if uncovered_contexts:
+        for source_name, contexts in source_contexts.items():
+            if context not in contexts:
+                continue
+
+            source_temporal_scope = source_temporal_scopes[source_name]
+
+            if source_temporal_scope is None:
+                continue
+
+            intervals.append(
+                (
+                    source_temporal_scope["start"],
+                    source_temporal_scope["end"],
+                )
+            )
+
+        gaps = uncovered_temporal_intervals(
+            intervals,
+            start=temporal_scope["start"],
+            end=temporal_scope["end"],
+        )
+
+        if gaps:
+            uncovered_by_context[context] = gaps
+
+    if uncovered_by_context:
+        gap_descriptions = {
+            context: [
+                f"[{gap_start.isoformat()}, {gap_end.isoformat()})"
+                for gap_start, gap_end in gaps
+            ]
+            for context, gaps in uncovered_by_context.items()
+        }
+
         raise ValueError(
-            "No configured electricity-demand source can supply "
-            "the following target context(s) within the requested "
-            f"temporal scope: {uncovered_contexts}. "
+            "Configured electricity-demand sources do not provide "
+            "complete temporal coverage for the following target "
+            f"context(s): {gap_descriptions}. "
             f"Configured sources: {list(source_names)}."
         )
 
