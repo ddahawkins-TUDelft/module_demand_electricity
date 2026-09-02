@@ -8,6 +8,11 @@ from typing import TYPE_CHECKING, Any
 import geopandas as gpd
 import pandas as pd
 from _schemas import Shapes
+from _source_capabilities import (
+    as_utc,
+    intersect_source_temporal_scope,
+    uncovered_temporal_intervals,
+)
 
 if TYPE_CHECKING:
     snakemake: Any
@@ -16,14 +21,7 @@ if TYPE_CHECKING:
 TARGET_DATA_PLAN_VERSION = 2
 
 
-def _as_utc(value: object) -> pd.Timestamp:
-    """Interpret naive timestamps as UTC and convert aware timestamps to UTC."""
-    timestamp = pd.Timestamp(value)
-
-    if timestamp.tzinfo is None:
-        return timestamp.tz_localize("UTC")
-
-    return timestamp.tz_convert("UTC")
+_as_utc = as_utc
 
 
 def effective_source_temporal_scope(
@@ -33,36 +31,22 @@ def effective_source_temporal_scope(
     end: object,
 ) -> dict[str, str] | None:
     """Return the intersection of requested and source temporal scopes."""
-    temporal_scope = metadata.get("temporal_scope") or {}
+    effective_scope = intersect_source_temporal_scope(
+        metadata,
+        start=start,
+        end=end,
+    )
 
-    requested_start = _as_utc(start)
-    requested_end = _as_utc(end)
-
-    source_start = temporal_scope.get("start")
-    source_end = temporal_scope.get("end")
-
-    effective_start = requested_start
-    effective_end = requested_end
-
-    if source_start is not None:
-        effective_start = max(
-            effective_start,
-            _as_utc(source_start),
-        )
-
-    if source_end is not None:
-        effective_end = min(
-            effective_end,
-            _as_utc(source_end),
-        )
-
-    if effective_start >= effective_end:
+    if effective_scope is None:
         return None
+
+    effective_start, effective_end = effective_scope
 
     return {
         "start": effective_start.isoformat(),
         "end": effective_end.isoformat(),
     }
+
 
 def supported_target_contexts(
     target_contexts: Sequence[str],
@@ -84,49 +68,6 @@ def supported_target_contexts(
         for context in target_contexts
         if context in supported
     ]
-
-
-def uncovered_temporal_intervals(
-    intervals: Sequence[tuple[object, object]],
-    *,
-    start: object,
-    end: object,
-) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
-    """Return gaps in the requested period not covered by any interval."""
-    requested_start = _as_utc(start)
-    requested_end = _as_utc(end)
-
-    covered_intervals = sorted(
-        (
-            max(_as_utc(interval_start), requested_start),
-            min(_as_utc(interval_end), requested_end),
-        )
-        for interval_start, interval_end in intervals
-        if (
-            _as_utc(interval_start) < requested_end
-            and _as_utc(interval_end) > requested_start
-        )
-    )
-
-    gaps: list[tuple[pd.Timestamp, pd.Timestamp]] = []
-    cursor = requested_start
-
-    for interval_start, interval_end in covered_intervals:
-        if interval_end <= cursor:
-            continue
-
-        if interval_start > cursor:
-            gaps.append((cursor, interval_start))
-
-        cursor = max(cursor, interval_end)
-
-        if cursor >= requested_end:
-            break
-
-    if cursor < requested_end:
-        gaps.append((cursor, requested_end))
-
-    return gaps
 
 
 def build_target_data_plan(

@@ -2,15 +2,10 @@
 
 
 def entsoe_power_statistics_annual_files(years):
-    """Return supported annual ENTSO-E Power Statistics files."""
+    """Return annual ENTSO-E Power Statistics files."""
     return [
         ("<resources>/automatic/" "entsoe_power_statistics/raw/" f"{int(year)}.parquet")
         for year in years
-        if source_overlaps_period(
-            "entsoe_power_statistics",
-            f"{int(year)}-01-01",
-            f"{int(year) + 1}-01-01",
-        )
     ]
 
 

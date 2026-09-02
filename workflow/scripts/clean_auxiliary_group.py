@@ -1,10 +1,10 @@
 """Combine and clean one auxiliary electricity-demand group."""
 
-import json
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
+from _advanced_execution import load_execution_plan
+from _prepared_data import read_prepared_source
 from tclean import TCleanConfig, TimeGrid, clean
 
 if TYPE_CHECKING:
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 def main(snakemake: Any) -> None:
     """Combine and basic-clean one auxiliary source group."""
-    plan = _read_plan(snakemake.input.plan)
+    plan = load_execution_plan(snakemake.input.plan)
 
     group_id = str(snakemake.wildcards.group_id)
 
@@ -71,7 +71,7 @@ def main(snakemake: Any) -> None:
                 f"{source_name!r}."
             )
 
-        sources[source_name] = _read_prepared_source(path)
+        sources[source_name] = read_prepared_source(path)
 
     contexts = sorted(
         {context for data in sources.values() for context in data.columns}
@@ -100,30 +100,6 @@ def main(snakemake: Any) -> None:
     data_source.to_parquet(snakemake.output.data_source)
 
     cleaning_method.to_parquet(snakemake.output.cleaning_method)
-
-
-def _read_plan(path: str | Path) -> dict[str, Any]:
-    """Read the advanced execution manifest."""
-    with Path(path).open(encoding="utf-8") as file:
-        return json.load(file)
-
-
-def _read_prepared_source(path: str | Path) -> pd.DataFrame:
-    """Read one prepared auxiliary provider frame."""
-    data = pd.read_parquet(path)
-
-    if not isinstance(data.index, pd.DatetimeIndex):
-        data.index = pd.to_datetime(data.index, utc=True)
-
-    elif data.index.tz is None:
-        data.index = data.index.tz_localize("UTC")
-
-    else:
-        data.index = data.index.tz_convert("UTC")
-
-    data.index.name = "timestamp"
-
-    return data
 
 
 if __name__ == "__main__":

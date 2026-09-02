@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
+from _prepared_data import read_prepared_source
 from _tclean_config import build_basic_rules, build_tclean_config
 from tclean import clean
 from tclean.advanced import build_gap_report
@@ -31,7 +32,7 @@ def main(snakemake: Any) -> None:
         )
 
     sources = {
-        source_name: _read_prepared_source(path)
+        source_name: read_prepared_source(path)
         for source_name, path in zip(source_names, input_paths, strict=True)
     }
 
@@ -86,24 +87,6 @@ def main(snakemake: Any) -> None:
     _log_cleaning_method_counts(cleaning_method)
 
     _log_gap_report(gap_report)
-
-
-def _read_prepared_source(path: str | Path) -> pd.DataFrame:
-    """Read one prepared electricity-demand source."""
-    data = pd.read_parquet(path)
-
-    if not isinstance(data.index, pd.DatetimeIndex):
-        data.index = pd.to_datetime(data.index, utc=True)
-
-    elif data.index.tz is None:
-        data.index = data.index.tz_localize("UTC")
-
-    else:
-        data.index = data.index.tz_convert("UTC")
-
-    data.index.name = "timestamp"
-
-    return data
 
 
 def _read_target_contexts(path: str | Path) -> list[str]:

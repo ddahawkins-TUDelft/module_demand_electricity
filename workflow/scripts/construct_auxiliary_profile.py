@@ -1,8 +1,7 @@
 """Construct an auxiliary profile from cleaned source data."""
 
-import json
-
 import pandas as pd
+from _advanced_execution import load_execution_plan
 from _tclean_config import (
     build_constructed_source_periods,
     build_scaling_source_periods,
@@ -10,8 +9,7 @@ from _tclean_config import (
 from tclean import TimeGrid
 from tclean.advanced import construct_from_sources
 
-with open(snakemake.input.plan, encoding="utf-8") as file:
-    plan = json.load(file)
+plan = load_execution_plan(snakemake.input.plan)
 
 rule_name = snakemake.wildcards.rule_name
 rule = plan["rules"][rule_name]

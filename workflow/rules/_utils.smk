@@ -27,36 +27,6 @@ def _as_utc(value):
     return parsed.astimezone(timezone.utc)
 
 
-def source_overlaps_period(
-    source_name,
-    start,
-    end,
-):
-    """Return whether a source can supply any part of a period."""
-    metadata = SOURCE_REGISTRY[source_name]
-    temporal_scope = metadata.get("temporal_scope") or {}
-
-    source_start = temporal_scope.get("start")
-    source_end = temporal_scope.get("end")
-
-    start = _as_utc(start)
-    end = _as_utc(end)
-
-    if source_start is not None:
-        source_start = _as_utc(source_start)
-
-        if end <= source_start:
-            return False
-
-    if source_end is not None:
-        source_end = _as_utc(source_end)
-
-        if start >= source_end:
-            return False
-
-    return True
-
-
 def years_for_period(start, end):
     """Return UTC calendar years intersected by the half-open period [start, end). Mirrors tclean logic."""
     start = _as_utc(start)

@@ -1,15 +1,14 @@
 """Apply advanced T-Clean rules to basic-cleaned demand."""
 
-import json
 from pathlib import Path
 
 import pandas as pd
+from _advanced_execution import load_execution_plan
 from tclean import TimeGrid
 from tclean.advanced import read_external_profile
 from tclean.advanced.apply import apply_advanced_rules
 
-with open(snakemake.input.plan, encoding="utf-8") as file:
-    plan = json.load(file)
+plan = load_execution_plan(snakemake.input.plan)
 
 grid = TimeGrid(
     start=snakemake.params.temporal_scope["start"],

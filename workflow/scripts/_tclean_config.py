@@ -6,6 +6,10 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 import pandas as pd
+from _source_capabilities import (
+    intersect_source_temporal_scope,
+    uncovered_temporal_intervals,
+)
 from tclean import TCleanConfig, TimeGrid
 
 
@@ -205,31 +209,20 @@ def filter_source_requests_by_temporal_scope(
         row = request._asdict()
 
         metadata = source_registry[str(request.source)]
-        temporal_scope = metadata.get("temporal_scope") or {}
 
         request_start = pd.to_datetime(request.start, utc=True)
         request_end = pd.to_datetime(request.end, utc=True)
 
-        effective_start = request_start
-        effective_end = request_end
+        effective_scope = intersect_source_temporal_scope(
+            metadata,
+            start=request_start,
+            end=request_end,
+        )
 
-        source_start = temporal_scope.get("start")
-        source_end = temporal_scope.get("end")
-
-        if source_start is not None:
-            effective_start = max(
-                effective_start,
-                pd.to_datetime(source_start, utc=True),
-            )
-
-        if source_end is not None:
-            effective_end = min(
-                effective_end,
-                pd.to_datetime(source_end, utc=True),
-            )
-
-        if effective_start >= effective_end:
+        if effective_scope is None:
             continue
+
+        effective_start, effective_end = effective_scope
 
         row["group_start"] = request_start
         row["group_end"] = request_end
@@ -257,8 +250,11 @@ def filter_source_requests_by_temporal_scope(
             & (filtered["group_end"] == required_end)
         ]
 
-        gaps = _uncovered_temporal_intervals(
-            candidates[["start", "end"]],
+        gaps = uncovered_temporal_intervals(
+            [
+                (candidate.start, candidate.end)
+                for candidate in candidates.itertuples(index=False)
+            ],
             start=required_start,
             end=required_end,
         )
@@ -280,46 +276,3 @@ def filter_source_requests_by_temporal_scope(
         )
 
     return filtered
-
-
-def _uncovered_temporal_intervals(
-    intervals: pd.DataFrame,
-    *,
-    start: object,
-    end: object,
-) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
-    """Return gaps in one required period not covered by source intervals."""
-    required_start = pd.to_datetime(start, utc=True)
-    required_end = pd.to_datetime(end, utc=True)
-
-    covered_intervals = sorted(
-        (
-            max(pd.to_datetime(row.start, utc=True), required_start),
-            min(pd.to_datetime(row.end, utc=True), required_end),
-        )
-        for row in intervals.itertuples(index=False)
-        if (
-            pd.to_datetime(row.start, utc=True) < required_end
-            and pd.to_datetime(row.end, utc=True) > required_start
-        )
-    )
-
-    gaps: list[tuple[pd.Timestamp, pd.Timestamp]] = []
-    cursor = required_start
-
-    for interval_start, interval_end in covered_intervals:
-        if interval_end <= cursor:
-            continue
-
-        if interval_start > cursor:
-            gaps.append((cursor, interval_start))
-
-        cursor = max(cursor, interval_end)
-
-        if cursor >= required_end:
-            break
-
-    if cursor < required_end:
-        gaps.append((cursor, required_end))
-
-    return gaps
