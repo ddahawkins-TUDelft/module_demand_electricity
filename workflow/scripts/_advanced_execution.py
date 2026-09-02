@@ -87,17 +87,21 @@ def build_group_id(*, start: pd.Timestamp, end: pd.Timestamp) -> str:
 def build_batch_id(
     *, source: str, start: pd.Timestamp, end: pd.Timestamp, countries: Sequence[str]
 ) -> str:
-    """Build a deterministic identifier for one provider batch."""
-    countries_key = ",".join(sorted(countries))
-
-    countries_hash = hashlib.sha1(countries_key.encode("utf-8")).hexdigest()[:8]
-
-    return (
-        f"{source}__"
-        f"{start.strftime('%Y%m%dT%H%M')}__"
-        f"{end.strftime('%Y%m%dT%H%M')}__"
-        f"{countries_hash}"
+    """Build a compact deterministic identifier for one provider batch."""
+    batch_key = json.dumps(
+        {
+            "source": str(source),
+            "start": pd.Timestamp(start).isoformat(),
+            "end": pd.Timestamp(end).isoformat(),
+            "countries": sorted(str(country) for country in countries),
+        },
+        sort_keys=True,
+        separators=(",", ":"),
     )
+
+    return hashlib.sha1(
+        batch_key.encode("utf-8")
+    ).hexdigest()[:16]
 
 
 def index_batch_ids_by_source(
