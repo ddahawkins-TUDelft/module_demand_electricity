@@ -248,7 +248,10 @@ def test_target_plan_rejects_temporal_coverage_gap():
         },
     }
 
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(
+        ValueError,
+        match=r"2019-01-01T00:00:00\+00:00",
+    ) as exc_info:
         build_target_data_plan(
             target_contexts=["AAA"],
             source_names=["source_a", "source_b"],
@@ -267,7 +270,7 @@ def test_target_plan_rejects_completely_unsupported_context():
     """A target context with no usable source is rejected."""
     source_registry = {"source_a": {"contexts": ["AAA"]}}
 
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError, match="BBB") as exc_info:
         build_target_data_plan(
             target_contexts=["AAA", "BBB"],
             source_names=["source_a"],
@@ -295,7 +298,7 @@ def test_target_plan_checks_coverage_per_context():
         },
     }
 
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError, match="BBB") as exc_info:
         build_target_data_plan(
             target_contexts=["AAA", "BBB"],
             source_names=["old_source", "new_source"],
