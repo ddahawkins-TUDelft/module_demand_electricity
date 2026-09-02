@@ -14,6 +14,7 @@ from _advanced_execution import (
     index_batch_ids_by_group,
     index_batch_ids_by_source,
     load_execution_plan,
+    resolve_required_group_ids,
     serialize_batch,
 )
 
@@ -180,3 +181,58 @@ def test_get_batch_requires_exactly_one_match() -> None:
             empty_execution_plan(),
             batch_id="missing",
         )
+
+def test_clipped_batches_share_logical_group() -> None:
+    """Check provider slices retain one logical auxiliary period."""
+    group_start = pd.Timestamp("2018-01-01", tz="UTC")
+    boundary = pd.Timestamp("2019-01-01", tz="UTC")
+    group_end = pd.Timestamp("2021-01-01", tz="UTC")
+
+    requests = pd.DataFrame(
+        {
+            "source": ["opsd", "entsoe_power_statistics"],
+            "context": ["AAA", "AAA"],
+            "start": [group_start, boundary],
+            "end": [boundary, group_end],
+            "group_start": [group_start, group_start],
+            "group_end": [group_end, group_end],
+        }
+    )
+
+    batches = build_source_batches(requests)
+
+    assert len(batches) == 2
+
+    assert batches[0]["start"] == group_start
+    assert batches[0]["end"] == boundary
+
+    assert batches[1]["start"] == boundary
+    assert batches[1]["end"] == group_end
+
+    expected_group_id = build_group_id(
+        start=group_start,
+        end=group_end,
+    )
+
+    assert batches[0]["group_id"] == expected_group_id
+    assert batches[1]["group_id"] == expected_group_id
+
+    by_group = index_batch_ids_by_group(batches)
+
+    assert list(by_group) == [expected_group_id]
+    assert by_group[expected_group_id] == [
+        batch["batch_id"] for batch in batches
+    ]
+
+    source_periods = pd.DataFrame(
+        {
+            "context": ["AAA"],
+            "start": [group_start],
+            "end": [group_end],
+        }
+    )
+
+    assert resolve_required_group_ids(
+        batches,
+        source_periods=source_periods,
+    ) == [expected_group_id]

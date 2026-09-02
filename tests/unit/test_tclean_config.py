@@ -1,12 +1,14 @@
 """Tests for the Modelblocks-to-T-Clean configuration adapter."""
 
 import pandas as pd
+import pytest
 from _tclean_config import (
     build_advanced_rules,
     build_all_constructed_source_periods,
     build_basic_rules,
     build_scaling_source_periods,
     build_time_grid,
+    filter_source_requests_by_temporal_scope,
 )
 from tclean import TimeGrid
 
@@ -195,3 +197,196 @@ def test_match_total_scaling_adds_auxiliary_periods() -> None:
 
     assert set(result) == {"scaled_source"}
     assert result["scaled_source"]["context"].tolist() == ["GBR", "ALB"]
+
+def test_auxiliary_temporal_filter_preserves_fully_available_request() -> None:
+    """Check a provider covering the whole requirement is not clipped."""
+    start = pd.Timestamp("2020-01-01", tz="UTC")
+    end = pd.Timestamp("2020-02-01", tz="UTC")
+
+    requests = pd.DataFrame(
+        {
+            "source": ["source_a"],
+            "context": ["AAA"],
+            "start": [start],
+            "end": [end],
+        }
+    )
+
+    requirements = pd.DataFrame(
+        {
+            "context": ["AAA"],
+            "start": [start],
+            "end": [end],
+        }
+    )
+
+    result = filter_source_requests_by_temporal_scope(
+        requests,
+        requirements=requirements,
+        source_registry={
+            "source_a": {
+                "temporal_scope": {
+                    "start": "2019-01-01",
+                    "end": "2021-01-01",
+                }
+            }
+        },
+    )
+
+    assert len(result) == 1
+    assert result.loc[0, "start"] == start
+    assert result.loc[0, "end"] == end
+    assert result.loc[0, "group_start"] == start
+    assert result.loc[0, "group_end"] == end
+
+
+def test_auxiliary_temporal_filter_clips_adjacent_providers() -> None:
+    """Check adjacent providers are clipped to a shared requirement."""
+    group_start = pd.Timestamp("2018-01-01", tz="UTC")
+    boundary = pd.Timestamp("2019-01-01", tz="UTC")
+    group_end = pd.Timestamp("2021-01-01", tz="UTC")
+
+    requests = pd.DataFrame(
+        {
+            "source": ["old_source", "new_source"],
+            "context": ["AAA", "AAA"],
+            "start": [group_start, group_start],
+            "end": [group_end, group_end],
+        }
+    )
+
+    requirements = pd.DataFrame(
+        {
+            "context": ["AAA"],
+            "start": [group_start],
+            "end": [group_end],
+        }
+    )
+
+    result = filter_source_requests_by_temporal_scope(
+        requests,
+        requirements=requirements,
+        source_registry={
+            "old_source": {
+                "temporal_scope": {
+                    "start": "2005-01-01",
+                    "end": "2019-01-01",
+                }
+            },
+            "new_source": {
+                "temporal_scope": {
+                    "start": "2019-01-01",
+                    "end": "2026-01-01",
+                }
+            },
+        },
+    )
+
+    old_source = result.loc[result["source"] == "old_source"].iloc[0]
+    new_source = result.loc[result["source"] == "new_source"].iloc[0]
+
+    assert old_source["start"] == group_start
+    assert old_source["end"] == boundary
+
+    assert new_source["start"] == boundary
+    assert new_source["end"] == group_end
+
+    assert old_source["group_start"] == group_start
+    assert old_source["group_end"] == group_end
+    assert new_source["group_start"] == group_start
+    assert new_source["group_end"] == group_end
+
+
+def test_auxiliary_temporal_filter_removes_non_overlapping_provider() -> None:
+    """Check an unavailable provider is removed when another covers the period."""
+    start = pd.Timestamp("2020-01-01", tz="UTC")
+    end = pd.Timestamp("2021-01-01", tz="UTC")
+
+    requests = pd.DataFrame(
+        {
+            "source": ["old_source", "current_source"],
+            "context": ["AAA", "AAA"],
+            "start": [start, start],
+            "end": [end, end],
+        }
+    )
+
+    requirements = pd.DataFrame(
+        {
+            "context": ["AAA"],
+            "start": [start],
+            "end": [end],
+        }
+    )
+
+    result = filter_source_requests_by_temporal_scope(
+        requests,
+        requirements=requirements,
+        source_registry={
+            "old_source": {
+                "temporal_scope": {
+                    "start": "2005-01-01",
+                    "end": "2019-01-01",
+                }
+            },
+            "current_source": {
+                "temporal_scope": {
+                    "start": "2019-01-01",
+                    "end": "2025-01-01",
+                }
+            },
+        },
+    )
+
+    assert result["source"].tolist() == ["current_source"]
+    assert result.loc[0, "start"] == start
+    assert result.loc[0, "end"] == end
+
+
+def test_auxiliary_temporal_filter_rejects_coverage_gap() -> None:
+    """Check a temporal gap between providers is rejected."""
+    start = pd.Timestamp("2018-01-01", tz="UTC")
+    end = pd.Timestamp("2021-01-01", tz="UTC")
+
+    requests = pd.DataFrame(
+        {
+            "source": ["old_source", "new_source"],
+            "context": ["AAA", "AAA"],
+            "start": [start, start],
+            "end": [end, end],
+        }
+    )
+
+    requirements = pd.DataFrame(
+        {
+            "context": ["AAA"],
+            "start": [start],
+            "end": [end],
+        }
+    )
+
+    with pytest.raises(ValueError) as exc_info:
+        filter_source_requests_by_temporal_scope(
+            requests,
+            requirements=requirements,
+            source_registry={
+                "old_source": {
+                    "temporal_scope": {
+                        "start": "2005-01-01",
+                        "end": "2019-01-01",
+                    }
+                },
+                "new_source": {
+                    "temporal_scope": {
+                        "start": "2019-02-01",
+                        "end": "2026-01-01",
+                    }
+                },
+            },
+        )
+
+    message = str(exc_info.value)
+
+    assert "AAA" in message
+    assert "2019-01-01T00:00:00+00:00" in message
+    assert "2019-02-01T00:00:00+00:00" in message
