@@ -35,8 +35,14 @@ rule prepare_load_opsd:
     conda:
         "../envs/module.yaml"
     params:
-        start=config["temporal_scope"]["start"],
-        end=config["temporal_scope"]["end"],
+        start=lambda wildcards: target_source_start(
+            wildcards,
+            "opsd",
+        ),
+        end=lambda wildcards: target_source_end(
+            wildcards,
+            "opsd",
+        ),
         frequency=config["temporal_scope"]["frequency"],
         country_codes=target_opsd_countries,
     message:

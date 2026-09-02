@@ -17,8 +17,14 @@ def entsoe_raw_files(wildcards):
     countries = plan["source_contexts"].get("entsoe", [])
 
     years = years_for_period(
-        config["temporal_scope"]["start"],
-        config["temporal_scope"]["end"],
+        target_source_start(
+            wildcards,
+            "entsoe",
+        ),
+        target_source_end(
+            wildcards,
+            "entsoe",
+        ),
     )
 
     return entsoe_annual_files(countries, years)
@@ -83,8 +89,14 @@ rule prepare_load_entsoe:
     conda:
         "../envs/module.yaml"
     params:
-        temporal_start=config["temporal_scope"]["start"],
-        temporal_end=config["temporal_scope"]["end"],
+        temporal_start=lambda wildcards: target_source_start(
+            wildcards,
+            "entsoe",
+        ),
+        temporal_end=lambda wildcards: target_source_end(
+            wildcards,
+            "entsoe",
+        ),
         frequency=config["temporal_scope"]["frequency"],
         country_codes=target_entsoe_countries,
     message:

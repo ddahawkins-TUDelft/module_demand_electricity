@@ -9,11 +9,17 @@ def neso_annual_files(years):
     ]
 
 
-def neso_raw_files(_wildcards):
-    """Return annual NESO input files for the configured period."""
+def neso_raw_files(wildcards):
+    """Return annual NESO input files for the planned target period."""
     years = years_for_period(
-        config["temporal_scope"]["start"],
-        config["temporal_scope"]["end"],
+        target_source_start(
+            wildcards,
+            "neso",
+        ),
+        target_source_end(
+            wildcards,
+            "neso",
+        ),
     )
 
     return neso_annual_files(years)
@@ -68,8 +74,14 @@ rule prepare_load_neso:
     conda:
         "../envs/module.yaml"
     params:
-        start=config["temporal_scope"]["start"],
-        end=config["temporal_scope"]["end"],
+        start=lambda wildcards: target_source_start(
+            wildcards,
+            "neso",
+        ),
+        end=lambda wildcards: target_source_end(
+            wildcards,
+            "neso",
+        ),
         country_codes=target_neso_countries,
         frequency=config["temporal_scope"]["frequency"],
     message:

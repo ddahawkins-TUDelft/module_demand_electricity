@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     snakemake: Any
 
 
-TARGET_DATA_PLAN_VERSION = 1
+TARGET_DATA_PLAN_VERSION = 2
 
 
 def _as_utc(value: object) -> pd.Timestamp:
@@ -26,31 +26,43 @@ def _as_utc(value: object) -> pd.Timestamp:
     return timestamp.tz_convert("UTC")
 
 
-def source_overlaps_period(
+def effective_source_temporal_scope(
     metadata: Mapping[str, Any],
     *,
     start: object,
     end: object,
-) -> bool:
-    """Return whether a source can supply any part of the requested period."""
+) -> dict[str, str] | None:
+    """Return the intersection of requested and source temporal scopes."""
     temporal_scope = metadata.get("temporal_scope") or {}
+
+    requested_start = _as_utc(start)
+    requested_end = _as_utc(end)
 
     source_start = temporal_scope.get("start")
     source_end = temporal_scope.get("end")
 
-    start = _as_utc(start)
-    end = _as_utc(end)
+    effective_start = requested_start
+    effective_end = requested_end
 
     if source_start is not None:
-        if end <= _as_utc(source_start):
-            return False
+        effective_start = max(
+            effective_start,
+            _as_utc(source_start),
+        )
 
     if source_end is not None:
-        if start >= _as_utc(source_end):
-            return False
+        effective_end = min(
+            effective_end,
+            _as_utc(source_end),
+        )
 
-    return True
+    if effective_start >= effective_end:
+        return None
 
+    return {
+        "start": effective_start.isoformat(),
+        "end": effective_end.isoformat(),
+    }
 
 def supported_target_contexts(
     target_contexts: Sequence[str],
@@ -90,6 +102,7 @@ def build_target_data_plan(
         )
 
     source_contexts: dict[str, list[str]] = {}
+    source_temporal_scopes: dict[str, dict[str, str] | None] = {}
     active_sources: list[str] = []
 
     for source_name in source_names:
@@ -100,11 +113,15 @@ def build_target_data_plan(
 
         metadata = source_registry[source_name]
 
-        if not source_overlaps_period(
+        effective_temporal_scope = effective_source_temporal_scope(
             metadata,
             start=temporal_scope["start"],
             end=temporal_scope["end"],
-        ):
+        )
+
+        source_temporal_scopes[source_name] = effective_temporal_scope
+
+        if effective_temporal_scope is None:
             source_contexts[source_name] = []
             continue
 
@@ -141,6 +158,7 @@ def build_target_data_plan(
         "target_contexts": target_contexts,
         "active_sources": active_sources,
         "source_contexts": source_contexts,
+        "source_temporal_scopes": source_temporal_scopes,
     }
 
 

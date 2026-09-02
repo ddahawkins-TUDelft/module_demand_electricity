@@ -14,11 +14,17 @@ def entsoe_power_statistics_annual_files(years):
     ]
 
 
-def entsoe_power_statistics_raw_files(_wildcards):
+def entsoe_power_statistics_raw_files(wildcards):
     """Return Power Statistics annual files required by the target period."""
     years = years_for_period(
-        config["temporal_scope"]["start"],
-        config["temporal_scope"]["end"],
+        target_source_start(
+            wildcards,
+            "entsoe_power_statistics",
+        ),
+        target_source_end(
+            wildcards,
+            "entsoe_power_statistics",
+        ),
     )
 
     return entsoe_power_statistics_annual_files(years)
@@ -84,8 +90,14 @@ rule prepare_load_entsoe_power_statistics:
     conda:
         "../envs/module.yaml"
     params:
-        temporal_start=config["temporal_scope"]["start"],
-        temporal_end=config["temporal_scope"]["end"],
+        temporal_start=lambda wildcards: target_source_start(
+            wildcards,
+            "entsoe_power_statistics",
+        ),
+        temporal_end=lambda wildcards: target_source_end(
+            wildcards,
+            "entsoe_power_statistics",
+        ),
         frequency=config["temporal_scope"]["frequency"],
         country_codes=target_entsoe_power_statistics_countries,
     message:

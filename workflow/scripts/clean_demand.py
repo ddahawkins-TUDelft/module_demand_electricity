@@ -39,12 +39,15 @@ def main(snakemake: Any) -> None:
         snakemake.input.target_plan
     )
 
+    config = build_tclean_config(snakemake.params.temporal_scope)
+
     sources = {
-        source_name: data.reindex(columns=target_contexts)
+        source_name: data.reindex(
+            index=config.grid.target_index,
+            columns=target_contexts,
+        )
         for source_name, data in sources.items()
     }
-
-    config = build_tclean_config(snakemake.params.temporal_scope)
 
     basic_rules = build_basic_rules(snakemake.params.gap_filling)
 

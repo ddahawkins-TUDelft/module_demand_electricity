@@ -84,6 +84,36 @@ def target_source_contexts(wildcards, source_name):
     return plan["source_contexts"].get(source_name, [])
 
 
+def target_source_temporal_scope(wildcards, source_name):
+    """Return the planned target temporal scope for one source."""
+    plan = read_target_data_plan(wildcards)
+
+    temporal_scope = plan["source_temporal_scopes"].get(source_name)
+
+    if temporal_scope is None:
+        raise ValueError(
+            f"Source {source_name!r} has no active target temporal scope."
+        )
+
+    return temporal_scope
+
+
+def target_source_start(wildcards, source_name):
+    """Return the planned target start timestamp for one source."""
+    return target_source_temporal_scope(
+        wildcards,
+        source_name,
+    )["start"]
+
+
+def target_source_end(wildcards, source_name):
+    """Return the planned target end timestamp for one source."""
+    return target_source_temporal_scope(
+        wildcards,
+        source_name,
+    )["end"]
+
+
 rule download_population:
     output:
         population=update("<resources>/automatic/population.zip"),
