@@ -214,9 +214,7 @@ def filter_source_requests_by_temporal_scope(
         request_end = pd.to_datetime(request.end, utc=True)
 
         effective_scope = intersect_source_temporal_scope(
-            metadata,
-            start=request_start,
-            end=request_end,
+            metadata, start=request_start, end=request_end
         )
 
         if effective_scope is None:
@@ -233,9 +231,7 @@ def filter_source_requests_by_temporal_scope(
 
     filtered = pd.DataFrame(clipped_rows, columns=output_columns)
 
-    required_periods = requirements[
-        ["context", "start", "end"]
-    ].drop_duplicates()
+    required_periods = requirements[["context", "start", "end"]].drop_duplicates()
 
     uncovered: list[dict[str, object]] = []
 

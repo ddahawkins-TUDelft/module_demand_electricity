@@ -27,13 +27,11 @@ def main(snakemake: Any) -> None:
         raise ValueError(f"Auxiliary group {group_id!r} contains no source batches.")
 
     group_starts = {
-        pd.Timestamp(batch.get("group_start", batch["start"]))
-        for batch in batches
+        pd.Timestamp(batch.get("group_start", batch["start"])) for batch in batches
     }
 
     group_ends = {
-        pd.Timestamp(batch.get("group_end", batch["end"]))
-        for batch in batches
+        pd.Timestamp(batch.get("group_end", batch["end"])) for batch in batches
     }
 
     if len(group_starts) != 1 or len(group_ends) != 1:
@@ -78,10 +76,7 @@ def main(snakemake: Any) -> None:
     )
 
     sources = {
-        source_name: data.reindex(
-            index=grid.target_index,
-            columns=contexts,
-        )
+        source_name: data.reindex(index=grid.target_index, columns=contexts)
         for source_name, data in sources.items()
     }
 

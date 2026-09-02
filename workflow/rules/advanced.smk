@@ -24,10 +24,7 @@ def auxiliary_group_source_files(wildcards):
 
     batch_ids = plan["groups"][wildcards.group_id]
 
-    batches_by_id = {
-        batch["batch_id"]: batch
-        for batch in plan["batches"]
-    }
+    batches_by_id = {batch["batch_id"]: batch for batch in plan["batches"]}
 
     return [
         (
@@ -129,9 +126,13 @@ rule finalise_clean_demand:
         demand=final_clean_demand_input,
         cleaning_method=final_cleaning_method_input,
     output:
-        demand=("<resources>/automatic/{shape}/""load_cleaned.parquet"),
-        cleaning_method=("<resources>/automatic/{shape}/" "load_final_cleaning_method.parquet"),
-        cleaning_method_rank=("<resources>/automatic/{shape}/" "load_final_cleaning_method_rank.parquet"),
+        demand=("<resources>/automatic/{shape}/" "load_cleaned.parquet"),
+        cleaning_method=(
+            "<resources>/automatic/{shape}/" "load_final_cleaning_method.parquet"
+        ),
+        cleaning_method_rank=(
+            "<resources>/automatic/{shape}/" "load_final_cleaning_method_rank.parquet"
+        ),
     conda:
         "../envs/module.yaml"
     params:
@@ -149,9 +150,7 @@ rule clean_auxiliary_group:
         sources=auxiliary_group_source_files,
     output:
         demand=(
-            "<resources>/automatic/{shape}/"
-            "auxiliary/cleaned/"
-            "{group_id}.parquet"
+            "<resources>/automatic/{shape}/" "auxiliary/cleaned/" "{group_id}.parquet"
         ),
         data_source=(
             "<resources>/automatic/{shape}/"
@@ -163,6 +162,8 @@ rule clean_auxiliary_group:
             "auxiliary/cleaned/"
             "{group_id}_cleaning_method.parquet"
         ),
+    log:
+        "<logs>/{shape}/auxiliary/clean_{group_id}.log",
     conda:
         "../envs/module.yaml"
     params:
@@ -173,8 +174,6 @@ rule clean_auxiliary_group:
                 "enabled"
             ]
         ),
-    log:
-        "<logs>/{shape}/auxiliary/clean_{group_id}.log",
     message:
         "Combine and clean auxiliary electricity-demand sources."
     script:
@@ -211,13 +210,9 @@ rule apply_advanced_overrides:
         constructed_profiles=advanced_constructed_profiles,
         external_profiles=advanced_external_profile_files,
     output:
-        demand=(
-            "<resources>/automatic/{shape}/"
-            "load_advanced_cleaned.parquet"
-        ),
+        demand=("<resources>/automatic/{shape}/" "load_advanced_cleaned.parquet"),
         cleaning_method=(
-            "<resources>/automatic/{shape}/"
-            "load_advanced_cleaning_method.parquet"
+            "<resources>/automatic/{shape}/" "load_advanced_cleaning_method.parquet"
         ),
     conda:
         "../envs/module.yaml"

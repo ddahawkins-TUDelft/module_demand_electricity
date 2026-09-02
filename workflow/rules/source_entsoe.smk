@@ -110,11 +110,7 @@ rule prepare_auxiliary_load_entsoe:
         plan=auxiliary_acquisition_plan,
         annual_files=auxiliary_entsoe_raw_files,
     output:
-        load=(
-            "<resources>/automatic/{shape}/"
-            "auxiliary/entsoe/"
-            "{batch_id}.parquet"
-        ),
+        load=("<resources>/automatic/{shape}/" "auxiliary/entsoe/" "{batch_id}.parquet"),
     log:
         "<logs>/{shape}/auxiliary/entsoe/prepare_{batch_id}.log",
     conda:

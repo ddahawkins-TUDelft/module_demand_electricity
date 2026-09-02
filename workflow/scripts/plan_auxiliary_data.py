@@ -85,9 +85,7 @@ def build_advanced_execution_plan(
     )
 
     requests = filter_source_requests_by_temporal_scope(
-        requests,
-        requirements=requirements,
-        source_registry=source_registry,
+        requests, requirements=requirements, source_registry=source_registry
     )
 
     raw_batches = build_source_batches(requests)

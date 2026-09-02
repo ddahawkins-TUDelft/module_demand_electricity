@@ -1,6 +1,5 @@
 """Prepare electricity demand timeseries, aggregated to shapes."""
 
-import sys
 from contextlib import redirect_stderr
 from typing import TYPE_CHECKING, Any
 from warnings import warn

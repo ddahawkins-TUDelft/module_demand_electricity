@@ -198,38 +198,23 @@ def test_match_total_scaling_adds_auxiliary_periods() -> None:
     assert set(result) == {"scaled_source"}
     assert result["scaled_source"]["context"].tolist() == ["GBR", "ALB"]
 
+
 def test_auxiliary_temporal_filter_preserves_fully_available_request() -> None:
     """Check a provider covering the whole requirement is not clipped."""
     start = pd.Timestamp("2020-01-01", tz="UTC")
     end = pd.Timestamp("2020-02-01", tz="UTC")
 
     requests = pd.DataFrame(
-        {
-            "source": ["source_a"],
-            "context": ["AAA"],
-            "start": [start],
-            "end": [end],
-        }
+        {"source": ["source_a"], "context": ["AAA"], "start": [start], "end": [end]}
     )
 
-    requirements = pd.DataFrame(
-        {
-            "context": ["AAA"],
-            "start": [start],
-            "end": [end],
-        }
-    )
+    requirements = pd.DataFrame({"context": ["AAA"], "start": [start], "end": [end]})
 
     result = filter_source_requests_by_temporal_scope(
         requests,
         requirements=requirements,
         source_registry={
-            "source_a": {
-                "temporal_scope": {
-                    "start": "2019-01-01",
-                    "end": "2021-01-01",
-                }
-            }
+            "source_a": {"temporal_scope": {"start": "2019-01-01", "end": "2021-01-01"}}
         },
     )
 
@@ -256,11 +241,7 @@ def test_auxiliary_temporal_filter_clips_adjacent_providers() -> None:
     )
 
     requirements = pd.DataFrame(
-        {
-            "context": ["AAA"],
-            "start": [group_start],
-            "end": [group_end],
-        }
+        {"context": ["AAA"], "start": [group_start], "end": [group_end]}
     )
 
     result = filter_source_requests_by_temporal_scope(
@@ -268,16 +249,10 @@ def test_auxiliary_temporal_filter_clips_adjacent_providers() -> None:
         requirements=requirements,
         source_registry={
             "old_source": {
-                "temporal_scope": {
-                    "start": "2005-01-01",
-                    "end": "2019-01-01",
-                }
+                "temporal_scope": {"start": "2005-01-01", "end": "2019-01-01"}
             },
             "new_source": {
-                "temporal_scope": {
-                    "start": "2019-01-01",
-                    "end": "2026-01-01",
-                }
+                "temporal_scope": {"start": "2019-01-01", "end": "2026-01-01"}
             },
         },
     )
@@ -311,29 +286,17 @@ def test_auxiliary_temporal_filter_removes_non_overlapping_provider() -> None:
         }
     )
 
-    requirements = pd.DataFrame(
-        {
-            "context": ["AAA"],
-            "start": [start],
-            "end": [end],
-        }
-    )
+    requirements = pd.DataFrame({"context": ["AAA"], "start": [start], "end": [end]})
 
     result = filter_source_requests_by_temporal_scope(
         requests,
         requirements=requirements,
         source_registry={
             "old_source": {
-                "temporal_scope": {
-                    "start": "2005-01-01",
-                    "end": "2019-01-01",
-                }
+                "temporal_scope": {"start": "2005-01-01", "end": "2019-01-01"}
             },
             "current_source": {
-                "temporal_scope": {
-                    "start": "2019-01-01",
-                    "end": "2025-01-01",
-                }
+                "temporal_scope": {"start": "2019-01-01", "end": "2025-01-01"}
             },
         },
     )
@@ -357,13 +320,7 @@ def test_auxiliary_temporal_filter_rejects_coverage_gap() -> None:
         }
     )
 
-    requirements = pd.DataFrame(
-        {
-            "context": ["AAA"],
-            "start": [start],
-            "end": [end],
-        }
-    )
+    requirements = pd.DataFrame({"context": ["AAA"], "start": [start], "end": [end]})
 
     with pytest.raises(ValueError) as exc_info:
         filter_source_requests_by_temporal_scope(
@@ -371,16 +328,10 @@ def test_auxiliary_temporal_filter_rejects_coverage_gap() -> None:
             requirements=requirements,
             source_registry={
                 "old_source": {
-                    "temporal_scope": {
-                        "start": "2005-01-01",
-                        "end": "2019-01-01",
-                    }
+                    "temporal_scope": {"start": "2005-01-01", "end": "2019-01-01"}
                 },
                 "new_source": {
-                    "temporal_scope": {
-                        "start": "2019-02-01",
-                        "end": "2026-01-01",
-                    }
+                    "temporal_scope": {"start": "2019-02-01", "end": "2026-01-01"}
                 },
             },
         )

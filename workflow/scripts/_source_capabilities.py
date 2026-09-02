@@ -17,10 +17,7 @@ def as_utc(value: object) -> pd.Timestamp:
 
 
 def intersect_source_temporal_scope(
-    metadata: Mapping[str, Any],
-    *,
-    start: object,
-    end: object,
+    metadata: Mapping[str, Any], *, start: object, end: object
 ) -> tuple[pd.Timestamp, pd.Timestamp] | None:
     """Return the intersection of a request and one source's temporal scope."""
     temporal_scope = metadata.get("temporal_scope") or {}
@@ -44,10 +41,7 @@ def intersect_source_temporal_scope(
 
 
 def uncovered_temporal_intervals(
-    intervals: Sequence[tuple[object, object]],
-    *,
-    start: object,
-    end: object,
+    intervals: Sequence[tuple[object, object]], *, start: object, end: object
 ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
     """Return gaps in a required period not covered by any supplied interval."""
     required_start = as_utc(start)

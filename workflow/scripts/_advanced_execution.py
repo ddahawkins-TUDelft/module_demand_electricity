@@ -39,8 +39,7 @@ def build_source_batches(requests: pd.DataFrame) -> list[dict[str, object]]:
     batches: list[dict[str, object]] = []
 
     grouped = requests.groupby(
-        ["source", "start", "end", "group_start", "group_end"],
-        sort=False,
+        ["source", "start", "end", "group_start", "group_end"], sort=False
     )
 
     for (source, start, end, group_start, group_end), group in grouped:
@@ -137,15 +136,9 @@ def build_batch_id(
     if group_id is not None:
         batch_key_data["group_id"] = str(group_id)
 
-    batch_key = json.dumps(
-        batch_key_data,
-        sort_keys=True,
-        separators=(",", ":"),
-    )
+    batch_key = json.dumps(batch_key_data, sort_keys=True, separators=(",", ":"))
 
-    return hashlib.sha1(
-        batch_key.encode("utf-8")
-    ).hexdigest()[:16]
+    return hashlib.sha1(batch_key.encode("utf-8")).hexdigest()[:16]
 
 
 def index_batch_ids_by_source(

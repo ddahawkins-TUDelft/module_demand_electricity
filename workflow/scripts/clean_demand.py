@@ -36,16 +36,13 @@ def main(snakemake: Any) -> None:
         for source_name, path in zip(source_names, input_paths, strict=True)
     }
 
-    target_contexts = _read_target_contexts(
-        snakemake.input.target_plan
-    )
+    target_contexts = _read_target_contexts(snakemake.input.target_plan)
 
     config = build_tclean_config(snakemake.params.temporal_scope)
 
     sources = {
         source_name: data.reindex(
-            index=config.grid.target_index,
-            columns=target_contexts,
+            index=config.grid.target_index, columns=target_contexts
         )
         for source_name, data in sources.items()
     }

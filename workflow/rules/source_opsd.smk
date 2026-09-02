@@ -17,10 +17,12 @@ rule download_load_opsd:
         "../scripts/download_load_opsd.py"
 
 
-
 def target_opsd_countries(wildcards):
     """Return OPSD target countries for one shape."""
-    return target_source_contexts(wildcards,"opsd",)
+    return target_source_contexts(
+        wildcards,
+        "opsd",
+    )
 
 
 rule prepare_load_opsd:
@@ -56,11 +58,7 @@ rule prepare_auxiliary_load_opsd:
         load=rules.download_load_opsd.output.load,
         plan=auxiliary_acquisition_plan,
     output:
-        load=(
-            "<resources>/automatic/{shape}/"
-            "auxiliary/opsd/"
-            "{batch_id}.parquet"
-        ),
+        load=("<resources>/automatic/{shape}/" "auxiliary/opsd/" "{batch_id}.parquet"),
     log:
         "<logs>/{shape}/auxiliary/opsd/{batch_id}.log",
     conda:

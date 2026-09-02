@@ -111,9 +111,7 @@ def main(
     legend_rows = _build_legend_rows(
         metadata=legend_metadata,
         rank_colours=rank_colours,
-        available_width_px=(
-            PAGE_WIDTH_PX - PAGE_LEFT_MARGIN_PX - PAGE_RIGHT_MARGIN_PX
-        ),
+        available_width_px=(PAGE_WIDTH_PX - PAGE_LEFT_MARGIN_PX - PAGE_RIGHT_MARGIN_PX),
     )
 
     logger.info(
@@ -147,8 +145,7 @@ def main(
 def _new_figure(*, height_px: int) -> plt.Figure:
     """Create a figure from pixel dimensions."""
     return plt.figure(
-        figsize=(PAGE_WIDTH_PX / FIGURE_DPI, height_px / FIGURE_DPI),
-        dpi=FIGURE_DPI,
+        figsize=(PAGE_WIDTH_PX / FIGURE_DPI, height_px / FIGURE_DPI), dpi=FIGURE_DPI
     )
 
 
@@ -167,16 +164,10 @@ def _build_legend_rows(
     renderer = measurement_figure.canvas.get_renderer()
 
     line_height_px = _measure_text_px(
-        figure=measurement_figure,
-        renderer=renderer,
-        text="Ag",
+        figure=measurement_figure, renderer=renderer, text="Ag"
     )[1]
 
-    max_text_width_px = (
-        available_width_px
-        - LEGEND_SWATCH_WIDTH_PX
-        - LEGEND_TEXT_GAP_PX
-    )
+    max_text_width_px = available_width_px - LEGEND_SWATCH_WIDTH_PX - LEGEND_TEXT_GAP_PX
 
     items: list[dict[str, Any]] = []
 
@@ -192,18 +183,13 @@ def _build_legend_rows(
         )
 
         line_widths = [
-            _measure_text_px(
-                figure=measurement_figure,
-                renderer=renderer,
-                text=line,
-            )[0]
+            _measure_text_px(figure=measurement_figure, renderer=renderer, text=line)[0]
             for line in lines
         ]
 
         text_width_px = max(line_widths, default=0.0)
         text_height_px = (
-            len(lines) * line_height_px
-            + max(0, len(lines) - 1) * LEGEND_LINE_GAP_PX
+            len(lines) * line_height_px + max(0, len(lines) - 1) * LEGEND_LINE_GAP_PX
         )
 
         items.append(
@@ -212,9 +198,7 @@ def _build_legend_rows(
                 "colour": rank_colours[rank],
                 "lines": lines,
                 "width_px": (
-                    LEGEND_SWATCH_WIDTH_PX
-                    + LEGEND_TEXT_GAP_PX
-                    + text_width_px
+                    LEGEND_SWATCH_WIDTH_PX + LEGEND_TEXT_GAP_PX + text_width_px
                 ),
                 "height_px": max(LEGEND_SWATCH_HEIGHT_PX, text_height_px),
                 "line_height_px": line_height_px,
@@ -233,12 +217,7 @@ def _build_legend_rows(
         proposed_width_px = current_width_px + separator_px + item["width_px"]
 
         if current_items and proposed_width_px > available_width_px:
-            packed_rows.append(
-                {
-                    "items": current_items,
-                    "height_px": current_height_px,
-                }
-            )
+            packed_rows.append({"items": current_items, "height_px": current_height_px})
             current_items = []
             current_width_px = 0.0
             current_height_px = 0.0
@@ -249,31 +228,16 @@ def _build_legend_rows(
         current_height_px = max(current_height_px, item["height_px"])
 
     if current_items:
-        packed_rows.append(
-            {
-                "items": current_items,
-                "height_px": current_height_px,
-            }
-        )
+        packed_rows.append({"items": current_items, "height_px": current_height_px})
 
     return packed_rows
 
 
 def _measure_text_px(
-    *,
-    figure: plt.Figure,
-    renderer: Any,
-    text: str,
+    *, figure: plt.Figure, renderer: Any, text: str
 ) -> tuple[float, float]:
     """Measure one legend text line in rendered pixels."""
-    artist = figure.text(
-        0,
-        0,
-        text,
-        fontsize=LEGEND_FONT_SIZE,
-        ha="left",
-        va="bottom",
-    )
+    artist = figure.text(0, 0, text, fontsize=LEGEND_FONT_SIZE, ha="left", va="bottom")
     bounds = artist.get_window_extent(renderer=renderer)
     artist.remove()
 
@@ -281,11 +245,7 @@ def _measure_text_px(
 
 
 def _wrap_legend_label(
-    *,
-    label: str,
-    max_width_px: int,
-    figure: plt.Figure,
-    renderer: Any,
+    *, label: str, max_width_px: int, figure: plt.Figure, renderer: Any
 ) -> list[str]:
     """Wrap a legend label to the available rendered width."""
     words = label.split()
@@ -299,9 +259,7 @@ def _wrap_legend_label(
     for word in words[1:]:
         candidate = f"{current} {word}"
         candidate_width = _measure_text_px(
-            figure=figure,
-            renderer=renderer,
-            text=candidate,
+            figure=figure, renderer=renderer, text=candidate
         )[0]
 
         if candidate_width <= max_width_px:
@@ -320,10 +278,7 @@ def _wrap_legend_label(
 
     lines.extend(
         _split_oversized_legend_token(
-            token=current,
-            max_width_px=max_width_px,
-            figure=figure,
-            renderer=renderer,
+            token=current, max_width_px=max_width_px, figure=figure, renderer=renderer
         )
     )
 
@@ -331,19 +286,11 @@ def _wrap_legend_label(
 
 
 def _split_oversized_legend_token(
-    *,
-    token: str,
-    max_width_px: int,
-    figure: plt.Figure,
-    renderer: Any,
+    *, token: str, max_width_px: int, figure: plt.Figure, renderer: Any
 ) -> list[str]:
     """Split an unusually long unbroken token if it cannot fit on one line."""
     if (
-        _measure_text_px(
-            figure=figure,
-            renderer=renderer,
-            text=token,
-        )[0]
+        _measure_text_px(figure=figure, renderer=renderer, text=token)[0]
         <= max_width_px
     ):
         return [token]
@@ -353,11 +300,7 @@ def _split_oversized_legend_token(
 
     for character in token:
         candidate = f"{current}{character}"
-        width_px = _measure_text_px(
-            figure=figure,
-            renderer=renderer,
-            text=candidate,
-        )[0]
+        width_px = _measure_text_px(figure=figure, renderer=renderer, text=candidate)[0]
 
         if current and width_px > max_width_px:
             pieces.append(current)
@@ -379,13 +322,13 @@ def _legend_rows_height_px(rows: list[dict[str, Any]]) -> int:
     row_height = sum(float(row["height_px"]) for row in rows)
     gaps = LEGEND_ROW_GAP_PX * max(0, len(rows) - 1)
 
-    return int(round(LEGEND_PADDING_TOP_PX + row_height + gaps + LEGEND_PADDING_BOTTOM_PX))
+    return int(
+        round(LEGEND_PADDING_TOP_PX + row_height + gaps + LEGEND_PADDING_BOTTOM_PX)
+    )
 
 
 def _take_legend_rows(
-    rows: list[dict[str, Any]],
-    *,
-    available_height_px: int,
+    rows: list[dict[str, Any]], *, available_height_px: int
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Take as many complete legend rows as fit in the available height."""
     if not rows or available_height_px <= 0:
@@ -401,7 +344,7 @@ def _take_legend_rows(
 
         selected.append(row)
 
-    return selected, rows[len(selected):]
+    return selected, rows[len(selected) :]
 
 
 def _write_timeline_pdf(
@@ -450,10 +393,7 @@ def _write_timeline_pdf(
 
             if is_final_country_page and remaining_legend_rows:
                 available_legend_height_px = max(
-                    0,
-                    REFERENCE_PAGE_HEIGHT_PX
-                    - base_height_px
-                    - PANEL_LEGEND_GAP_PX,
+                    0, REFERENCE_PAGE_HEIGHT_PX - base_height_px - PANEL_LEGEND_GAP_PX
                 )
 
                 page_legend_rows, remaining_legend_rows = _take_legend_rows(
@@ -495,9 +435,7 @@ def _write_timeline_pdf(
 
             if page_legend_rows:
                 _draw_legend_rows(
-                    figure=figure,
-                    rows=page_legend_rows,
-                    top_px=legend_top_px,
+                    figure=figure, rows=page_legend_rows, top_px=legend_top_px
                 )
 
             pdf.savefig(figure)
@@ -515,8 +453,7 @@ def _write_timeline_pdf(
             )
 
             page_rows, new_remaining_rows = _take_legend_rows(
-                remaining_legend_rows,
-                available_height_px=available_height_px,
+                remaining_legend_rows, available_height_px=available_height_px
             )
 
             if not page_rows:
@@ -552,9 +489,7 @@ def _write_timeline_pdf(
             )
 
             _draw_legend_rows(
-                figure=figure,
-                rows=page_rows,
-                top_px=LEGEND_PAGE_TOP_MARGIN_PX,
+                figure=figure, rows=page_rows, top_px=LEGEND_PAGE_TOP_MARGIN_PX
             )
 
             pdf.savefig(figure)
@@ -564,10 +499,7 @@ def _write_timeline_pdf(
 
 
 def _draw_legend_rows(
-    *,
-    figure: plt.Figure,
-    rows: list[dict[str, Any]],
-    top_px: int,
+    *, figure: plt.Figure, rows: list[dict[str, Any]], top_px: int
 ) -> None:
     """Draw packed legend rows directly in figure coordinates."""
     figure_height_px = int(round(figure.get_figheight() * FIGURE_DPI))
@@ -588,18 +520,14 @@ def _draw_legend_rows(
             item_top_px = y_px + (row_height_px - item_height_px) / 2
 
             swatch_top_px = item_top_px + max(
-                0.0,
-                (item_height_px - LEGEND_SWATCH_HEIGHT_PX) / 2,
+                0.0, (item_height_px - LEGEND_SWATCH_HEIGHT_PX) / 2
             )
             swatch_bottom_fraction = 1.0 - (
                 (swatch_top_px + LEGEND_SWATCH_HEIGHT_PX) / figure_height_px
             )
 
             swatch = Rectangle(
-                (
-                    x_px / PAGE_WIDTH_PX,
-                    swatch_bottom_fraction,
-                ),
+                (x_px / PAGE_WIDTH_PX, swatch_bottom_fraction),
                 LEGEND_SWATCH_WIDTH_PX / PAGE_WIDTH_PX,
                 LEGEND_SWATCH_HEIGHT_PX / figure_height_px,
                 transform=figure.transFigure,
@@ -630,6 +558,7 @@ def _draw_legend_rows(
 
         y_px += row_height_px + LEGEND_ROW_GAP_PX
 
+
 def _validate_alignment(
     *,
     demand: pd.DataFrame,
@@ -658,8 +587,7 @@ def _validate_cleaning_method_rank_mapping(
 ) -> None:
     """Require provenance strings and numeric codes to describe the same methods."""
     method_to_rank = (
-        metadata
-        .set_index("cleaning_method")["cleaning_method_rank"]
+        metadata.set_index("cleaning_method")["cleaning_method_rank"]
         .astype(int)
         .to_dict()
     )
@@ -678,25 +606,16 @@ def _validate_cleaning_method_rank_mapping(
             f"metadata: {unknown_methods!r}."
         )
 
-    expected = cleaning_method.apply(
-        lambda column: column.map(method_to_rank)
-    )
+    expected = cleaning_method.apply(lambda column: column.map(method_to_rank))
 
-    actual = cleaning_method_rank.apply(
-        pd.to_numeric,
-        errors="coerce",
-    )
+    actual = cleaning_method_rank.apply(pd.to_numeric, errors="coerce")
 
-    mismatch = expected.ne(actual) & ~(
-        expected.isna() & actual.isna()
-    )
+    mismatch = expected.ne(actual) & ~(expected.isna() & actual.isna())
 
     if not mismatch.any().any():
         return
 
-    row_index, column_index = np.argwhere(
-        mismatch.to_numpy()
-    )[0]
+    row_index, column_index = np.argwhere(mismatch.to_numpy())[0]
 
     timestamp = cleaning_method.index[row_index]
     country = cleaning_method.columns[column_index]
@@ -833,8 +752,7 @@ def _plot_country_page(
     )
 
     background_norm = BoundaryNorm(
-        np.arange(-0.5, background_cmap.N + 0.5, 1),
-        background_cmap.N,
+        np.arange(-0.5, background_cmap.N + 0.5, 1), background_cmap.N
     )
 
     axis.imshow(
@@ -894,13 +812,7 @@ def _plot_country_page(
         spine.set_visible(False)
 
     for boundary in row_boundaries:
-        summary_axis.axhline(
-            boundary,
-            linewidth=0.4,
-            alpha=0.35,
-            color="0.5",
-            zorder=0,
-        )
+        summary_axis.axhline(boundary, linewidth=0.4, alpha=0.35, color="0.5", zorder=0)
 
     summary_axis.axvline(0.0, linewidth=0.6, color="0.7")
 
@@ -935,6 +847,7 @@ def _plot_country_page(
         legend_top_px = page_height_px - PAGE_BOTTOM_MARGIN_PX
 
     return figure, axis, summary_axis, legend_top_px
+
 
 def _add_normalised_demand_traces(
     *,
@@ -1214,8 +1127,7 @@ def _build_cleaning_method_metadata(
                 "cleaning_method": f"observed_{source_name}",
                 "cleaning_method_rank": rank,
                 "label": (
-                    f"[Src.] "
-                    f"{_format_source_name(source_name, source_registry)}"
+                    f"[Src.] {_format_source_name(source_name, source_registry)}"
                 ),
                 "category": "observed",
             }
@@ -1278,19 +1190,13 @@ def _filter_legend_metadata(
     for frame in (basic_cleaning_method, cleaning_method):
         values = pd.unique(frame.to_numpy().ravel())
 
-        used_methods.update(
-            str(value)
-            for value in values
-            if pd.notna(value)
-        )
+        used_methods.update(str(value) for value in values if pd.notna(value))
 
     # Keep missing in the legend as the fixed diagnostic reference colour,
     # even when this particular result is complete.
     used_methods.add("missing")
 
-    return metadata.loc[
-        metadata["cleaning_method"].isin(used_methods)
-    ].copy()
+    return metadata.loc[metadata["cleaning_method"].isin(used_methods)].copy()
 
 
 def _format_source_name(

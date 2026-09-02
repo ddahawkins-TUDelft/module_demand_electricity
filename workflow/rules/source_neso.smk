@@ -59,7 +59,10 @@ rule download_load_neso_year:
 
 def target_neso_countries(wildcards):
     """Return NESO target countries for one shape."""
-    return target_source_contexts(wildcards,"neso",)
+    return target_source_contexts(
+        wildcards,
+        "neso",
+    )
 
 
 rule prepare_load_neso:
@@ -89,15 +92,13 @@ rule prepare_load_neso:
     script:
         "../scripts/prepare_load_neso.py"
 
+
 rule prepare_auxiliary_load_neso:
     input:
         plan=auxiliary_acquisition_plan,
         annual_files=auxiliary_neso_raw_files,
     output:
-        load=(
-            "<resources>/automatic/{shape}/"
-            "auxiliary/neso/{batch_id}.parquet"
-        ),
+        load=("<resources>/automatic/{shape}/" "auxiliary/neso/{batch_id}.parquet"),
     log:
         "<logs>/{shape}/auxiliary/neso/{batch_id}.log",
     conda:

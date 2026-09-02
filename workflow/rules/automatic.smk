@@ -1,6 +1,5 @@
 """Rules used for generic automatic resources and validation."""
 
-
 import json
 
 
@@ -40,14 +39,9 @@ rule validate_gap_filling_config_semantics:
 checkpoint plan_target_data:
     input:
         shapes="<shapes>",
-        temporal_validation=(
-            "<resources>/automatic/temporal_config_validation.json"
-        ),
+        temporal_validation=("<resources>/automatic/temporal_config_validation.json"),
     output:
-        plan=(
-            "<resources>/automatic/{shape}/"
-            "target_data_plan.json"
-        ),
+        plan=("<resources>/automatic/{shape}/" "target_data_plan.json"),
     conda:
         "../envs/module.yaml"
     params:
@@ -91,9 +85,7 @@ def target_source_temporal_scope(wildcards, source_name):
     temporal_scope = plan["source_temporal_scopes"].get(source_name)
 
     if temporal_scope is None:
-        raise ValueError(
-            f"Source {source_name!r} has no active target temporal scope."
-        )
+        raise ValueError(f"Source {source_name!r} has no active target temporal scope.")
 
     return temporal_scope
 

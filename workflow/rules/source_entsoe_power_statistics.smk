@@ -64,22 +64,19 @@ rule download_load_entsoe_power_statistics_year:
 
 def target_entsoe_power_statistics_countries(wildcards):
     """Return Power Statistics target countries for one shape."""
-    return target_source_contexts(wildcards,"entsoe_power_statistics",)
+    return target_source_contexts(
+        wildcards,
+        "entsoe_power_statistics",
+    )
 
 
 rule prepare_load_entsoe_power_statistics:
     input:
-        validation=(
-            "<resources>/automatic/"
-            "temporal_config_validation.json"
-        ),
+        validation=("<resources>/automatic/" "temporal_config_validation.json"),
         target_plan=target_data_plan,
         annual_files=entsoe_power_statistics_raw_files,
     output:
-        load=(
-            "<resources>/automatic/{shape}/"
-            "load_entsoe_power_statistics.parquet"
-        ),
+        load=("<resources>/automatic/{shape}/" "load_entsoe_power_statistics.parquet"),
     log:
         "<logs>/{shape}/prepare_load_entsoe_power_statistics.log",
     conda:
@@ -112,9 +109,7 @@ rule prepare_auxiliary_load_entsoe_power_statistics:
             "{batch_id}.parquet"
         ),
     log:
-        "<logs>/{shape}/auxiliary/"
-        "entsoe_power_statistics/"
-        "prepare_{batch_id}.log",
+        "<logs>/{shape}/auxiliary/" "entsoe_power_statistics/" "prepare_{batch_id}.log",
     conda:
         "../envs/module.yaml"
     params:

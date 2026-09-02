@@ -3,11 +3,7 @@ def configured_load_inputs(wildcards):
     plan = read_target_data_plan(wildcards)
 
     return [
-        (
-            "<resources>/automatic/"
-            f"{wildcards.shape}/"
-            f"load_{source_name}.parquet"
-        )
+        ("<resources>/automatic/" f"{wildcards.shape}/" f"load_{source_name}.parquet")
         for source_name in plan["active_sources"]
     ]
 
@@ -25,26 +21,15 @@ rule clean_demand:
         target_plan=target_data_plan,
         validation="<resources>/automatic/gap_filling_config_validation.json",
     output:
-        demand=(
-            "<resources>/automatic/{shape}/"
-            "load_basic_cleaned.parquet"
-        ),
-        data_source=(
-            "<resources>/automatic/{shape}/"
-            "load_data_source.parquet"
-        ),
+        demand=("<resources>/automatic/{shape}/" "load_basic_cleaned.parquet"),
+        data_source=("<resources>/automatic/{shape}/" "load_data_source.parquet"),
         cleaning_method=(
-            "<resources>/automatic/{shape}/"
-            "load_cleaning_method.parquet"
+            "<resources>/automatic/{shape}/" "load_cleaning_method.parquet"
         ),
         cleaning_method_rank=(
-            "<resources>/automatic/{shape}/"
-            "load_cleaning_method_rank.parquet"
+            "<resources>/automatic/{shape}/" "load_cleaning_method_rank.parquet"
         ),
-        gap_report=(
-            "<resources>/automatic/{shape}/"
-            "load_gap_report.parquet"
-        ),
+        gap_report=("<resources>/automatic/{shape}/" "load_gap_report.parquet"),
     log:
         "<logs>/{shape}/clean_demand.log",
     conda:
@@ -62,21 +47,15 @@ rule clean_demand:
 rule plot_cleaning_timeline:
     input:
         target_plan=target_data_plan,
-        demand=(
-            "<resources>/automatic/{shape}/"
-            "load_cleaned.parquet"
-        ),
+        demand=("<resources>/automatic/{shape}/" "load_cleaned.parquet"),
         basic_cleaning_method=(
-            "<resources>/automatic/{shape}/"
-            "load_cleaning_method.parquet"
+            "<resources>/automatic/{shape}/" "load_cleaning_method.parquet"
         ),
         cleaning_method=(
-            "<resources>/automatic/{shape}/"
-            "load_final_cleaning_method.parquet"
+            "<resources>/automatic/{shape}/" "load_final_cleaning_method.parquet"
         ),
         cleaning_method_rank=(
-            "<resources>/automatic/{shape}/"
-            "load_final_cleaning_method_rank.parquet"
+            "<resources>/automatic/{shape}/" "load_final_cleaning_method_rank.parquet"
         ),
     output:
         plot="<results>/{shape}/load_cleaning_timeline.pdf",

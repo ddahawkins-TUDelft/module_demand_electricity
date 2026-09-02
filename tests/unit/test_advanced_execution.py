@@ -45,16 +45,10 @@ def test_batch_id_is_compact_and_independent_of_country_order() -> None:
     end = pd.Timestamp("2020-02-01", tz="UTC")
 
     first = build_batch_id(
-        source="entsoe",
-        start=start,
-        end=end,
-        countries=["ALB", "GRC"],
+        source="entsoe", start=start, end=end, countries=["ALB", "GRC"]
     )
     second = build_batch_id(
-        source="entsoe",
-        start=start,
-        end=end,
-        countries=["GRC", "ALB"],
+        source="entsoe", start=start, end=end, countries=["GRC", "ALB"]
     )
 
     assert first == second
@@ -67,18 +61,8 @@ def test_batch_id_depends_on_source() -> None:
     start = pd.Timestamp("2020-01-01", tz="UTC")
     end = pd.Timestamp("2020-02-01", tz="UTC")
 
-    entsoe = build_batch_id(
-        source="entsoe",
-        start=start,
-        end=end,
-        countries=["ALB"],
-    )
-    opsd = build_batch_id(
-        source="opsd",
-        start=start,
-        end=end,
-        countries=["ALB"],
-    )
+    entsoe = build_batch_id(source="entsoe", start=start, end=end, countries=["ALB"])
+    opsd = build_batch_id(source="opsd", start=start, end=end, countries=["ALB"])
 
     assert entsoe != opsd
 
@@ -121,9 +105,7 @@ def test_batch_indexes_preserve_compiled_ids() -> None:
     assert set(by_source) == {"entsoe", "opsd"}
     assert len(by_source["entsoe"]) == 1
     assert len(by_source["opsd"]) == 1
-    assert list(by_group.values())[0] == [
-        batch["batch_id"] for batch in batches
-    ]
+    assert list(by_group.values())[0] == [batch["batch_id"] for batch in batches]
 
 
 def test_serialize_batch_produces_json_safe_values() -> None:
@@ -162,25 +144,16 @@ def test_load_execution_plan_and_get_batch(tmp_path) -> None:
     path.write_text(json.dumps(plan), encoding="utf-8")
 
     loaded = load_execution_plan(path)
-    selected = get_batch(
-        loaded,
-        batch_id=batch["batch_id"],
-        source=batch["source"],
-    )
+    selected = get_batch(loaded, batch_id=batch["batch_id"], source=batch["source"])
 
     assert selected == batch
 
 
 def test_get_batch_requires_exactly_one_match() -> None:
     """Test get batch requires a single match."""
-    with pytest.raises(
-        ValueError,
-        match="Expected exactly one auxiliary batch",
-    ):
-        get_batch(
-            empty_execution_plan(),
-            batch_id="missing",
-        )
+    with pytest.raises(ValueError, match="Expected exactly one auxiliary batch"):
+        get_batch(empty_execution_plan(), batch_id="missing")
+
 
 def test_clipped_batches_share_logical_group() -> None:
     """Check provider slices retain one logical auxiliary period."""
@@ -209,10 +182,7 @@ def test_clipped_batches_share_logical_group() -> None:
     assert batches[1]["start"] == boundary
     assert batches[1]["end"] == group_end
 
-    expected_group_id = build_group_id(
-        start=group_start,
-        end=group_end,
-    )
+    expected_group_id = build_group_id(start=group_start, end=group_end)
 
     assert batches[0]["group_id"] == expected_group_id
     assert batches[1]["group_id"] == expected_group_id
@@ -220,19 +190,12 @@ def test_clipped_batches_share_logical_group() -> None:
     by_group = index_batch_ids_by_group(batches)
 
     assert list(by_group) == [expected_group_id]
-    assert by_group[expected_group_id] == [
-        batch["batch_id"] for batch in batches
-    ]
+    assert by_group[expected_group_id] == [batch["batch_id"] for batch in batches]
 
     source_periods = pd.DataFrame(
-        {
-            "context": ["AAA"],
-            "start": [group_start],
-            "end": [group_end],
-        }
+        {"context": ["AAA"], "start": [group_start], "end": [group_end]}
     )
 
-    assert resolve_required_group_ids(
-        batches,
-        source_periods=source_periods,
-    ) == [expected_group_id]
+    assert resolve_required_group_ids(batches, source_periods=source_periods) == [
+        expected_group_id
+    ]
