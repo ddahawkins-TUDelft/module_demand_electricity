@@ -7,7 +7,6 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-
 # workflow/scripts is not a Python package, so expose it for direct imports.
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = ROOT / "workflow" / "scripts"

@@ -189,65 +189,137 @@ def filter_source_requests_by_temporal_scope(
     requirements: pd.DataFrame,
     source_registry: Mapping[str, Mapping[str, Any]],
 ) -> pd.DataFrame:
-    """Remove auxiliary source requests outside provider availability."""
+    """Clip auxiliary source requests to provider temporal availability."""
     if requests.empty:
         return requests.copy()
 
-    keep: list[bool] = []
+    output_columns = list(requests.columns)
+
+    for column in ("group_start", "group_end"):
+        if column not in output_columns:
+            output_columns.append(column)
+
+    clipped_rows: list[dict[str, object]] = []
 
     for request in requests.itertuples(index=False):
+        row = request._asdict()
+
         metadata = source_registry[str(request.source)]
         temporal_scope = metadata.get("temporal_scope") or {}
-
-        source_start = temporal_scope.get("start")
-        source_end = temporal_scope.get("end")
 
         request_start = pd.to_datetime(request.start, utc=True)
         request_end = pd.to_datetime(request.end, utc=True)
 
-        overlaps = True
+        effective_start = request_start
+        effective_end = request_end
+
+        source_start = temporal_scope.get("start")
+        source_end = temporal_scope.get("end")
 
         if source_start is not None:
-            overlaps &= request_end > pd.to_datetime(
-                source_start,
-                utc=True,
+            effective_start = max(
+                effective_start,
+                pd.to_datetime(source_start, utc=True),
             )
 
         if source_end is not None:
-            overlaps &= request_start < pd.to_datetime(
-                source_end,
-                utc=True,
+            effective_end = min(
+                effective_end,
+                pd.to_datetime(source_end, utc=True),
             )
 
-        keep.append(overlaps)
+        if effective_start >= effective_end:
+            continue
 
-    filtered = requests.loc[keep].reset_index(drop=True)
+        row["group_start"] = request_start
+        row["group_end"] = request_end
+        row["start"] = effective_start
+        row["end"] = effective_end
+
+        clipped_rows.append(row)
+
+    filtered = pd.DataFrame(clipped_rows, columns=output_columns)
 
     required_periods = requirements[
         ["context", "start", "end"]
     ].drop_duplicates()
 
-    covered_periods = filtered[
-        ["context", "start", "end"]
-    ].drop_duplicates()
+    uncovered: list[dict[str, object]] = []
 
-    coverage = required_periods.merge(
-        covered_periods,
-        on=["context", "start", "end"],
-        how="left",
-        indicator=True,
-    )
+    for requirement in required_periods.itertuples(index=False):
+        context = str(requirement.context)
+        required_start = pd.to_datetime(requirement.start, utc=True)
+        required_end = pd.to_datetime(requirement.end, utc=True)
 
-    uncovered = coverage.loc[
-        coverage["_merge"] == "left_only",
-        ["context", "start", "end"],
-    ]
+        candidates = filtered.loc[
+            (filtered["context"] == requirement.context)
+            & (filtered["group_start"] == required_start)
+            & (filtered["group_end"] == required_end)
+        ]
 
-    if not uncovered.empty:
+        gaps = _uncovered_temporal_intervals(
+            candidates[["start", "end"]],
+            start=required_start,
+            end=required_end,
+        )
+
+        uncovered.extend(
+            {
+                "context": context,
+                "start": gap_start.isoformat(),
+                "end": gap_end.isoformat(),
+            }
+            for gap_start, gap_end in gaps
+        )
+
+    if uncovered:
         raise ValueError(
-            "No configured auxiliary source overlaps the declared "
-            "temporal scope for required context-period(s): "
-            f"{uncovered.to_dict(orient='records')}."
+            "Configured auxiliary sources do not provide complete "
+            "temporal coverage for required context-period(s): "
+            f"{uncovered}."
         )
 
     return filtered
+
+
+def _uncovered_temporal_intervals(
+    intervals: pd.DataFrame,
+    *,
+    start: object,
+    end: object,
+) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
+    """Return gaps in one required period not covered by source intervals."""
+    required_start = pd.to_datetime(start, utc=True)
+    required_end = pd.to_datetime(end, utc=True)
+
+    covered_intervals = sorted(
+        (
+            max(pd.to_datetime(row.start, utc=True), required_start),
+            min(pd.to_datetime(row.end, utc=True), required_end),
+        )
+        for row in intervals.itertuples(index=False)
+        if (
+            pd.to_datetime(row.start, utc=True) < required_end
+            and pd.to_datetime(row.end, utc=True) > required_start
+        )
+    )
+
+    gaps: list[tuple[pd.Timestamp, pd.Timestamp]] = []
+    cursor = required_start
+
+    for interval_start, interval_end in covered_intervals:
+        if interval_end <= cursor:
+            continue
+
+        if interval_start > cursor:
+            gaps.append((cursor, interval_start))
+
+        cursor = max(cursor, interval_end)
+
+        if cursor >= required_end:
+            break
+
+    if cursor < required_end:
+        gaps.append((cursor, required_end))
+
+    return gaps

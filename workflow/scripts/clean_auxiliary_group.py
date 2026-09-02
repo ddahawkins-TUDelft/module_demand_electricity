@@ -26,17 +26,23 @@ def main(snakemake: Any) -> None:
     if not batches:
         raise ValueError(f"Auxiliary group {group_id!r} contains no source batches.")
 
-    starts = {pd.Timestamp(batch["start"]) for batch in batches}
+    group_starts = {
+        pd.Timestamp(batch.get("group_start", batch["start"]))
+        for batch in batches
+    }
 
-    ends = {pd.Timestamp(batch["end"]) for batch in batches}
+    group_ends = {
+        pd.Timestamp(batch.get("group_end", batch["end"]))
+        for batch in batches
+    }
 
-    if len(starts) != 1 or len(ends) != 1:
+    if len(group_starts) != 1 or len(group_ends) != 1:
         raise ValueError(
-            f"Auxiliary group {group_id!r} contains inconsistent batch periods."
+            f"Auxiliary group {group_id!r} contains inconsistent logical periods."
         )
 
-    group_start = next(iter(starts))
-    group_end = next(iter(ends))
+    group_start = next(iter(group_starts))
+    group_end = next(iter(group_ends))
 
     grid = TimeGrid(
         start=group_start, end=group_end, frequency=(snakemake.params.frequency)
@@ -72,7 +78,10 @@ def main(snakemake: Any) -> None:
     )
 
     sources = {
-        source_name: data.reindex(columns=contexts)
+        source_name: data.reindex(
+            index=grid.target_index,
+            columns=contexts,
+        )
         for source_name, data in sources.items()
     }
 

@@ -10,7 +10,7 @@ from typing import Any
 
 import pandas as pd
 
-EXECUTION_PLAN_VERSION = 1
+EXECUTION_PLAN_VERSION = 2
 
 
 def build_source_batches(requests: pd.DataFrame) -> list[dict[str, object]]:
@@ -28,23 +28,48 @@ def build_source_batches(requests: pd.DataFrame) -> list[dict[str, object]]:
             f"columns: {sorted(missing_columns)}."
         )
 
+    requests = requests.copy()
+
+    if "group_start" not in requests.columns:
+        requests["group_start"] = requests["start"]
+
+    if "group_end" not in requests.columns:
+        requests["group_end"] = requests["end"]
+
     batches: list[dict[str, object]] = []
 
-    grouped = requests.groupby(["source", "start", "end"], sort=False)
+    grouped = requests.groupby(
+        ["source", "start", "end", "group_start", "group_end"],
+        sort=False,
+    )
 
-    for (source, start, end), group in grouped:
+    for (source, start, end, group_start, group_end), group in grouped:
         start = pd.Timestamp(start)
         end = pd.Timestamp(end)
+        group_start = pd.Timestamp(group_start)
+        group_end = pd.Timestamp(group_end)
 
         if end <= start:
             raise ValueError("Auxiliary batch end must be later than its start.")
 
+        if group_end <= group_start:
+            raise ValueError("Auxiliary group end must be later than its start.")
+
+        if start < group_start or end > group_end:
+            raise ValueError(
+                "Auxiliary provider batch must lie within its logical group period."
+            )
+
         countries = sorted(group["context"].drop_duplicates().tolist())
 
-        group_id = build_group_id(start=start, end=end)
+        group_id = build_group_id(start=group_start, end=group_end)
 
         batch_id = build_batch_id(
-            source=str(source), start=start, end=end, countries=countries
+            source=str(source),
+            start=start,
+            end=end,
+            countries=countries,
+            group_id=group_id,
         )
 
         batches.append(
@@ -54,6 +79,8 @@ def build_source_batches(requests: pd.DataFrame) -> list[dict[str, object]]:
                 "source": str(source),
                 "start": start,
                 "end": end,
+                "group_start": group_start,
+                "group_end": group_end,
                 "countries": countries,
             }
         )
@@ -65,9 +92,14 @@ def serialize_batch(batch: Mapping[str, object]) -> dict[str, object]:
     """Convert one auxiliary batch to JSON-compatible values."""
     start = pd.Timestamp(batch["start"])
     end = pd.Timestamp(batch["end"])
+    group_start = pd.Timestamp(batch.get("group_start", start))
+    group_end = pd.Timestamp(batch.get("group_end", end))
 
     if end <= start:
         raise ValueError("Auxiliary batch end must be later than its start.")
+
+    if group_end <= group_start:
+        raise ValueError("Auxiliary group end must be later than its start.")
 
     final_included_time = end - pd.Timedelta(nanoseconds=1)
 
@@ -75,6 +107,8 @@ def serialize_batch(batch: Mapping[str, object]) -> dict[str, object]:
         **batch,
         "start": start.isoformat(),
         "end": end.isoformat(),
+        "group_start": group_start.isoformat(),
+        "group_end": group_end.isoformat(),
         "years": list(range(start.year, final_included_time.year + 1)),
     }
 
@@ -85,16 +119,26 @@ def build_group_id(*, start: pd.Timestamp, end: pd.Timestamp) -> str:
 
 
 def build_batch_id(
-    *, source: str, start: pd.Timestamp, end: pd.Timestamp, countries: Sequence[str]
+    *,
+    source: str,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+    countries: Sequence[str],
+    group_id: str | None = None,
 ) -> str:
     """Build a compact deterministic identifier for one provider batch."""
+    batch_key_data = {
+        "source": str(source),
+        "start": pd.Timestamp(start).isoformat(),
+        "end": pd.Timestamp(end).isoformat(),
+        "countries": sorted(str(country) for country in countries),
+    }
+
+    if group_id is not None:
+        batch_key_data["group_id"] = str(group_id)
+
     batch_key = json.dumps(
-        {
-            "source": str(source),
-            "start": pd.Timestamp(start).isoformat(),
-            "end": pd.Timestamp(end).isoformat(),
-            "countries": sorted(str(country) for country in countries),
-        },
+        batch_key_data,
         sort_keys=True,
         separators=(",", ":"),
     )
@@ -162,8 +206,8 @@ def resolve_required_group_ids(
             for batch in batches
             if (
                 period.context in batch["countries"]
-                and pd.Timestamp(batch["start"]) <= start
-                and pd.Timestamp(batch["end"]) >= end
+                and pd.Timestamp(batch.get("group_start", batch["start"])) <= start
+                and pd.Timestamp(batch.get("group_end", batch["end"])) >= end
             )
         }
 
