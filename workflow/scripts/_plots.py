@@ -24,6 +24,8 @@ def plot_national_profiles(df: pd.DataFrame):
     n_profiles = df.shape[1]
 
     fig, axs = plt.subplots(1, n_profiles, figsize=(17, 6))
+    if len(profiles_GW.columns) == 1:
+        axs = [axs]
     fig.subplots_adjust(wspace=0)
 
     for ax, column in zip(axs, profiles_GW.columns):
