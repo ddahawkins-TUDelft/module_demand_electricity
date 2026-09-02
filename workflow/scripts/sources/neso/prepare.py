@@ -16,7 +16,9 @@ def add_utc_timestamps(data: pd.DataFrame) -> pd.DataFrame:
     prepared = data.copy()
 
     prepared["SETTLEMENT_DATE"] = pd.to_datetime(
-        prepared["SETTLEMENT_DATE"], errors="raise"
+        prepared["SETTLEMENT_DATE"],
+        format="mixed",
+        errors="raise",
     ).dt.normalize()
 
     prepared["SETTLEMENT_PERIOD"] = pd.to_numeric(
