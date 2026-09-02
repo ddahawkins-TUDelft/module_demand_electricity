@@ -1,5 +1,6 @@
 """Combine and basic-clean prepared electricity-demand sources."""
 
+import json
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -32,6 +33,15 @@ def main(snakemake: Any) -> None:
     sources = {
         source_name: _read_prepared_source(path)
         for source_name, path in zip(source_names, input_paths, strict=True)
+    }
+
+    target_contexts = _read_target_contexts(
+        snakemake.input.target_plan
+    )
+
+    sources = {
+        source_name: data.reindex(columns=target_contexts)
+        for source_name, data in sources.items()
     }
 
     config = build_tclean_config(snakemake.params.temporal_scope)
@@ -91,6 +101,14 @@ def _read_prepared_source(path: str | Path) -> pd.DataFrame:
     data.index.name = "timestamp"
 
     return data
+
+
+def _read_target_contexts(path: str | Path) -> list[str]:
+    """Read the planned target contexts for one shape."""
+    with open(path, encoding="utf-8") as file:
+        plan = json.load(file)
+
+    return [str(context) for context in plan["target_contexts"]]
 
 
 def _log_source_counts(data_source: pd.DataFrame) -> None:

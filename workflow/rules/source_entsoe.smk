@@ -10,19 +10,28 @@ def entsoe_annual_files(countries, years):
     ]
 
 
-def entsoe_raw_files(_wildcards):
-    """Return ENTSO-E country-year files required by the configured period."""
+def entsoe_raw_files(wildcards):
+    """Return ENTSO-E country-year files required for one target shape."""
+    plan = read_target_data_plan(wildcards)
+
+    countries = plan["source_contexts"].get("entsoe", [])
+
     years = years_for_period(
         config["temporal_scope"]["start"],
         config["temporal_scope"]["end"],
     )
 
-    return entsoe_annual_files(internal["load_entsoe"]["countries"], years)
+    return entsoe_annual_files(countries, years)
+
+
+def target_entsoe_countries(wildcards):
+    """Return ENTSO-E target countries for one shape."""
+    return target_source_contexts(wildcards, "entsoe")
 
 
 def auxiliary_entsoe_raw_files(wildcards):
     """Return ENTSO-E country-year files required by one auxiliary batch."""
-    plan = _read_auxiliary_plan()
+    plan = _read_auxiliary_plan(wildcards)
 
     batch = next(
         batch
@@ -64,11 +73,12 @@ rule download_load_entsoe_country_year:
 rule prepare_load_entsoe:
     input:
         validation="<resources>/automatic/temporal_config_validation.json",
+        target_plan=target_data_plan,
         annual_files=entsoe_raw_files,
     output:
-        load="<resources>/automatic/load_entsoe.parquet",
+        load="<resources>/automatic/{shape}/load_entsoe.parquet",
     log:
-        "<logs>/prepare_load_entsoe.log",
+        "<logs>/{shape}/prepare_load_entsoe.log",
     localrule: True
     conda:
         "../envs/module.yaml"
@@ -76,7 +86,7 @@ rule prepare_load_entsoe:
         temporal_start=config["temporal_scope"]["start"],
         temporal_end=config["temporal_scope"]["end"],
         frequency=config["temporal_scope"]["frequency"],
-        country_codes=internal["load_entsoe"]["countries"],
+        country_codes=target_entsoe_countries,
     message:
         "Prepare electricity load from ENTSOE."
     script:
@@ -88,9 +98,13 @@ rule prepare_auxiliary_load_entsoe:
         plan=auxiliary_acquisition_plan,
         annual_files=auxiliary_entsoe_raw_files,
     output:
-        load=("<resources>/automatic/" "auxiliary/entsoe/" "{batch_id}.parquet"),
+        load=(
+            "<resources>/automatic/{shape}/"
+            "auxiliary/entsoe/"
+            "{batch_id}.parquet"
+        ),
     log:
-        ("<logs>/auxiliary/" "entsoe/prepare_{batch_id}.log"),
+        "<logs>/{shape}/auxiliary/entsoe/prepare_{batch_id}.log",
     conda:
         "../envs/module.yaml"
     params:

@@ -1,27 +1,56 @@
-def configured_load_inputs(_wildcards):
-    """Return prepared demand files for configured sources."""
+def configured_load_inputs(wildcards):
+    """Return prepared demand files for active target sources."""
+    plan = read_target_data_plan(wildcards)
+
     return [
-        ("<resources>/automatic/" f"load_{source_name}.parquet")
-        for source_name in config["load_sources"]
+        (
+            "<resources>/automatic/"
+            f"{wildcards.shape}/"
+            f"load_{source_name}.parquet"
+        )
+        for source_name in plan["active_sources"]
     ]
+
+
+def active_load_sources(wildcards):
+    """Return active demand sources for one target shape."""
+    plan = read_target_data_plan(wildcards)
+
+    return plan["active_sources"]
 
 
 rule clean_demand:
     input:
         load_inputs=configured_load_inputs,
+        target_plan=target_data_plan,
         validation="<resources>/automatic/gap_filling_config_validation.json",
     output:
-        demand=("<resources>/automatic/load_basic_cleaned.parquet"),
-        data_source=("<resources>/automatic/load_data_source.parquet"),
-        cleaning_method=("<resources>/automatic/load_cleaning_method.parquet"),
-        cleaning_method_rank=("<resources>/automatic/load_cleaning_method_rank.parquet"),
-        gap_report=("<resources>/automatic/load_gap_report.parquet"),
+        demand=(
+            "<resources>/automatic/{shape}/"
+            "load_basic_cleaned.parquet"
+        ),
+        data_source=(
+            "<resources>/automatic/{shape}/"
+            "load_data_source.parquet"
+        ),
+        cleaning_method=(
+            "<resources>/automatic/{shape}/"
+            "load_cleaning_method.parquet"
+        ),
+        cleaning_method_rank=(
+            "<resources>/automatic/{shape}/"
+            "load_cleaning_method_rank.parquet"
+        ),
+        gap_report=(
+            "<resources>/automatic/{shape}/"
+            "load_gap_report.parquet"
+        ),
     log:
-        "<logs>/clean_demand.log",
+        "<logs>/{shape}/clean_demand.log",
     conda:
         "../envs/module.yaml"
     params:
-        source_names=config["load_sources"],
+        source_names=active_load_sources,
         temporal_scope=config["temporal_scope"],
         gap_filling=config["gap_filling"],
     message:
@@ -32,21 +61,32 @@ rule clean_demand:
 
 rule plot_cleaning_timeline:
     input:
-        demand=("<resources>/automatic/" "load_cleaned.parquet"),
-        basic_cleaning_method=("<resources>/automatic/" "load_cleaning_method.parquet"),
-        cleaning_method=("<resources>/automatic/" "load_final_cleaning_method.parquet"),
+        target_plan=target_data_plan,
+        demand=(
+            "<resources>/automatic/{shape}/"
+            "load_cleaned.parquet"
+        ),
+        basic_cleaning_method=(
+            "<resources>/automatic/{shape}/"
+            "load_cleaning_method.parquet"
+        ),
+        cleaning_method=(
+            "<resources>/automatic/{shape}/"
+            "load_final_cleaning_method.parquet"
+        ),
         cleaning_method_rank=(
-            "<resources>/automatic/" "load_final_cleaning_method_rank.parquet"
+            "<resources>/automatic/{shape}/"
+            "load_final_cleaning_method_rank.parquet"
         ),
     output:
-        plot=("<results>/{shape}/" "load_cleaning_timeline.pdf"),
-        summary=("<results>/{shape}/" "load_cleaning_summary.html"),
+        plot="<results>/{shape}/load_cleaning_timeline.pdf",
+        summary="<results>/{shape}/load_cleaning_summary.html",
     log:
         "<logs>/{shape}/plot_cleaning_timeline.log",
     conda:
         "../envs/module.yaml"
     params:
-        source_names=config["load_sources"],
+        source_names=active_load_sources,
         gap_filling=config["gap_filling"],
         source_registry=SOURCE_REGISTRY,
     message:

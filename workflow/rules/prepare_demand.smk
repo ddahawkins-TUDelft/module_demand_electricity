@@ -1,6 +1,6 @@
 rule demand_electricity_raster:
     input:
-        demand="<resources>/automatic/load_cleaned.parquet",
+        demand=rules.finalise_clean_demand.output.demand,
         shapes="<shapes>",
         population="<resources>/automatic/{shape}/population_clean.tif",
     output:

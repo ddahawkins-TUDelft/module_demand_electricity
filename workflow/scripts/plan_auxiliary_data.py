@@ -21,6 +21,7 @@ from _tclean_config import (
     build_basic_rules,
     build_source_capabilities,
     build_time_grid,
+    filter_source_requests_by_temporal_scope,
     get_advanced_source_definitions,
 )
 from tclean.advanced import (
@@ -81,6 +82,12 @@ def build_advanced_execution_plan(
 
     requests = build_auxiliary_source_requests(
         requirements, source_capabilities=source_capabilities, grid=grid
+    )
+
+    requests = filter_source_requests_by_temporal_scope(
+        requests,
+        requirements=requirements,
+        source_registry=source_registry,
     )
 
     raw_batches = build_source_batches(requests)

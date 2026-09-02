@@ -17,21 +17,28 @@ rule download_load_opsd:
         "../scripts/download_load_opsd.py"
 
 
+
+def target_opsd_countries(wildcards):
+    """Return OPSD target countries for one shape."""
+    return target_source_contexts(wildcards,"opsd",)
+
+
 rule prepare_load_opsd:
     input:
         validation="<resources>/automatic/temporal_config_validation.json",
+        target_plan=target_data_plan,
         load="<resources>/automatic/opsd/raw_load.parquet",
     output:
-        load="<resources>/automatic/load_opsd.parquet",
+        load="<resources>/automatic/{shape}/load_opsd.parquet",
     log:
-        "<logs>/prepare_load_opsd.log",
+        "<logs>/{shape}/prepare_load_opsd.log",
     conda:
         "../envs/module.yaml"
     params:
         start=config["temporal_scope"]["start"],
         end=config["temporal_scope"]["end"],
         frequency=config["temporal_scope"]["frequency"],
-        country_codes=internal["load_entsoe"]["countries"],
+        country_codes=target_opsd_countries,
     message:
         "Prepare electricity-demand data from OPSD."
     script:
@@ -43,9 +50,13 @@ rule prepare_auxiliary_load_opsd:
         load=rules.download_load_opsd.output.load,
         plan=auxiliary_acquisition_plan,
     output:
-        load=("<resources>/automatic/" "auxiliary/opsd/" "{batch_id}.parquet"),
+        load=(
+            "<resources>/automatic/{shape}/"
+            "auxiliary/opsd/"
+            "{batch_id}.parquet"
+        ),
     log:
-        ("<logs>/auxiliary/" "opsd/{batch_id}.log"),
+        "<logs>/{shape}/auxiliary/opsd/{batch_id}.log",
     conda:
         "../envs/module.yaml"
     params:

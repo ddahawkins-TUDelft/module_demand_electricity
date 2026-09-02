@@ -26,7 +26,7 @@ def entsoe_power_statistics_raw_files(_wildcards):
 
 def auxiliary_entsoe_power_statistics_raw_files(wildcards):
     """Return Power Statistics annual files required by one auxiliary batch."""
-    plan = _read_auxiliary_plan()
+    plan = _read_auxiliary_plan(wildcards)
 
     batch = next(
         batch
@@ -61,21 +61,33 @@ rule download_load_entsoe_power_statistics_year:
         "../scripts/download_load_entsoe_power_statistics.py"
 
 
+def target_entsoe_power_statistics_countries(wildcards):
+    """Return Power Statistics target countries for one shape."""
+    return target_source_contexts(wildcards,"entsoe_power_statistics",)
+
+
 rule prepare_load_entsoe_power_statistics:
     input:
-        validation=("<resources>/automatic/" "temporal_config_validation.json"),
+        validation=(
+            "<resources>/automatic/"
+            "temporal_config_validation.json"
+        ),
+        target_plan=target_data_plan,
         annual_files=entsoe_power_statistics_raw_files,
     output:
-        load=("<resources>/automatic/" "load_entsoe_power_statistics.parquet"),
+        load=(
+            "<resources>/automatic/{shape}/"
+            "load_entsoe_power_statistics.parquet"
+        ),
     log:
-        "<logs>/prepare_load_entsoe_power_statistics.log",
+        "<logs>/{shape}/prepare_load_entsoe_power_statistics.log",
     conda:
         "../envs/module.yaml"
     params:
         temporal_start=config["temporal_scope"]["start"],
         temporal_end=config["temporal_scope"]["end"],
         frequency=config["temporal_scope"]["frequency"],
-        country_codes=internal["load_entsoe"]["countries"],
+        country_codes=target_entsoe_power_statistics_countries,
     message:
         "Prepare electricity-demand data from ENTSO-E Power Statistics."
     script:
@@ -88,12 +100,14 @@ rule prepare_auxiliary_load_entsoe_power_statistics:
         annual_files=auxiliary_entsoe_power_statistics_raw_files,
     output:
         load=(
-            "<resources>/automatic/"
+            "<resources>/automatic/{shape}/"
             "auxiliary/entsoe_power_statistics/"
             "{batch_id}.parquet"
         ),
     log:
-        ("<logs>/auxiliary/" "entsoe_power_statistics/" "prepare_{batch_id}.log"),
+        "<logs>/{shape}/auxiliary/"
+        "entsoe_power_statistics/"
+        "prepare_{batch_id}.log",
     conda:
         "../envs/module.yaml"
     params:

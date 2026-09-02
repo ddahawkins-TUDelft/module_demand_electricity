@@ -21,7 +21,7 @@ def neso_raw_files(_wildcards):
 
 def auxiliary_neso_raw_files(wildcards):
     """Return annual NESO files required by one auxiliary batch."""
-    plan = _read_auxiliary_plan()
+    plan = _read_auxiliary_plan(wildcards)
 
     batch = next(
         batch
@@ -51,35 +51,43 @@ rule download_load_neso_year:
         "../scripts/download_load_neso.py"
 
 
+def target_neso_countries(wildcards):
+    """Return NESO target countries for one shape."""
+    return target_source_contexts(wildcards,"neso",)
+
+
 rule prepare_load_neso:
     input:
         validation="<resources>/automatic/temporal_config_validation.json",
+        target_plan=target_data_plan,
         annual_files=neso_raw_files,
     output:
-        load="<resources>/automatic/load_neso.parquet",
+        load="<resources>/automatic/{shape}/load_neso.parquet",
     log:
-        "<logs>/prepare_load_neso.log",
+        "<logs>/{shape}/prepare_load_neso.log",
     conda:
         "../envs/module.yaml"
     params:
         start=config["temporal_scope"]["start"],
         end=config["temporal_scope"]["end"],
-        country_codes=internal["load_entsoe"]["countries"],
+        country_codes=target_neso_countries,
         frequency=config["temporal_scope"]["frequency"],
     message:
         "Prepare electricity-demand data from NESO."
     script:
         "../scripts/prepare_load_neso.py"
 
-
 rule prepare_auxiliary_load_neso:
     input:
         plan=auxiliary_acquisition_plan,
         annual_files=auxiliary_neso_raw_files,
     output:
-        load=("<resources>/automatic/" "auxiliary/neso/" "{batch_id}.parquet"),
+        load=(
+            "<resources>/automatic/{shape}/"
+            "auxiliary/neso/{batch_id}.parquet"
+        ),
     log:
-        "<logs>/auxiliary/neso/{batch_id}.log",
+        "<logs>/{shape}/auxiliary/neso/{batch_id}.log",
     conda:
         "../envs/module.yaml"
     params:

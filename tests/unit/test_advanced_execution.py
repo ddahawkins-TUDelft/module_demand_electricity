@@ -38,18 +38,66 @@ def test_group_id_depends_only_on_period() -> None:
     assert build_group_id(start=start, end=end) == "20200101T0000__20200201T0000"
 
 
-def test_batch_id_is_independent_of_country_order() -> None:
-    """Test Batch ignores country order."""
+def test_batch_id_is_compact_and_independent_of_country_order() -> None:
+    """Test batch id is compact and ignores country order."""
     start = pd.Timestamp("2020-01-01", tz="UTC")
     end = pd.Timestamp("2020-02-01", tz="UTC")
+
     first = build_batch_id(
-        source="entsoe", start=start, end=end, countries=["ALB", "GRC"]
+        source="entsoe",
+        start=start,
+        end=end,
+        countries=["ALB", "GRC"],
     )
     second = build_batch_id(
-        source="entsoe", start=start, end=end, countries=["GRC", "ALB"]
+        source="entsoe",
+        start=start,
+        end=end,
+        countries=["GRC", "ALB"],
     )
+
     assert first == second
-    assert first.startswith("entsoe__20200101T0000__20200201T0000__")
+    assert len(first) == 16
+    assert set(first) <= set("0123456789abcdef")
+
+
+def test_batch_id_depends_on_source() -> None:
+    """Test batch id changes when the source changes."""
+    start = pd.Timestamp("2020-01-01", tz="UTC")
+    end = pd.Timestamp("2020-02-01", tz="UTC")
+
+    entsoe = build_batch_id(
+        source="entsoe",
+        start=start,
+        end=end,
+        countries=["ALB"],
+    )
+    opsd = build_batch_id(
+        source="opsd",
+        start=start,
+        end=end,
+        countries=["ALB"],
+    )
+
+    assert entsoe != opsd
+
+
+def test_batch_id_depends_on_period() -> None:
+    """Test batch id changes when the period changes."""
+    first = build_batch_id(
+        source="entsoe",
+        start=pd.Timestamp("2020-01-01", tz="UTC"),
+        end=pd.Timestamp("2020-02-01", tz="UTC"),
+        countries=["ALB"],
+    )
+    second = build_batch_id(
+        source="entsoe",
+        start=pd.Timestamp("2020-02-01", tz="UTC"),
+        end=pd.Timestamp("2020-03-01", tz="UTC"),
+        countries=["ALB"],
+    )
+
+    assert first != second
 
 
 def test_source_batches_group_countries_by_source_and_period() -> None:
@@ -68,17 +116,22 @@ def test_batch_indexes_preserve_compiled_ids() -> None:
     batches = build_source_batches(_requests())
     by_source = index_batch_ids_by_source(batches)
     by_group = index_batch_ids_by_group(batches)
+
     assert set(by_source) == {"entsoe", "opsd"}
     assert len(by_source["entsoe"]) == 1
     assert len(by_source["opsd"]) == 1
-    assert list(by_group.values())[0] == [batch["batch_id"] for batch in batches]
+    assert list(by_group.values())[0] == [
+        batch["batch_id"] for batch in batches
+    ]
 
 
 def test_serialize_batch_produces_json_safe_values() -> None:
     """Test for json safety."""
     batch = build_source_batches(_requests())[0]
     serialized = serialize_batch(batch)
+
     json.dumps(serialized)
+
     assert isinstance(serialized["start"], str)
     assert isinstance(serialized["end"], str)
 
@@ -98,19 +151,32 @@ def test_empty_execution_plan_has_stable_contract() -> None:
 
 
 def test_load_execution_plan_and_get_batch(tmp_path) -> None:
-    """Test load execution plan."""
+    """Test load execution plan and batch lookup."""
     batch = serialize_batch(build_source_batches(_requests())[0])
+
     plan = empty_execution_plan()
     plan["batches"] = [batch]
+
     path = tmp_path / "plan.json"
     path.write_text(json.dumps(plan), encoding="utf-8")
 
     loaded = load_execution_plan(path)
-    selected = get_batch(loaded, batch_id=batch["batch_id"], source=batch["source"])
+    selected = get_batch(
+        loaded,
+        batch_id=batch["batch_id"],
+        source=batch["source"],
+    )
+
     assert selected == batch
 
 
 def test_get_batch_requires_exactly_one_match() -> None:
     """Test get batch requires a single match."""
-    with pytest.raises(ValueError, match="Expected exactly one auxiliary batch"):
-        get_batch(empty_execution_plan(), batch_id="missing")
+    with pytest.raises(
+        ValueError,
+        match="Expected exactly one auxiliary batch",
+    ):
+        get_batch(
+            empty_execution_plan(),
+            batch_id="missing",
+        )

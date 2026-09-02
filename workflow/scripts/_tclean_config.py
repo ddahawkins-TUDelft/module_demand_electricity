@@ -181,3 +181,73 @@ def _build_source_periods(periods: Sequence[Mapping[str, Any]]) -> pd.DataFrame:
         ],
         columns=["context", "start", "end", "weight"],
     )
+
+
+def filter_source_requests_by_temporal_scope(
+    requests: pd.DataFrame,
+    *,
+    requirements: pd.DataFrame,
+    source_registry: Mapping[str, Mapping[str, Any]],
+) -> pd.DataFrame:
+    """Remove auxiliary source requests outside provider availability."""
+    if requests.empty:
+        return requests.copy()
+
+    keep: list[bool] = []
+
+    for request in requests.itertuples(index=False):
+        metadata = source_registry[str(request.source)]
+        temporal_scope = metadata.get("temporal_scope") or {}
+
+        source_start = temporal_scope.get("start")
+        source_end = temporal_scope.get("end")
+
+        request_start = pd.to_datetime(request.start, utc=True)
+        request_end = pd.to_datetime(request.end, utc=True)
+
+        overlaps = True
+
+        if source_start is not None:
+            overlaps &= request_end > pd.to_datetime(
+                source_start,
+                utc=True,
+            )
+
+        if source_end is not None:
+            overlaps &= request_start < pd.to_datetime(
+                source_end,
+                utc=True,
+            )
+
+        keep.append(overlaps)
+
+    filtered = requests.loc[keep].reset_index(drop=True)
+
+    required_periods = requirements[
+        ["context", "start", "end"]
+    ].drop_duplicates()
+
+    covered_periods = filtered[
+        ["context", "start", "end"]
+    ].drop_duplicates()
+
+    coverage = required_periods.merge(
+        covered_periods,
+        on=["context", "start", "end"],
+        how="left",
+        indicator=True,
+    )
+
+    uncovered = coverage.loc[
+        coverage["_merge"] == "left_only",
+        ["context", "start", "end"],
+    ]
+
+    if not uncovered.empty:
+        raise ValueError(
+            "No configured auxiliary source overlaps the declared "
+            "temporal scope for required context-period(s): "
+            f"{uncovered.to_dict(orient='records')}."
+        )
+
+    return filtered
