@@ -322,10 +322,7 @@ def test_auxiliary_temporal_filter_rejects_coverage_gap() -> None:
 
     requirements = pd.DataFrame({"context": ["AAA"], "start": [start], "end": [end]})
 
-    with pytest.raises(
-        ValueError,
-        match=r"2019-01-01T00:00:00\+00:00",
-    ) as exc_info:
+    with pytest.raises(ValueError, match=r"2019-01-01T00:00:00\+00:00") as exc_info:
         filter_source_requests_by_temporal_scope(
             requests,
             requirements=requirements,
