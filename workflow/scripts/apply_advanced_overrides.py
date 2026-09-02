@@ -20,55 +20,65 @@ data = pd.read_parquet(snakemake.input.demand)
 data_source = pd.read_parquet(snakemake.input.data_source)
 cleaning_method = pd.read_parquet(snakemake.input.cleaning_method)
 
-rules = pd.DataFrame(
-    [
-        {
-            "rule_name": rule_name,
-            "method": plan["rules"][rule_name]["method"],
-            "source": plan["rules"][rule_name]["source"],
-            "context": plan["rules"][rule_name]["context"],
-            "start": plan["rules"][rule_name]["start"],
-            "end": plan["rules"][rule_name]["end"],
-            "scope": plan["rules"][rule_name]["scope"],
-        }
-        for rule_name in plan["active_rule_names"]
-    ]
-)
+active_rule_names = plan["active_rule_names"]
 
-advanced_sources = {}
+if not active_rule_names:
+    print(
+        "No advanced cleaning rules apply to the target contexts and period; "
+        "passing basic-cleaned demand through unchanged."
+    )
+    filled = data.copy()
 
-for path in snakemake.input.constructed_profiles:
-    rule_name = Path(path).stem
-    rule = plan["rules"][rule_name]
-    source_name = rule["source"]
+else:
+    rules = pd.DataFrame(
+        [
+            {
+                "rule_name": rule_name,
+                "method": plan["rules"][rule_name]["method"],
+                "source": plan["rules"][rule_name]["source"],
+                "context": plan["rules"][rule_name]["context"],
+                "start": plan["rules"][rule_name]["start"],
+                "end": plan["rules"][rule_name]["end"],
+                "scope": plan["rules"][rule_name]["scope"],
+            }
+            for rule_name in active_rule_names
+        ]
+    )
 
-    profile = pd.read_parquet(path)
+    advanced_sources = {}
 
-    if profile.shape[1] != 1:
-        raise ValueError(
-            f"Constructed profile for rule {rule_name!r} "
-            "must contain exactly one column."
-        )
+    for path in snakemake.input.constructed_profiles:
+        rule_name = Path(path).stem
+        rule = plan["rules"][rule_name]
+        source_name = rule["source"]
 
-    advanced_sources[source_name] = profile.iloc[:, 0]
+        profile = pd.read_parquet(path)
 
-external_profile_paths = {
-    Path(path).name: path for path in snakemake.input.external_profiles
-}
+        if profile.shape[1] != 1:
+            raise ValueError(
+                f"Constructed profile for rule {rule_name!r} "
+                "must contain exactly one column."
+            )
 
-for source_name, filename in plan["external_profile_files"].items():
-    path = external_profile_paths[filename]
+        advanced_sources[source_name] = profile.iloc[:, 0]
 
-    advanced_sources[source_name] = read_external_profile(path, grid=grid)
+    external_profile_paths = {
+        Path(path).name: path for path in snakemake.input.external_profiles
+    }
 
-filled, _, cleaning_method = apply_advanced_rules(
-    data,
-    data_source,
-    cleaning_method,
-    rules=rules,
-    advanced_sources=advanced_sources,
-    grid=grid,
-)
+    for source_name, filename in plan["external_profile_files"].items():
+        path = external_profile_paths[filename]
+
+        advanced_sources[source_name] = read_external_profile(path, grid=grid)
+
+    filled, _, cleaning_method = apply_advanced_rules(
+        data,
+        data_source,
+        cleaning_method,
+        rules=rules,
+        advanced_sources=advanced_sources,
+        grid=grid,
+    )
 
 filled.to_parquet(snakemake.output.demand)
 cleaning_method.to_parquet(snakemake.output.cleaning_method)
