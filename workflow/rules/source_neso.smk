@@ -1,6 +1,17 @@
 """Rules for the NESO historic demand source."""
 
 
+# Protect the user against NESO Rate limits. NESO asks for users to respect
+# a 2call/min limit. We cannot implement such a limit specifically but we can
+# constrain usage to 2 concurrent downloads. The user may 
+# specify a different value which the conditional statement respects.
+if "neso_download" not in workflow.global_resources:
+    workflow.register_resource(
+        "neso_download",
+        2,
+    )
+
+
 rule download_load_neso_year:
     output:
         annual_file=("<resources>/automatic/neso/" "historic_demand_{year}.csv"),
