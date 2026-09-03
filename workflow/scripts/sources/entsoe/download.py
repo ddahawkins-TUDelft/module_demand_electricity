@@ -18,10 +18,28 @@ def load_token(filepath: str | Path) -> str:
     return Path(filepath).read_text().strip()
 
 
+def monthly_intervals(
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
+    """Split a time interval at calendar-month boundaries."""
+    intervals = []
+    chunk_start = start
+
+    while chunk_start < end:
+        next_month = chunk_start + pd.offsets.MonthBegin(1)
+        chunk_end = min(next_month, end)
+
+        intervals.append((chunk_start, chunk_end))
+        chunk_start = chunk_end
+
+    return intervals
+
+
 def download_country(
     *, country_alpha_3: str, start: pd.Timestamp, end: pd.Timestamp, token: str
 ) -> tuple[str, pd.Series, float]:
-    """Download ENTSO-E load for one country."""
+    """Download ENTSO-E load for one country. Accounts for ENTSO-E API P1M Constraint."""
     country = pycountry.countries.get(alpha_3=country_alpha_3)
 
     if country is None:
@@ -33,21 +51,48 @@ def download_country(
 
     country_start = perf_counter()
 
-    try:
-        data = client.query_load(country_code=country_alpha_2, start=start, end=end)
+    chunks = []
 
-        data = data["Actual Load"]
-        data.name = country_alpha_3
-
-    except NoMatchingDataError:
-        logger.warning(
-            "No data found for %s/%s in the given period: %s to %s.",
+    for chunk_start, chunk_end in monthly_intervals(start, end):
+        logger.debug(
+            "Downloading ENTSO-E load for %s/%s from %s to %s.",
             country_alpha_2,
             country_alpha_3,
-            start,
-            end,
+            chunk_start,
+            chunk_end,
         )
 
+        try:
+            chunk = client.query_load(
+                country_code=country_alpha_2,
+                start=chunk_start,
+                end=chunk_end,
+            )
+
+        except NoMatchingDataError:
+            logger.warning(
+                "No data found for %s/%s from %s to %s.",
+                country_alpha_2,
+                country_alpha_3,
+                chunk_start,
+                chunk_end,
+            )
+            continue
+
+        chunks.append(chunk["Actual Load"])
+
+    if chunks:
+        data = pd.concat(chunks).sort_index()
+
+        if data.index.has_duplicates:
+            raise ValueError(
+                f"ENTSO-E returned duplicate timestamps for {country_alpha_3!r} "
+                f"between {start} and {end}."
+            )
+
+        data.name = country_alpha_3
+
+    else:
         data = pd.Series(name=country_alpha_3, dtype=float)
 
     elapsed = perf_counter() - country_start
