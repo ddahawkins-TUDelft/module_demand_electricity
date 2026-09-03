@@ -3,6 +3,8 @@ checkpoint plan_auxiliary_data:
         demand=rules.clean_demand.output.demand,
     output:
         plan=("<resources>/automatic/{shape}/" "auxiliary/advanced_execution_plan.json"),
+    log:
+        "<logs>/{shape}/auxiliary/plan_auxiliary_data.log",
     conda:
         "../envs/module.yaml"
     params:
@@ -10,8 +12,6 @@ checkpoint plan_auxiliary_data:
         gap_filling=config["gap_filling"],
         source_names=config["load_sources"],
         source_registry=SOURCE_REGISTRY,
-    log:
-        "<logs>/{shape}/auxiliary/plan_auxiliary_data.log",
     message:
         "Plan auxiliary electricity-demand acquisition."
     script:
@@ -64,13 +64,13 @@ rule construct_auxiliary_profile:
             "auxiliary/constructed/"
             "{rule_name}.parquet"
         ),
+    log:
+        "<logs>/{shape}/auxiliary/construct_auxiliary_data_{rule_name}.log",
     conda:
         "../envs/module.yaml"
     params:
         frequency=config["temporal_scope"]["frequency"],
         advanced_sources=(config["gap_filling"]["advanced"]["sources"]),
-    log:
-        "<logs>/{shape}/auxiliary/construct_auxiliary_data_{rule_name}.log",
     message:
         "Construct auxiliary demand profile for {wildcards.rule_name}."
     script:
@@ -90,10 +90,10 @@ rule apply_advanced_overrides:
         cleaning_method=(
             "<resources>/automatic/{shape}/" "load_advanced_cleaning_method.parquet"
         ),
-    conda:
-        "../envs/module.yaml"
     log:
         "<logs>/{shape}/auxiliary/apply_advanced_overrides.log",
+    conda:
+        "../envs/module.yaml"
     params:
         temporal_scope=config["temporal_scope"],
     message:

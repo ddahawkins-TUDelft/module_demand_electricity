@@ -169,4 +169,3 @@ def advanced_external_profile_files(wildcards):
         f"<external_profiles>/{filename}"
         for filename in dict.fromkeys(plan["external_profile_files"].values())
     ]
-

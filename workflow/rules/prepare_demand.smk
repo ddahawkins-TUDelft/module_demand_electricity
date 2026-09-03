@@ -11,10 +11,10 @@ rule finalise_clean_demand:
         cleaning_method_rank=(
             "<resources>/automatic/{shape}/" "load_final_cleaning_method_rank.parquet"
         ),
-    conda:
-        "../envs/module.yaml"
     log:
         "<logs>/{shape}/finalise_clean_demand.log",
+    conda:
+        "../envs/module.yaml"
     params:
         source_names=active_load_sources,
         gap_filling=config["gap_filling"],

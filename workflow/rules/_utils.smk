@@ -2,7 +2,6 @@
 
 from datetime import datetime, timedelta, timezone
 
-
 if not isinstance(SOURCE_REGISTRY, dict):
     raise ValueError(
         "Source registry must contain a mapping " "of source identifiers to metadata."

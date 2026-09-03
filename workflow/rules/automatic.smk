@@ -1,8 +1,11 @@
 """Rules used for generic automatic resources and validation."""
 
+
 rule validate_temporal_config_semantics:
     output:
         "<resources>/automatic/temporal_config_validation.json",
+    log:
+        "<logs>/validate_temporal_config_semantics.log",
     conda:
         "../envs/module.yaml"
     params:
@@ -10,8 +13,6 @@ rule validate_temporal_config_semantics:
         validation_config={
             "temporal_scope": config["temporal_scope"],
         },
-    log:
-        "<logs>/validate_temporal_config_semantics.log",
     message:
         "Validate temporal configuration semantics."
     script:
@@ -21,6 +22,8 @@ rule validate_temporal_config_semantics:
 rule validate_gap_filling_config_semantics:
     output:
         "<resources>/automatic/gap_filling_config_validation.json",
+    log:
+        "<logs>/validate_gap_filling_config_semantics.log",
     conda:
         "../envs/module.yaml"
     params:
@@ -29,8 +32,6 @@ rule validate_gap_filling_config_semantics:
             "temporal_scope": config["temporal_scope"],
             "gap_filling": config["gap_filling"],
         },
-    log:
-        "<logs>/validate_gap_filling_config_semantics.log",
     message:
         "Validate gap-filling configuration semantics."
     script:
@@ -43,14 +44,14 @@ checkpoint plan_target_data:
         temporal_validation=("<resources>/automatic/temporal_config_validation.json"),
     output:
         plan=("<resources>/automatic/{shape}/" "target_data_plan.json"),
+    log:
+        "<logs>/{shape}/plan_target_data.log",
     conda:
         "../envs/module.yaml"
     params:
         source_names=config["load_sources"],
         source_registry=SOURCE_REGISTRY,
         temporal_scope=config["temporal_scope"],
-    log:
-        "<logs>/{shape}/plan_target_data.log",
     message:
         "Plan target electricity-demand data acquisition."
     script:
