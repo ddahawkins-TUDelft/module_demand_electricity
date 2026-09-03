@@ -70,7 +70,7 @@ def download_country(
             )
 
         except NoMatchingDataError:
-            logger.warning(
+            logger.debug(
                 "No data found for %s/%s from %s to %s.",
                 country_alpha_2,
                 country_alpha_3,
@@ -168,7 +168,7 @@ def download_entsoe(
 
     raw.to_parquet(output_path)
 
-    logger.info(
+    logger.debug(
         "Finished ENTSO-E downloads in %.1fs. Saved raw data to %s.",
         perf_counter() - download_start,
         output_path,
