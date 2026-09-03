@@ -19,8 +19,7 @@ def load_token(filepath: str | Path) -> str:
 
 
 def monthly_intervals(
-    start: pd.Timestamp,
-    end: pd.Timestamp,
+    start: pd.Timestamp, end: pd.Timestamp
 ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
     """Split a time interval at calendar-month boundaries."""
     intervals = []
@@ -64,9 +63,7 @@ def download_country(
 
         try:
             chunk = client.query_load(
-                country_code=country_alpha_2,
-                start=chunk_start,
-                end=chunk_end,
+                country_code=country_alpha_2, start=chunk_start, end=chunk_end
             )
 
         except NoMatchingDataError:
