@@ -10,7 +10,7 @@ integration_test:
   # data for the same country and timestamp, the earlier source takes priority.
   # Supported sources include: entsoe, neso, opsd.
   load_sources:
-    # - entsoe
+    - entsoe
     - neso
     - opsd
     - entsoe_power_statistics
