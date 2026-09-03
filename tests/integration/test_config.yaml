@@ -12,7 +12,7 @@ integration_test:
   load_sources:
     - entsoe
     - neso
-    - opsd
+    # - opsd
     - entsoe_power_statistics
 
   # Exercise the full advanced gap-filling workflow. See config/README.md for
