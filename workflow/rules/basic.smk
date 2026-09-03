@@ -1,20 +1,3 @@
-def configured_load_inputs(wildcards):
-    """Return prepared demand files for active target sources."""
-    plan = read_target_data_plan(wildcards)
-
-    return [
-        ("<resources>/automatic/" f"{wildcards.shape}/" f"load_{source_name}.parquet")
-        for source_name in plan["active_sources"]
-    ]
-
-
-def active_load_sources(wildcards):
-    """Return active demand sources for one target shape."""
-    plan = read_target_data_plan(wildcards)
-
-    return plan["active_sources"]
-
-
 rule clean_demand:
     input:
         load_inputs=configured_load_inputs,

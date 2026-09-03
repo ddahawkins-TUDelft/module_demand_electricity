@@ -1,8 +1,5 @@
 """Rules used for generic automatic resources and validation."""
 
-import json
-
-
 rule validate_temporal_config_semantics:
     output:
         "<resources>/automatic/temporal_config_validation.json",
@@ -52,58 +49,6 @@ checkpoint plan_target_data:
         "Plan target electricity-demand data acquisition."
     script:
         "../scripts/plan_target_data.py"
-
-
-def target_data_plan(wildcards):
-    """Return the target-data plan after the checkpoint completes."""
-    return checkpoints.plan_target_data.get(
-        shape=wildcards.shape,
-    ).output.plan
-
-
-def read_target_data_plan(wildcards):
-    """Read the resolved target-data plan for one shape."""
-    plan_file = checkpoints.plan_target_data.get(
-        shape=wildcards.shape,
-    ).output.plan
-
-    with open(plan_file, encoding="utf-8") as file:
-        return json.load(file)
-
-
-def target_source_contexts(wildcards, source_name):
-    """Return target contexts assigned to one source for one shape."""
-    plan = read_target_data_plan(wildcards)
-
-    return plan["source_contexts"].get(source_name, [])
-
-
-def target_source_temporal_scope(wildcards, source_name):
-    """Return the planned target temporal scope for one source."""
-    plan = read_target_data_plan(wildcards)
-
-    temporal_scope = plan["source_temporal_scopes"].get(source_name)
-
-    if temporal_scope is None:
-        raise ValueError(f"Source {source_name!r} has no active target temporal scope.")
-
-    return temporal_scope
-
-
-def target_source_start(wildcards, source_name):
-    """Return the planned target start timestamp for one source."""
-    return target_source_temporal_scope(
-        wildcards,
-        source_name,
-    )["start"]
-
-
-def target_source_end(wildcards, source_name):
-    """Return the planned target end timestamp for one source."""
-    return target_source_temporal_scope(
-        wildcards,
-        source_name,
-    )["end"]
 
 
 rule download_population:

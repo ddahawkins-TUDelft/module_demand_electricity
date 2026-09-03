@@ -1,3 +1,27 @@
+rule finalise_clean_demand:
+    input:
+        target_plan=target_data_plan,
+        demand=final_clean_demand_input,
+        cleaning_method=final_cleaning_method_input,
+    output:
+        demand=("<resources>/automatic/{shape}/" "load_cleaned.parquet"),
+        cleaning_method=(
+            "<resources>/automatic/{shape}/" "load_final_cleaning_method.parquet"
+        ),
+        cleaning_method_rank=(
+            "<resources>/automatic/{shape}/" "load_final_cleaning_method_rank.parquet"
+        ),
+    conda:
+        "../envs/module.yaml"
+    params:
+        source_names=active_load_sources,
+        gap_filling=config["gap_filling"],
+    message:
+        "Finalise cleaned electricity demand and provenance."
+    script:
+        "../scripts/finalise_clean_demand.py"
+
+
 rule demand_electricity_raster:
     input:
         demand=rules.finalise_clean_demand.output.demand,
