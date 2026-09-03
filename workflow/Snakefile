@@ -28,11 +28,23 @@ validate(config, workflow.source_path("internal/config.schema.yaml"))
 with open(workflow.source_path("internal/settings.yaml"), "r") as f:
     internal = yaml.safe_load(f)
 
+# Load the source registry
+with open(workflow.source_path("internal/source_registry.yaml"),encoding="utf-8",) as f:
+    SOURCE_REGISTRY = yaml.safe_load(f)
 
 # Load python files in scripts that are used in other scripts, but not run itself.
 # This is necessary for integrating the snakemake module via reference to GitHub.
 workflow.source_path("scripts/_plots.py")
 workflow.source_path("scripts/_schemas.py")
+workflow.source_path("scripts/_advanced_execution.py")
+workflow.source_path("scripts/_plot_timeline.py")
+workflow.source_path("scripts/_prepared_data.py")
+workflow.source_path("scripts/_source_capabilities.py")
+workflow.source_path("scripts/_tclean_config.py")
+# Register source-specific python scripts for remote module use.
+for source in SOURCE_REGISTRY.values():
+    for python_file in source["workflow"]["python"]:
+        workflow.source_path(python_file)
 
 
 # Add all your includes here.
@@ -50,12 +62,11 @@ include: "rules/_helpers.smk"
 include: "rules/automatic.smk"
 include: "rules/basic.smk"
 include: "rules/advanced.smk"
-# Source-specific acquisition and preparation rules.
-include: "rules/source_entsoe.smk"
-include: "rules/source_entsoe_power_statistics.smk"
-include: "rules/source_neso.smk"
-include: "rules/source_opsd.smk"
-# Spatial demand preparation.
+# Source-specific workflow rules.
+for source in SOURCE_REGISTRY.values():
+    for rule_file in source["workflow"]["rules"]:
+        include: rule_file
+# Demand finalisation and spatial re-aggregation.
 include: "rules/prepare_demand.smk"
 
 

@@ -1,15 +1,7 @@
 """Collection of auxiliary functions for this module."""
 
 from datetime import datetime, timedelta, timezone
-import yaml
 
-SOURCE_REGISTRY_PATH = workflow.source_path("../internal/source_registry.yaml")
-
-with open(
-    SOURCE_REGISTRY_PATH,
-    encoding="utf-8",
-) as file:
-    SOURCE_REGISTRY = yaml.safe_load(file) or {}
 
 if not isinstance(SOURCE_REGISTRY, dict):
     raise ValueError(

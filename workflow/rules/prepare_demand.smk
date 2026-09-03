@@ -13,6 +13,8 @@ rule finalise_clean_demand:
         ),
     conda:
         "../envs/module.yaml"
+    log:
+        "<logs>/{shape}/finalise_clean_demand.log",
     params:
         source_names=active_load_sources,
         gap_filling=config["gap_filling"],

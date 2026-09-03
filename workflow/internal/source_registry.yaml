@@ -47,6 +47,12 @@ entsoe:
     - "SWE"
     - "SVN"
     - "SVK"
+  workflow:
+    rules:
+      - "rules/source_entsoe.smk"
+    python:
+      - "scripts/sources/entsoe/download.py"
+      - "scripts/sources/entsoe/prepare.py"
 
 entsoe_power_statistics:
   display_name: ENTSO-E Power Statistics
@@ -88,11 +94,23 @@ entsoe_power_statistics:
     - "SWE"
     - "SVN"
     - "SVK"
+  workflow:
+    rules:
+      - "rules/source_entsoe_power_statistics.smk"
+    python:
+      - "scripts/sources/entsoe_power_statistics/download.py"
+      - "scripts/sources/entsoe_power_statistics/prepare.py"
 
 neso:
   display_name: NESO
   contexts:
     - GBR
+  workflow:
+    rules:
+      - "rules/source_neso.smk"
+    python:
+      - "scripts/sources/neso/download.py"
+      - "scripts/sources/neso/prepare.py"
 
 opsd:
   display_name: OPSD
@@ -134,3 +152,9 @@ opsd:
     - "SWE"
     - "SVN"
     - "SVK"
+  workflow:
+    rules:
+      - "rules/source_opsd.smk"
+    python:
+      - "scripts/sources/opsd/download.py"
+      - "scripts/sources/opsd/prepare.py"
