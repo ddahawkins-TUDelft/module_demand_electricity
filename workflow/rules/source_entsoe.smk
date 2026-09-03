@@ -1,8 +1,8 @@
 """Rules for the ENTSO-E Transparency Platform demand source."""
 
-# Protect the user against ENTSO-E Rate limits. ENTSOE rate limits are set 
+# Protect the user against ENTSO-E Rate limits. ENTSOE rate limits are set
 # to 400calls/min. Given each download rule makes 12 API calls, we apply a
-# concurrency cap of 16 entsoe download jobs (16*12=196). The user may 
+# concurrency cap of 16 entsoe download jobs (16*12=196). The user may
 # specify a different value which the conditional statement respects.
 if "entsoe_download" not in workflow.global_resources:
     workflow.register_resource(
