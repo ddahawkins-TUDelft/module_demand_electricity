@@ -62,6 +62,7 @@ additional_config_validation()
 
 # Generic demand workflow rules.
 include: "rules/_helpers.smk"
+include: "rules/_source_helpers.smk"
 include: "rules/automatic.smk"
 include: "rules/basic.smk"
 include: "rules/advanced.smk"

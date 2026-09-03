@@ -25,7 +25,7 @@ jobs:
         continue-on-error: true
       - name: Run unit tests
         id: unit-tests
-        run: pixi run -e test pytest tests/unit
+        run: pixi run test-unit
         continue-on-error: true
       - name: Run snakemake linting
         id: linting

@@ -53,35 +53,35 @@ def additional_config_validation():
 
     advanced = gap_filling["advanced"]
     sources = advanced["sources"]
-    advanced_rules = advanced["rules"]
+    advanced_entries = advanced["rules"]
 
-    seen_rule_names = set()
-    duplicate_rule_names = set()
+    seen_entry_names = set()
+    duplicate_entry_names = set()
 
-    for rule in advanced_rules:
-        rule_name = rule["name"]
+    for advanced_entry in advanced_entries:
+        entry_name = advanced_entry["name"]
 
-        if rule_name in seen_rule_names:
-            duplicate_rule_names.add(rule_name)
+        if entry_name in seen_entry_names:
+            duplicate_entry_names.add(entry_name)
 
-        seen_rule_names.add(rule_name)
+        seen_entry_names.add(entry_name)
 
-    if duplicate_rule_names:
+    if duplicate_entry_names:
         raise ValueError(
-            "Advanced cleaning rule names must be unique. "
-            f"Duplicate names: {sorted(duplicate_rule_names)}."
+            "Advanced_entry names must be unique. "
+            f"Duplicate names: {sorted(duplicate_entry_names)}."
         )
 
-    for rule in advanced_rules:
-        source_name = rule.get("source")
+    for advanced_entry in advanced_entries:
+        source_name = advanced_entry.get("source")
 
-        # A rule without a source explicitly leaves the target values missing.
+        # An advanced_entry without a source explicitly leaves the target values missing.
         if source_name is None:
             continue
 
         if source_name not in sources:
             raise ValueError(
-                f"Advanced rule {rule['name']!r} references unknown "
+                f"Advanced_entry {advanced_entry['name']!r} references unknown "
                 f"advanced source {source_name!r}."
             )
 

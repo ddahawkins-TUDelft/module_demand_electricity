@@ -1,46 +1,6 @@
 """Rules for the ENTSO-E Power Statistics demand source."""
 
 
-def entsoe_power_statistics_annual_files(years):
-    """Return annual ENTSO-E Power Statistics files."""
-    return [
-        ("<resources>/automatic/" "entsoe_power_statistics/raw/" f"{int(year)}.parquet")
-        for year in years
-    ]
-
-
-def entsoe_power_statistics_raw_files(wildcards):
-    """Return Power Statistics annual files required by the target period."""
-    years = years_for_period(
-        target_source_start(
-            wildcards,
-            "entsoe_power_statistics",
-        ),
-        target_source_end(
-            wildcards,
-            "entsoe_power_statistics",
-        ),
-    )
-
-    return entsoe_power_statistics_annual_files(years)
-
-
-def auxiliary_entsoe_power_statistics_raw_files(wildcards):
-    """Return Power Statistics annual files required by one auxiliary batch."""
-    plan = _read_auxiliary_plan(wildcards)
-
-    batch = next(
-        batch
-        for batch in plan["batches"]
-        if (
-            batch["batch_id"] == wildcards.batch_id
-            and batch["source"] == "entsoe_power_statistics"
-        )
-    )
-
-    return entsoe_power_statistics_annual_files(batch["years"])
-
-
 rule download_load_entsoe_power_statistics_year:
     output:
         annual_file=("<resources>/automatic/entsoe_power_statistics/raw/{year}.parquet"),
@@ -60,14 +20,6 @@ rule download_load_entsoe_power_statistics_year:
         ("Download ENTSO-E Power Statistics " "electricity load for {wildcards.year}.")
     script:
         "../scripts/download_load_entsoe_power_statistics.py"
-
-
-def target_entsoe_power_statistics_countries(wildcards):
-    """Return Power Statistics target countries for one shape."""
-    return target_source_contexts(
-        wildcards,
-        "entsoe_power_statistics",
-    )
 
 
 rule prepare_load_entsoe_power_statistics:

@@ -1,53 +1,6 @@
 """Rules for the ENTSO-E Transparency Platform demand source."""
 
 
-def entsoe_annual_files(countries, years):
-    """Return reusable ENTSO-E country-year raw-file paths."""
-    return [
-        "<resources>/automatic/entsoe/raw/" f"{country}/{int(year)}.parquet"
-        for country in countries
-        for year in years
-    ]
-
-
-def entsoe_raw_files(wildcards):
-    """Return ENTSO-E country-year files required for one target shape."""
-    plan = read_target_data_plan(wildcards)
-
-    countries = plan["source_contexts"].get("entsoe", [])
-
-    years = years_for_period(
-        target_source_start(
-            wildcards,
-            "entsoe",
-        ),
-        target_source_end(
-            wildcards,
-            "entsoe",
-        ),
-    )
-
-    return entsoe_annual_files(countries, years)
-
-
-def target_entsoe_countries(wildcards):
-    """Return ENTSO-E target countries for one shape."""
-    return target_source_contexts(wildcards, "entsoe")
-
-
-def auxiliary_entsoe_raw_files(wildcards):
-    """Return ENTSO-E country-year files required by one auxiliary batch."""
-    plan = _read_auxiliary_plan(wildcards)
-
-    batch = next(
-        batch
-        for batch in plan["batches"]
-        if (batch["batch_id"] == wildcards.batch_id and batch["source"] == "entsoe")
-    )
-
-    return entsoe_annual_files(batch["countries"], batch["years"])
-
-
 rule download_load_entsoe_country_year:
     input:
         token_entsoe="<token_entsoe>",

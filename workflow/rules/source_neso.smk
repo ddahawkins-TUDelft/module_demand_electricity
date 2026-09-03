@@ -1,43 +1,6 @@
 """Rules for the NESO historic demand source."""
 
 
-def neso_annual_files(years):
-    """Return reusable annual NESO raw-file paths for the requested years."""
-    return [
-        "<resources>/automatic/neso/" f"historic_demand_{int(year)}.csv"
-        for year in years
-    ]
-
-
-def neso_raw_files(wildcards):
-    """Return annual NESO input files for the planned target period."""
-    years = years_for_period(
-        target_source_start(
-            wildcards,
-            "neso",
-        ),
-        target_source_end(
-            wildcards,
-            "neso",
-        ),
-    )
-
-    return neso_annual_files(years)
-
-
-def auxiliary_neso_raw_files(wildcards):
-    """Return annual NESO files required by one auxiliary batch."""
-    plan = _read_auxiliary_plan(wildcards)
-
-    batch = next(
-        batch
-        for batch in plan["batches"]
-        if (batch["batch_id"] == wildcards.batch_id and batch["source"] == "neso")
-    )
-
-    return neso_annual_files(batch["years"])
-
-
 rule download_load_neso_year:
     output:
         annual_file=("<resources>/automatic/neso/" "historic_demand_{year}.csv"),
@@ -55,14 +18,6 @@ rule download_load_neso_year:
         "Download NESO historic electricity demand for {wildcards.year}."
     script:
         "../scripts/download_load_neso.py"
-
-
-def target_neso_countries(wildcards):
-    """Return NESO target countries for one shape."""
-    return target_source_contexts(
-        wildcards,
-        "neso",
-    )
 
 
 rule prepare_load_neso:

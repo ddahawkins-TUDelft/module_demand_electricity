@@ -17,14 +17,6 @@ rule download_load_opsd:
         "../scripts/download_load_opsd.py"
 
 
-def target_opsd_countries(wildcards):
-    """Return OPSD target countries for one shape."""
-    return target_source_contexts(
-        wildcards,
-        "opsd",
-    )
-
-
 rule prepare_load_opsd:
     input:
         validation="<resources>/automatic/temporal_config_validation.json",
