@@ -2,6 +2,7 @@
 
 # ENTSOE POWER STATISTICS
 
+
 def entsoe_power_statistics_annual_files(years):
     """Return annual ENTSO-E Power Statistics files."""
     return [
@@ -51,6 +52,7 @@ def target_entsoe_power_statistics_countries(wildcards):
 
 
 # ENTSOE
+
 
 def entsoe_annual_files(countries, years):
     """Return reusable ENTSO-E country-year raw-file paths."""
