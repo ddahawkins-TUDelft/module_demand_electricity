@@ -4,12 +4,12 @@ rule finalise_clean_demand:
         demand=final_clean_demand_input,
         cleaning_method=final_cleaning_method_input,
     output:
-        demand=("<resources>/automatic/{shape}/" "load_cleaned.parquet"),
+        demand=("<resources>/automatic/{shape}/load_cleaned.parquet"),
         cleaning_method=(
-            "<resources>/automatic/{shape}/" "load_final_cleaning_method.parquet"
+            "<resources>/automatic/{shape}/load_final_cleaning_method.parquet"
         ),
         cleaning_method_rank=(
-            "<resources>/automatic/{shape}/" "load_final_cleaning_method_rank.parquet"
+            "<resources>/automatic/{shape}/load_final_cleaning_method_rank.parquet"
         ),
     log:
         "<logs>/{shape}/finalise_clean_demand.log",
@@ -61,3 +61,4 @@ rule demand_electricity_polygon:
         "Aggregate annual demand to shapes and scale with profile."
     script:
         "../scripts/demand_electricity_polygon.py"
+

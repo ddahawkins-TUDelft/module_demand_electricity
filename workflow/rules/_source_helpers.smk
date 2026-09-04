@@ -6,7 +6,7 @@
 def entsoe_power_statistics_annual_files(years):
     """Return annual ENTSO-E Power Statistics files."""
     return [
-        ("<resources>/automatic/" "entsoe_power_statistics/raw/" f"{int(year)}.parquet")
+        ("<resources>/automatic/entsoe_power_statistics/raw/" f"{int(year)}.parquet")
         for year in years
     ]
 
@@ -158,3 +158,4 @@ def target_opsd_countries(wildcards):
         wildcards,
         "opsd",
     )
+

@@ -13,7 +13,7 @@ if "neso_download" not in workflow.global_resources:
 
 rule download_load_neso_year:
     output:
-        annual_file=("<resources>/automatic/neso/" "historic_demand_{year}.csv"),
+        annual_file=("<resources>/automatic/neso/historic_demand_{year}.csv"),
     log:
         "<logs>/download_load_neso_{year}.log",
     localrule: True
@@ -63,7 +63,7 @@ rule prepare_auxiliary_load_neso:
         plan=auxiliary_acquisition_plan,
         annual_files=auxiliary_neso_raw_files,
     output:
-        load=("<resources>/automatic/{shape}/" "auxiliary/neso/{batch_id}.parquet"),
+        load=("<resources>/automatic/{shape}/auxiliary/neso/{batch_id}.parquet"),
     log:
         "<logs>/{shape}/auxiliary/neso/{batch_id}.log",
     conda:
@@ -74,3 +74,4 @@ rule prepare_auxiliary_load_neso:
         "Prepare auxiliary electricity-demand data from NESO."
     script:
         "../scripts/prepare_load_neso.py"
+

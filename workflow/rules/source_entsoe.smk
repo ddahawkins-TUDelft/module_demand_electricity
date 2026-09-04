@@ -15,7 +15,7 @@ rule download_load_entsoe_country_year:
     input:
         token_entsoe="<token_entsoe>",
     output:
-        annual_file=("<resources>/automatic/entsoe/raw/" "{country}/{year}.parquet"),
+        annual_file=("<resources>/automatic/entsoe/raw/{country}/{year}.parquet"),
     log:
         "<logs>/download_load_entsoe_{country}_{year}.log",
     wildcard_constraints:
@@ -73,7 +73,7 @@ rule prepare_auxiliary_load_entsoe:
         plan=auxiliary_acquisition_plan,
         annual_files=auxiliary_entsoe_raw_files,
     output:
-        load=("<resources>/automatic/{shape}/" "auxiliary/entsoe/" "{batch_id}.parquet"),
+        load=("<resources>/automatic/{shape}/auxiliary/entsoe/{batch_id}.parquet"),
     log:
         "<logs>/{shape}/auxiliary/entsoe/prepare_{batch_id}.log",
     conda:
@@ -84,3 +84,4 @@ rule prepare_auxiliary_load_entsoe:
         "Prepare auxiliary electricity-demand data from ENTSO-E."
     script:
         "../scripts/prepare_load_entsoe.py"
+

@@ -43,7 +43,7 @@ checkpoint plan_target_data:
         shapes="<shapes>",
         temporal_validation=("<resources>/automatic/temporal_config_validation.json"),
     output:
-        plan=("<resources>/automatic/{shape}/" "target_data_plan.json"),
+        plan=("<resources>/automatic/{shape}/target_data_plan.json"),
     log:
         "<logs>/{shape}/plan_target_data.log",
     conda:
@@ -89,3 +89,4 @@ rule unzip_population:
         "Unzip population data."
     wrapper:
         "v9.8.0/utils/libarchive/extract"
+
