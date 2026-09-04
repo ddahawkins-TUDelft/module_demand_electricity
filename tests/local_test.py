@@ -9,13 +9,7 @@ LOCAL_TEST_PATH = Path(__file__).parent / "local"
 def test_europe_end_to_end(user_path: Path, token_entsoe: Path):
     """Run a full European end-to-end electricity-demand test."""
     subprocess.run(
-        [
-            "snakemake",
-            "--use-conda",
-            "--cores",
-            "8",
-            "--forceall",
-        ],
+        ["snakemake", "--use-conda", "--cores", "8", "--forceall"],
         check=True,
         cwd=LOCAL_TEST_PATH,
     )

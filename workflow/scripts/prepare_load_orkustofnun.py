@@ -19,9 +19,7 @@ def main(snakemake: Any) -> None:
         plan = load_execution_plan(plan_path)
 
         batch = get_batch(
-            plan,
-            batch_id=snakemake.wildcards.batch_id,
-            source="orkustofnun",
+            plan, batch_id=snakemake.wildcards.batch_id, source="orkustofnun"
         )
 
         start = batch["start"]
@@ -33,11 +31,7 @@ def main(snakemake: Any) -> None:
         end = snakemake.params.end
         country_codes = list(snakemake.params.country_codes)
 
-    grid = TimeGrid(
-        start=start,
-        end=end,
-        frequency=snakemake.params.frequency,
-    )
+    grid = TimeGrid(start=start, end=end, frequency=snakemake.params.frequency)
 
     prepare_orkustofnun(
         input_path=snakemake.input.load,

@@ -3,9 +3,7 @@
 
 rule download_load_orkustofnun:
     output:
-        load=update(
-            "<resources>/automatic/orkustofnun/raw_load.parquet"
-        ),
+        load=update("<resources>/automatic/orkustofnun/raw_load.parquet"),
     log:
         "<logs>/download_load_orkustofnun.log",
     localrule: True
@@ -25,9 +23,7 @@ rule prepare_load_orkustofnun:
         target_plan=target_data_plan,
         load="<resources>/automatic/orkustofnun/raw_load.parquet",
     output:
-        load=(
-            "<resources>/automatic/{shape}/load_orkustofnun.parquet"
-        ),
+        load=("<resources>/automatic/{shape}/load_orkustofnun.parquet"),
     log:
         "<logs>/{shape}/prepare_load_orkustofnun.log",
     conda:
@@ -57,11 +53,9 @@ rule prepare_auxiliary_load_orkustofnun:
         load=rules.download_load_orkustofnun.output.load,
         plan=auxiliary_acquisition_plan,
     output:
-        load=(
-            "<resources>/automatic/{shape}/auxiliary/orkustofnun/{batch_id}.parquet"
-        ),
+        load=("<resources>/automatic/{shape}/auxiliary/orkustofnun/{batch_id}.parquet"),
     log:
-        "<logs>/{shape}/auxiliary/orkustofnun/{batch_id}.log"
+        "<logs>/{shape}/auxiliary/orkustofnun/{batch_id}.log",
     conda:
         "../envs/module.yaml"
     params:

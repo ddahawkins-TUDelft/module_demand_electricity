@@ -11,10 +11,7 @@ if TYPE_CHECKING:
 
 def main(snakemake: Any) -> None:
     """Download the curated Orkustofnun demand dataset."""
-    download_orkustofnun(
-        url=snakemake.params.url,
-        output_path=snakemake.output.load,
-    )
+    download_orkustofnun(url=snakemake.params.url, output_path=snakemake.output.load)
 
 
 if __name__ == "__main__":

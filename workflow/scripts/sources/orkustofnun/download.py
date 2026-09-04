@@ -5,10 +5,7 @@ from pathlib import Path
 import requests
 
 
-def download_orkustofnun(
-    url: str,
-    output_path: str | Path,
-) -> None:
+def download_orkustofnun(url: str, output_path: str | Path) -> None:
     """Download the curated Iceland electricity-demand dataset."""
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)

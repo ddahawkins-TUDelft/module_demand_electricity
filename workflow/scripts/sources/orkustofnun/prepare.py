@@ -21,16 +21,12 @@ def prepare_orkustofnun(
 
     if unsupported:
         raise ValueError(
-            "Orkustofnun does not provide demand data for "
-            f"{sorted(unsupported)}."
+            f"Orkustofnun does not provide demand data for {sorted(unsupported)}."
         )
 
     data = pd.read_parquet(input_path)
 
-    required_columns = {
-        "utc_timestamp",
-        "ISL",
-    }
+    required_columns = {"utc_timestamp", "ISL"}
 
     missing_columns = required_columns - set(data.columns)
 
@@ -40,15 +36,10 @@ def prepare_orkustofnun(
             f"{sorted(missing_columns)}."
         )
 
-    data["utc_timestamp"] = pd.to_datetime(
-        data["utc_timestamp"],
-        utc=True,
-    )
+    data["utc_timestamp"] = pd.to_datetime(data["utc_timestamp"], utc=True)
 
     if data["utc_timestamp"].duplicated().any():
-        raise ValueError(
-            "Orkustofnun dataset contains duplicate timestamps."
-        )
+        raise ValueError("Orkustofnun dataset contains duplicate timestamps.")
 
     data = data.set_index("utc_timestamp")
 
