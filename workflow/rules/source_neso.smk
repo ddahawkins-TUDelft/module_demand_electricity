@@ -72,4 +72,3 @@ rule prepare_auxiliary_load_neso:
         "Prepare auxiliary electricity-demand data from NESO."
     script:
         "../scripts/prepare_load_neso.py"
-

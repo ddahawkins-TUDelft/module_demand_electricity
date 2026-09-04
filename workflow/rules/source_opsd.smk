@@ -61,4 +61,3 @@ rule prepare_auxiliary_load_opsd:
         "Prepare auxiliary electricity-demand data from OPSD."
     script:
         "../scripts/prepare_load_opsd.py"
-

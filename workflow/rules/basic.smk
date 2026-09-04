@@ -6,9 +6,7 @@ rule clean_demand:
     output:
         demand=("<resources>/automatic/{shape}/load_basic_cleaned.parquet"),
         data_source=("<resources>/automatic/{shape}/load_data_source.parquet"),
-        cleaning_method=(
-            "<resources>/automatic/{shape}/load_cleaning_method.parquet"
-        ),
+        cleaning_method=("<resources>/automatic/{shape}/load_cleaning_method.parquet"),
         cleaning_method_rank=(
             "<resources>/automatic/{shape}/load_cleaning_method_rank.parquet"
         ),
@@ -67,4 +65,3 @@ rule clean_population:
         "<logs>/{shape}/clean_population.log",
     wrapper:
         "v7.2.0/geo/rasterio/clip-geotiff"
-

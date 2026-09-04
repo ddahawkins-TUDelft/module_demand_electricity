@@ -158,4 +158,3 @@ def target_opsd_countries(wildcards):
         wildcards,
         "opsd",
     )
-

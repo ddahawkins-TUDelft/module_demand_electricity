@@ -81,4 +81,3 @@ rule prepare_auxiliary_load_entsoe:
         "Prepare auxiliary electricity-demand data from ENTSO-E."
     script:
         "../scripts/prepare_load_entsoe.py"
-

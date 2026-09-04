@@ -23,9 +23,7 @@ rule clean_auxiliary_group:
         plan=auxiliary_acquisition_plan,
         sources=auxiliary_group_source_files,
     output:
-        demand=(
-            "<resources>/automatic/{shape}/auxiliary/cleaned/{group_id}.parquet"
-        ),
+        demand=("<resources>/automatic/{shape}/auxiliary/cleaned/{group_id}.parquet"),
         data_source=(
             "<resources>/automatic/{shape}/"
             "auxiliary/cleaned/"
@@ -100,4 +98,3 @@ rule apply_advanced_overrides:
         "Apply advanced electricity-demand overrides."
     script:
         "../scripts/apply_advanced_overrides.py"
-

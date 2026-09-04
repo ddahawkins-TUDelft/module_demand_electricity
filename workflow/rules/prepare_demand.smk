@@ -61,4 +61,3 @@ rule demand_electricity_polygon:
         "Aggregate annual demand to shapes and scale with profile."
     script:
         "../scripts/demand_electricity_polygon.py"
-

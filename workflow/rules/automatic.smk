@@ -89,4 +89,3 @@ rule unzip_population:
         "Unzip population data."
     wrapper:
         "v9.8.0/utils/libarchive/extract"
-

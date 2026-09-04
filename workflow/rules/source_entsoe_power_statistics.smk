@@ -68,4 +68,3 @@ rule prepare_auxiliary_load_entsoe_power_statistics:
         ("Prepare auxiliary electricity-demand data " "from ENTSO-E Power Statistics.")
     script:
         "../scripts/prepare_load_entsoe_power_statistics.py"
-
