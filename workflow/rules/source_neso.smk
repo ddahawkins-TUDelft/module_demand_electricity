@@ -4,9 +4,9 @@
 # a 2call/min limit. We cannot implement such a limit specifically but we can
 # constrain usage to 2 concurrent downloads. The user may
 # specify a different value which the conditional statement respects.
-if "neso_download" not in workflow.global_resources:
+if "module_demand_electricity_neso_api" not in workflow.global_resources:
     workflow.register_resource(
-        "neso_download",
+        "module_demand_electricity_neso_api",
         2,
     )
 
@@ -21,7 +21,7 @@ rule download_load_neso_year:
         "../envs/module.yaml"
     threads: 1
     resources:
-        neso_download=1,
+        module_demand_electricity_neso_api=1,
     message:
         "Download NESO historic electricity demand for {wildcards.year}."
     script:
