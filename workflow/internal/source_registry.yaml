@@ -159,3 +159,18 @@ opsd:
     python:
       - "scripts/sources/opsd/download.py"
       - "scripts/sources/opsd/prepare.py"
+
+
+orkustofnun:
+  display_name: Orkustofnun
+  contexts:
+    - ISL
+  temporal_scope:
+    start: "2019-01-01"
+    end: "2026-01-01"
+  workflow:
+    rules:
+      - "rules/source_orkustofnun.smk"
+    python:
+      - "scripts/sources/orkustofnun/download.py"
+      - "scripts/sources/orkustofnun/prepare.py"
