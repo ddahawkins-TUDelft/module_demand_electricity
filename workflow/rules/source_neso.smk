@@ -22,8 +22,6 @@ rule download_load_neso_year:
     threads: 1
     resources:
         neso_download=1,
-    params:
-        year=lambda wildcards: int(wildcards.year),
     message:
         "Download NESO historic electricity demand for {wildcards.year}."
     script:

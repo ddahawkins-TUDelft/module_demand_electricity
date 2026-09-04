@@ -27,9 +27,6 @@ rule download_load_entsoe_country_year:
     threads: 1
     resources:
         entsoe_download=1,
-    params:
-        country_code=lambda wildcards: wildcards.country,
-        year=lambda wildcards: int(wildcards.year),
     message:
         (
             "Download ENTSO-E electricity load for "

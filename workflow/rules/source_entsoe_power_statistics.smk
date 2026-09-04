@@ -14,8 +14,6 @@ rule download_load_entsoe_power_statistics_year:
     threads: 1
     resources:
         entsoe_download=1,
-    params:
-        year=lambda wildcards: int(wildcards.year),
     message:
         ("Download ENTSO-E Power Statistics " "electricity load for {wildcards.year}.")
     script:

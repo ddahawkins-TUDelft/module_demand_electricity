@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 def main(snakemake: Any) -> None:
     """Download one annual NESO historic-demand file."""
     download_annual_file(
-        year=int(snakemake.params.year), output_path=snakemake.output.annual_file
+        year=int(snakemake.wildcards.year), output_path=snakemake.output.annual_file
     )
 
 

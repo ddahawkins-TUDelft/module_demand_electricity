@@ -13,8 +13,8 @@ if TYPE_CHECKING:
 
 def main(snakemake: Any) -> None:
     """Download one UTC calendar year of ENTSO-E data for one country."""
-    year = int(snakemake.params.year)
-    country_code = str(snakemake.params.country_code)
+    year = int(snakemake.wildcards.year)
+    country_code = str(snakemake.wildcards.country)
 
     start = pd.Timestamp(year=year, month=1, day=1, tz="UTC")
     end = pd.Timestamp(year=year + 1, month=1, day=1, tz="UTC")

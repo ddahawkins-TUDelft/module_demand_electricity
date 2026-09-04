@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 def main(snakemake: Any) -> None:
     """Download and harmonise one ENTSO-E Power Statistics year."""
     download_entsoe_power_statistics_year(
-        year=int(snakemake.params.year), output_path=Path(snakemake.output.annual_file)
+        year=int(snakemake.wildcards.year), output_path=Path(snakemake.output.annual_file)
     )
 
 
