@@ -60,12 +60,9 @@ def prepare_orkustofnun(
     target_index = pd.DatetimeIndex(grid.target_index)
 
     data = data.reindex(target_index)
-    data.index.name = "utc_timestamp"
+    data.index.name = "timestamp"
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    data.reset_index().to_parquet(
-        output_path,
-        index=False,
-    )
+    data.to_parquet(output_path)
