@@ -25,14 +25,16 @@ rule evaluate_data_quality:
 
 rule plot_data_quality_timeline:
     input:
-        demand=("<resources>/automatic/{shape}/load_cleaned.parquet"),
+        demand="<resources>/automatic/{shape}/load_cleaned.parquet",
         failures=rules.evaluate_data_quality.output.failures,
     output:
-        plot=("<results>/{shape}/" "load_data_quality_timeline.pdf"),
+        plot="<results>/{shape}/load_data_quality_timeline.pdf",
     log:
         "<logs>/{shape}/plot_data_quality_timeline.log",
     conda:
         "../envs/module.yaml"
+    params:
+        detail_years_per_row=1,
     message:
         "Plot electricity-demand data-quality failures."
     script:
