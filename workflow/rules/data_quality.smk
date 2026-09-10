@@ -34,6 +34,7 @@ rule plot_data_quality_timeline:
     conda:
         "../envs/module.yaml"
     params:
+        data_quality=config["data_quality"],
         detail_years_per_row=1,
     message:
         "Plot electricity-demand data-quality failures."

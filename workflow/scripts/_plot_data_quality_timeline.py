@@ -1,7 +1,9 @@
 """Plot electricity demand with data-quality failure annotations."""
 
 import logging
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -20,7 +22,8 @@ CONTEXTS_PER_PAGE = 20
 
 PAGE_LEFT_MARGIN_PX = 68
 PAGE_RIGHT_MARGIN_PX = 38
-PAGE_TOP_MARGIN_PX = 72
+OVERVIEW_PAGE_TOP_MARGIN_PX = 96
+DETAIL_PAGE_TOP_MARGIN_PX = 72
 PAGE_BOTTOM_MARGIN_PX = 42
 
 PLOT_SUMMARY_GAP_PX = 8
@@ -44,12 +47,12 @@ USABLE_WIDTH_PX = PAGE_WIDTH_PX - PAGE_LEFT_MARGIN_PX - PAGE_RIGHT_MARGIN_PX
 TIMELINE_WIDTH_PX = USABLE_WIDTH_PX - PLOT_SUMMARY_GAP_PX - SUMMARY_WIDTH_PX
 
 
-
 def main(
     *,
     demand_path: str | Path,
     failures_path: str | Path,
     output_path: str | Path,
+    data_quality_config: Mapping[str, Any],
     detail_years_per_row: int = 1,
 ) -> None:
     """Create overview and per-country electricity-demand quality diagnostics."""
@@ -64,14 +67,16 @@ def main(
     plot_start = demand.index[0]
     plot_end = demand.index[-1] + time_step
 
+    test_metadata = _build_test_metadata(data_quality_config)
     failures = _prepare_failures(
         failures,
         demand=demand,
+        test_metadata=test_metadata,
         plot_start=plot_start,
         plot_end=plot_end,
     )
 
-    method_colours = _build_method_colours(failures)
+    test_colours = _build_test_colours(test_metadata)
     overview_summary = _build_context_summary(demand=demand, failures=failures)
 
     logger.info(
@@ -87,7 +92,8 @@ def main(
     _write_pdf(
         demand=demand,
         failures=failures,
-        method_colours=method_colours,
+        test_metadata=test_metadata,
+        test_colours=test_colours,
         overview_summary=overview_summary,
         plot_start=plot_start,
         plot_end=plot_end,
@@ -99,12 +105,10 @@ def main(
     logger.info("Saved data-quality timeline to %s.", output_path)
 
 
-
 def _validate_detail_years_per_row(value: int) -> None:
     """Require a positive whole-number detail horizon."""
     if isinstance(value, bool) or not isinstance(value, int) or value < 1:
         raise ValueError("detail_years_per_row must be an integer >= 1.")
-
 
 
 def _validate_demand(demand: pd.DataFrame) -> None:
@@ -122,7 +126,6 @@ def _validate_demand(demand: pd.DataFrame) -> None:
         raise ValueError("Demand timestamps must be monotonically increasing.")
 
 
-
 def _infer_time_step(demand: pd.DataFrame) -> pd.Timedelta:
     """Infer the regular time step represented by the demand frame."""
     time_step = demand.index.to_series().diff().dropna().median()
@@ -133,16 +136,45 @@ def _infer_time_step(demand: pd.DataFrame) -> pd.Timedelta:
     return time_step
 
 
+def _build_test_metadata(data_quality_config: Mapping[str, Any]) -> pd.DataFrame:
+    """Describe configured tests in their evaluation/display order."""
+    tests = data_quality_config["tests"]
+    rows = [
+        {
+            "test_name": str(test["name"]),
+            "method": str(test["method"]),
+            "label": _format_test_name(str(test["name"])),
+            "order": order,
+        }
+        for order, test in enumerate(tests)
+    ]
+
+    metadata = pd.DataFrame(
+        rows,
+        columns=["test_name", "method", "label", "order"],
+    )
+
+    if metadata.empty:
+        return metadata.set_index("test_name")
+
+    duplicate_names = metadata["test_name"].duplicated(keep=False)
+    if duplicate_names.any():
+        duplicates = sorted(metadata.loc[duplicate_names, "test_name"].unique())
+        raise ValueError(f"Data-quality test names must be unique: {duplicates!r}.")
+
+    return metadata.set_index("test_name")
+
 
 def _prepare_failures(
     failures: pd.DataFrame,
     *,
     demand: pd.DataFrame,
+    test_metadata: pd.DataFrame,
     plot_start: pd.Timestamp,
     plot_end: pd.Timestamp,
 ) -> pd.DataFrame:
     """Keep constructed-demand failures relevant to the plotted demand."""
-    required_columns = {"context", "source", "start", "end", "method"}
+    required_columns = {"context", "source", "start", "end", "test_name", "method"}
     missing_columns = required_columns - set(failures.columns)
 
     if missing_columns:
@@ -157,27 +189,46 @@ def _prepare_failures(
         return selected.reset_index(drop=True)
 
     selected["context"] = selected["context"].astype(str)
+    selected["test_name"] = selected["test_name"].astype(str)
     selected["method"] = selected["method"].astype(str)
     selected["start"] = pd.to_datetime(selected["start"], utc=True)
     selected["end"] = pd.to_datetime(selected["end"], utc=True)
 
     unknown_contexts = sorted(set(selected["context"]) - set(demand.columns))
-
     if unknown_contexts:
         raise ValueError(
             "Data-quality failures reference contexts absent from demand: "
             f"{unknown_contexts!r}."
         )
 
-    invalid_periods = selected["end"].le(selected["start"])
+    configured_tests = set(test_metadata.index)
+    unknown_tests = sorted(set(selected["test_name"]) - configured_tests)
+    if unknown_tests:
+        raise ValueError(
+            "Data-quality failures reference tests absent from configuration: "
+            f"{unknown_tests!r}."
+        )
 
+    expected_methods = test_metadata["method"]
+    observed_methods = selected.set_index("test_name")["method"]
+    mismatched_tests = sorted(
+        test_name
+        for test_name in observed_methods.index.unique()
+        if not observed_methods.loc[[test_name]].eq(expected_methods.loc[test_name]).all()
+    )
+    if mismatched_tests:
+        raise ValueError(
+            "Data-quality failures do not match configured methods for tests: "
+            f"{mismatched_tests!r}."
+        )
+
+    invalid_periods = selected["end"].le(selected["start"])
     if invalid_periods.any():
         raise ValueError(
             "Data-quality failures must use positive [start, end) periods."
         )
 
     outside_plot = selected["start"].lt(plot_start) | selected["end"].gt(plot_end)
-
     if outside_plot.any():
         raise ValueError(
             "Data-quality failures extend outside the plotted demand period."
@@ -186,81 +237,48 @@ def _prepare_failures(
     return selected.reset_index(drop=True)
 
 
-
-def _build_method_colours(
-    failures: pd.DataFrame,
+def _build_test_colours(
+    test_metadata: pd.DataFrame,
 ) -> dict[str, tuple[float, float, float, float]]:
-    """Assign one Plasma colour to each observed data-quality method."""
-    if failures.empty:
+    """Assign Plasma colours to tests in configured priority order."""
+    test_names = test_metadata.sort_values("order").index.tolist()
+    if not test_names:
         return {}
 
-    methods = sorted(failures["method"].astype(str).unique())
     colourtheme = plt.get_cmap("plasma")
 
-    if len(methods) == 1:
+    if len(test_names) == 1:
         positions = [0.45]
     else:
         # Avoid the palest yellow end of Plasma against a white page.
-        positions = np.linspace(0.05, 0.85, len(methods))
+        positions = np.linspace(0.05, 0.85, len(test_names))
 
     return {
-        method: colourtheme(position)
-        for method, position in zip(methods, positions, strict=True)
+        test_name: colourtheme(position)
+        for test_name, position in zip(test_names, positions, strict=True)
     }
 
 
-
-def _method_order(
-    method_colours: dict[str, tuple[float, float, float, float]],
-) -> dict[str, int]:
-    """Return the deterministic display order used for failure methods."""
-    return {method: position for position, method in enumerate(method_colours)}
+def _test_order(test_metadata: pd.DataFrame) -> dict[str, int]:
+    """Return configured data-quality test priority by name."""
+    return test_metadata["order"].astype(int).to_dict()
 
 
-
-def _marker_levels(
+def _active_test_names(
     failures: pd.DataFrame,
     *,
-    method_order: dict[str, int],
-) -> dict[int, int]:
-    """Assign each failure the lowest non-overlapping annotation level."""
+    test_order: dict[str, int],
+) -> list[str]:
+    """Return tests represented in one trace, preserving configured order."""
     if failures.empty:
-        return {}
+        return []
 
-    intervals = sorted(
-        (
-            (
-                failure.Index,
-                failure.start,
-                failure.end,
-                str(failure.method),
-            )
-            for failure in failures.itertuples()
-        ),
-        key=lambda interval: (
-            interval[1],
-            method_order[interval[3]],
-            interval[2],
-            interval[0],
-        ),
-    )
-
-    level_ends: list[pd.Timestamp] = []
-    levels: dict[int, int] = {}
-
-    for failure_index, start, end, _ in intervals:
-        for level, previous_end in enumerate(level_ends):
-            # Failure periods are [start, end), so touching periods may share a level.
-            if start >= previous_end:
-                levels[failure_index] = level
-                level_ends[level] = end
-                break
-        else:
-            levels[failure_index] = len(level_ends)
-            level_ends.append(end)
-
-    return levels
-
+    observed = set(failures["test_name"].astype(str))
+    return [
+        test_name
+        for test_name, _ in sorted(test_order.items(), key=lambda item: item[1])
+        if test_name in observed
+    ]
 
 
 def _build_row_layout(
@@ -268,25 +286,26 @@ def _build_row_layout(
     row_keys: list[str | int],
     failures: pd.DataFrame,
     failure_row_field: str,
-    method_order: dict[str, int],
+    test_order: dict[str, int],
     base_row_height_px: int,
     footer_height_px: int = 0,
-) -> tuple[pd.DataFrame, dict[int, int]]:
-    """Allocate vertical room for traces, collision levels, and row footers."""
+) -> tuple[pd.DataFrame, dict[tuple[str | int, str], int]]:
+    """Allocate one active test lane above each trace, in configured order."""
     rows: list[dict[str, float | str | int]] = []
-    all_marker_levels: dict[int, int] = {}
+    lane_by_test: dict[tuple[str | int, str], int] = {}
     cursor = 0.0
 
     for row_key in row_keys:
         row_failures = failures.loc[failures[failure_row_field].eq(row_key)]
-        marker_levels = _marker_levels(row_failures, method_order=method_order)
-        all_marker_levels.update(marker_levels)
+        active_tests = _active_test_names(row_failures, test_order=test_order)
+        lane_count = len(active_tests)
 
-        level_count = max(marker_levels.values()) + 1 if marker_levels else 0
+        for lane, test_name in enumerate(active_tests):
+            lane_by_test[(row_key, test_name)] = lane
+
         marker_space = 0.0
-
-        if level_count:
-            marker_space = MARKER_GAP_PX + level_count * MARKER_LEVEL_SPACING_PX
+        if lane_count:
+            marker_space = MARKER_GAP_PX + lane_count * MARKER_LEVEL_SPACING_PX
 
         axis_height = marker_space + base_row_height_px
         axis_end = cursor + axis_height
@@ -300,15 +319,14 @@ def _build_row_layout(
                 "centre": centre,
                 "axis_end": axis_end,
                 "end": row_end,
+                "lane_count": lane_count,
             }
         )
 
         cursor = row_end
 
     layout = pd.DataFrame(rows).set_index("row_key")
-
-    return layout, all_marker_levels
-
+    return layout, lane_by_test
 
 
 def _build_context_summary(
@@ -323,7 +341,6 @@ def _build_context_summary(
         rows.append({"context": context, **metrics})
 
     return pd.DataFrame(rows).set_index("context")
-
 
 
 def _summarise_series(
@@ -358,12 +375,12 @@ def _summarise_series(
     }
 
 
-
 def _write_pdf(
     *,
     demand: pd.DataFrame,
     failures: pd.DataFrame,
-    method_colours: dict[str, tuple[float, float, float, float]],
+    test_metadata: pd.DataFrame,
+    test_colours: dict[str, tuple[float, float, float, float]],
     overview_summary: pd.DataFrame,
     plot_start: pd.Timestamp,
     plot_end: pd.Timestamp,
@@ -377,7 +394,8 @@ def _write_pdf(
             pdf=pdf,
             demand=demand,
             failures=failures,
-            method_colours=method_colours,
+            test_metadata=test_metadata,
+            test_colours=test_colours,
             summary=overview_summary,
             plot_start=plot_start,
             plot_end=plot_end,
@@ -387,11 +405,11 @@ def _write_pdf(
             pdf=pdf,
             demand=demand,
             failures=failures,
-            method_colours=method_colours,
+            test_metadata=test_metadata,
+            test_colours=test_colours,
             time_step=time_step,
             detail_years_per_row=detail_years_per_row,
         )
-
 
 
 def _write_overview_pages(
@@ -399,7 +417,8 @@ def _write_overview_pages(
     pdf: PdfPages,
     demand: pd.DataFrame,
     failures: pd.DataFrame,
-    method_colours: dict[str, tuple[float, float, float, float]],
+    test_metadata: pd.DataFrame,
+    test_colours: dict[str, tuple[float, float, float, float]],
     summary: pd.DataFrame,
     plot_start: pd.Timestamp,
     plot_end: pd.Timestamp,
@@ -410,8 +429,8 @@ def _write_overview_pages(
         slice(start, min(start + CONTEXTS_PER_PAGE, len(contexts)))
         for start in range(0, len(contexts), CONTEXTS_PER_PAGE)
     ]
-    method_order = _method_order(method_colours)
-    methods = list(method_colours)
+    test_order = _test_order(test_metadata)
+    configured_test_names = test_metadata.sort_values("order").index.tolist()
 
     for page_index, context_slice in enumerate(context_slices):
         page_contexts = contexts[context_slice]
@@ -419,18 +438,23 @@ def _write_overview_pages(
         page_failures = failures.loc[failures["context"].isin(page_contexts)]
         page_summary = summary.loc[page_contexts]
 
-        layout, marker_levels = _build_row_layout(
+        layout, lane_by_test = _build_row_layout(
             row_keys=page_contexts,
             failures=page_failures,
             failure_row_field="context",
-            method_order=method_order,
+            test_order=test_order,
             base_row_height_px=OVERVIEW_BASE_ROW_HEIGHT_PX,
         )
 
-        legend_height_px = _legend_height_px(methods)
+        visible_test_names = [
+            test_name
+            for test_name in configured_test_names
+            if test_name in set(page_failures["test_name"])
+        ]
+        legend_height_px = _legend_height_px(visible_test_names)
         panel_height_px = int(np.ceil(layout["end"].iloc[-1]))
         page_height_px = (
-            PAGE_TOP_MARGIN_PX
+            OVERVIEW_PAGE_TOP_MARGIN_PX
             + panel_height_px
             + legend_height_px
             + PAGE_BOTTOM_MARGIN_PX
@@ -455,22 +479,22 @@ def _write_overview_pages(
             failures=page_failures,
             layout=layout,
             failure_row_field="context",
-            marker_levels=marker_levels,
-            method_colours=method_colours,
+            lane_by_test=lane_by_test,
+            test_colours=test_colours,
             trace_half_height_px=OVERVIEW_TRACE_HALF_HEIGHT_PX,
         )
 
         _add_summary_panel(axis=summary_axis, summary=page_summary, layout=layout)
-        _add_method_legend(
+        _add_test_legend(
             figure=figure,
-            methods=methods,
-            method_colours=method_colours,
+            test_names=visible_test_names,
+            test_metadata=test_metadata,
+            test_colours=test_colours,
             page_height_px=page_height_px,
         )
 
         pdf.savefig(figure)
         plt.close(figure)
-
 
 
 def _new_overview_page(
@@ -555,18 +579,19 @@ def _new_overview_page(
     return figure, axis, summary_axis
 
 
-
 def _write_country_detail_pages(
     *,
     pdf: PdfPages,
     demand: pd.DataFrame,
     failures: pd.DataFrame,
-    method_colours: dict[str, tuple[float, float, float, float]],
+    test_metadata: pd.DataFrame,
+    test_colours: dict[str, tuple[float, float, float, float]],
     time_step: pd.Timedelta,
     detail_years_per_row: int,
 ) -> None:
     """Write one page per context, split into calendar-year horizon rows."""
-    method_order = _method_order(method_colours)
+    test_order = _test_order(test_metadata)
+    configured_test_names = test_metadata.sort_values("order").index.tolist()
 
     for context in demand.columns:
         series = demand[context].astype(float)
@@ -583,11 +608,11 @@ def _write_country_detail_pages(
         )
 
         row_keys = periods["row_id"].astype(int).tolist()
-        layout, marker_levels = _build_row_layout(
+        layout, lane_by_test = _build_row_layout(
             row_keys=row_keys,
             failures=detail_failures,
             failure_row_field="row_id",
-            method_order=method_order,
+            test_order=test_order,
             base_row_height_px=DETAIL_BASE_ROW_HEIGHT_PX,
             footer_height_px=DETAIL_X_TICK_FOOTER_PX,
         )
@@ -598,16 +623,16 @@ def _write_country_detail_pages(
             failures=detail_failures,
         )
 
-        methods = [
-            method
-            for method in method_colours
-            if method in set(detail_failures["method"])
+        visible_test_names = [
+            test_name
+            for test_name in configured_test_names
+            if test_name in set(detail_failures["test_name"])
         ]
 
-        legend_height_px = _legend_height_px(methods)
+        legend_height_px = _legend_height_px(visible_test_names)
         panel_height_px = int(np.ceil(layout["end"].iloc[-1]))
         page_height_px = (
-            PAGE_TOP_MARGIN_PX
+            DETAIL_PAGE_TOP_MARGIN_PX
             + panel_height_px
             + legend_height_px
             + PAGE_BOTTOM_MARGIN_PX
@@ -657,9 +682,11 @@ def _write_country_detail_pages(
             _add_detail_failure_annotations(
                 axis=row_axis,
                 failures=row_failures,
+                row_key=row_key,
+                row_layout=row_layout,
                 local_centre=local_centre,
-                marker_levels=marker_levels,
-                method_colours=method_colours,
+                lane_by_test=lane_by_test,
+                test_colours=test_colours,
             )
 
             row_axis.set_xlim(period.start, period.end)
@@ -676,16 +703,16 @@ def _write_country_detail_pages(
             fontsize=11,
         )
 
-        _add_method_legend(
+        _add_test_legend(
             figure=figure,
-            methods=methods,
-            method_colours=method_colours,
+            test_names=visible_test_names,
+            test_metadata=test_metadata,
+            test_colours=test_colours,
             page_height_px=page_height_px,
         )
 
         pdf.savefig(figure)
         plt.close(figure)
-
 
 
 def _build_detail_periods(
@@ -737,7 +764,6 @@ def _build_detail_periods(
     return pd.DataFrame(rows)
 
 
-
 def _clip_failures_to_periods(
     *,
     failures: pd.DataFrame,
@@ -759,6 +785,7 @@ def _clip_failures_to_periods(
                 {
                     "row_id": int(period.row_id),
                     "context": context,
+                    "test_name": str(failure.test_name),
                     "method": str(failure.method),
                     "start": max(failure.start, period.start),
                     "end": min(failure.end, period.end),
@@ -767,9 +794,8 @@ def _clip_failures_to_periods(
 
     return pd.DataFrame(
         rows,
-        columns=["row_id", "context", "method", "start", "end"],
+        columns=["row_id", "context", "test_name", "method", "start", "end"],
     )
-
 
 
 def _build_period_summary(
@@ -792,14 +818,12 @@ def _build_period_summary(
     return pd.DataFrame(rows).set_index("row_id")
 
 
-
 def _new_figure(*, height_px: int) -> plt.Figure:
     """Create a figure from pixel dimensions."""
     return plt.figure(
         figsize=(PAGE_WIDTH_PX / FIGURE_DPI, height_px / FIGURE_DPI),
         dpi=FIGURE_DPI,
     )
-
 
 
 def _new_detail_summary_axis(
@@ -830,7 +854,6 @@ def _new_detail_summary_axis(
     )
 
     return axis
-
 
 
 def _new_detail_row_axis(
@@ -871,7 +894,6 @@ def _new_detail_row_axis(
     return axis
 
 
-
 def _configure_summary_axis(
     *, axis: plt.Axes, layout: pd.DataFrame, panel_height_px: int
 ) -> None:
@@ -904,7 +926,6 @@ def _configure_summary_axis(
     )
 
 
-
 def _add_row_boundaries(*, axis: plt.Axes, layout: pd.DataFrame) -> None:
     """Draw the existing light row separators on a stacked overview axis."""
     for boundary in layout["start"]:
@@ -917,7 +938,6 @@ def _add_row_boundaries(*, axis: plt.Axes, layout: pd.DataFrame) -> None:
         color="0.5",
         zorder=0,
     )
-
 
 
 def _add_summary_panel(
@@ -948,11 +968,7 @@ def _add_summary_panel(
 
         for x_position, (_, field, kind) in zip(x_positions, columns, strict=True):
             value = row[field]
-
-            if kind == "load":
-                label = "—" if pd.isna(value) else f"{float(value):.2f}"
-            else:
-                label = _format_percentage(value)
+            label = _format_load_gw(value) if kind == "load" else _format_percentage(value)
 
             axis.text(
                 x_position,
@@ -963,6 +979,17 @@ def _add_summary_panel(
                 fontsize=7,
             )
 
+
+def _format_load_gw(value: float) -> str:
+    """Format load while distinguishing tiny positive values from exact zero."""
+    if pd.isna(value):
+        return "—"
+
+    value = float(value)
+    if 0.0 < value < 0.01:
+        return "<0.01"
+
+    return f"{value:.2f}"
 
 
 def _format_percentage(value: float) -> str:
@@ -981,7 +1008,6 @@ def _format_percentage(value: float) -> str:
     return f"{percentage:.1f}"
 
 
-
 def _normalisation_parameters(series: pd.Series) -> tuple[float, float] | None:
     """Return the mean and robust relative scale used for one demand trace."""
     mean_load = series.mean(skipna=True)
@@ -996,7 +1022,6 @@ def _normalisation_parameters(series: pd.Series) -> tuple[float, float] | None:
         return None
 
     return float(mean_load), float(scale)
-
 
 
 def _add_overview_traces(
@@ -1014,7 +1039,6 @@ def _add_overview_traces(
             half_height=OVERVIEW_TRACE_HALF_HEIGHT_PX,
             normalisation=_normalisation_parameters(series),
         )
-
 
 
 def _add_normalised_trace(
@@ -1049,99 +1073,112 @@ def _add_normalised_trace(
     )
 
 
-
 def _add_failure_annotations(
     *,
     axis: plt.Axes,
     failures: pd.DataFrame,
     layout: pd.DataFrame,
     failure_row_field: str,
-    marker_levels: dict[int, int],
-    method_colours: dict[str, tuple[float, float, float, float]],
+    lane_by_test: dict[tuple[str | int, str], int],
+    test_colours: dict[str, tuple[float, float, float, float]],
     trace_half_height_px: float,
 ) -> None:
-    """Add collision-stacked failure segments above overview traces."""
+    """Add failure segments in stable, test-specific lanes above overview traces."""
     for failure in failures.itertuples():
         row_key = getattr(failure, failure_row_field)
+        test_name = str(failure.test_name)
         centre = float(layout.loc[row_key, "centre"])
-        level = marker_levels[failure.Index]
+        lane = lane_by_test[(row_key, test_name)]
+        lane_count = int(layout.loc[row_key, "lane_count"])
         marker_y = _marker_y(
             centre=centre,
-            level=level,
+            lane=lane,
+            lane_count=lane_count,
             trace_half_height_px=trace_half_height_px,
         )
 
         axis.plot(
             [failure.start, failure.end],
             [marker_y, marker_y],
-            color=method_colours[str(failure.method)],
+            color=test_colours[test_name],
             linewidth=MARKER_LINEWIDTH,
             solid_capstyle="round",
             zorder=5,
         )
-
 
 
 def _add_detail_failure_annotations(
     *,
     axis: plt.Axes,
     failures: pd.DataFrame,
+    row_key: int,
+    row_layout: pd.Series,
     local_centre: float,
-    marker_levels: dict[int, int],
-    method_colours: dict[str, tuple[float, float, float, float]],
+    lane_by_test: dict[tuple[str | int, str], int],
+    test_colours: dict[str, tuple[float, float, float, float]],
 ) -> None:
-    """Add collision-stacked failure segments above one detail-row trace."""
+    """Add failure segments in stable, test-specific lanes above one detail trace."""
+    lane_count = int(row_layout["lane_count"])
+
     for failure in failures.itertuples():
-        level = marker_levels[failure.Index]
+        test_name = str(failure.test_name)
+        lane = lane_by_test[(row_key, test_name)]
         marker_y = _marker_y(
             centre=local_centre,
-            level=level,
+            lane=lane,
+            lane_count=lane_count,
             trace_half_height_px=DETAIL_TRACE_HALF_HEIGHT_PX,
         )
 
         axis.plot(
             [failure.start, failure.end],
             [marker_y, marker_y],
-            color=method_colours[str(failure.method)],
+            color=test_colours[test_name],
             linewidth=MARKER_LINEWIDTH,
             solid_capstyle="round",
             zorder=5,
         )
 
 
-
-def _marker_y(*, centre: float, level: int, trace_half_height_px: float) -> float:
-    """Return the y position for one annotation level above a trace."""
+def _marker_y(
+    *,
+    centre: float,
+    lane: int,
+    lane_count: int,
+    trace_half_height_px: float,
+) -> float:
+    """Return the y position for one configured-priority lane above a trace."""
+    # The y-axis is inverted. Lane zero is therefore placed highest, so lanes
+    # read top-to-bottom in the same order as the configured tests and legend.
+    reversed_lane = lane_count - 1 - lane
     return (
         centre
         - trace_half_height_px
         - MARKER_GAP_PX
-        - level * MARKER_LEVEL_SPACING_PX
+        - reversed_lane * MARKER_LEVEL_SPACING_PX
     )
 
 
-
-def _legend_height_px(methods: list[str]) -> int:
-    """Return enough footer height for a simple three-column method legend."""
-    if not methods:
+def _legend_height_px(test_names: list[str]) -> int:
+    """Return enough footer height for a simple three-column test legend."""
+    if not test_names:
         return 28
 
-    column_count = min(3, len(methods))
-    row_count = int(np.ceil(len(methods) / column_count))
-
+    column_count = min(3, len(test_names))
+    row_count = int(np.ceil(len(test_names) / column_count))
     return LEGEND_VERTICAL_PADDING_PX + row_count * LEGEND_ROW_HEIGHT_PX
 
 
-
-def _add_method_legend(
+def _add_test_legend(
     *,
     figure: plt.Figure,
-    methods: list[str],
-    method_colours: dict[str, tuple[float, float, float, float]],
+    test_names: list[str],
+    test_metadata: pd.DataFrame,
+    test_colours: dict[str, tuple[float, float, float, float]],
     page_height_px: int,
 ) -> None:
-    """Add the marker-colour legend to a diagnostic page."""
-    if not methods:
+    """Add configured test names and colours to a diagnostic page."""
+    if not test_names:
         figure.text(
             0.5,
             8 / page_height_px,
@@ -1157,11 +1194,11 @@ def _add_method_legend(
         Line2D(
             [0],
             [0],
-            color=method_colours[method],
+            color=test_colours[test_name],
             linewidth=MARKER_LINEWIDTH,
-            label=_format_method_name(method),
+            label=str(test_metadata.loc[test_name, "label"]),
         )
-        for method in methods
+        for test_name in test_names
     ]
 
     figure.legend(
@@ -1176,7 +1213,8 @@ def _add_method_legend(
     )
 
 
+def _format_test_name(test_name: str) -> str:
+    """Format a configured data-quality test name for display."""
+    return test_name.replace("_", " ").capitalize()
 
-def _format_method_name(method: str) -> str:
-    """Format a data-quality method for the legend."""
-    return method.replace("_", " ").title()
+

@@ -181,24 +181,23 @@ integration_test:
 
   data_quality:
     tests:
-      - name: non_negative
+      - name: near_zero_demand
         method: range
         minimum:
-          value_mode: fixed
-          value: 0
+          value_mode: quantile
+          quantile: 0.5
+          multiplier: 0.1
 
       - name: abrupt_change
         method: rate_of_change
         difference_mode: fixed
         threshold:
-          value_mode: quantile_range
-          lower_quantile: 0
-          upper_quantile: 0.95
-          multiplier: 0.1
+          value_mode: median_absolute_increment
+          multiplier: 12
       
       - name: longterm_shift_in_energy_demand
         method: level_shift
-        window_duration: 1Y
+        window_duration: 365D
         threshold:
           value_mode: quantile
           quantile: 0.99
@@ -243,4 +242,4 @@ integration_test:
         difference_mode: fixed
         threshold:
           value_mode: fixed
-          value: 0.001
+          value: 0.1
