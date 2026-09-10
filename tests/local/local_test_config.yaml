@@ -191,18 +191,33 @@ integration_test:
         method: rate_of_change
         difference_mode: fixed
         threshold:
-          value_mode: median_absolute_increment
-          multiplier: 10
+          value_mode: quantile_range
+          lower_quantile: 0
+          upper_quantile: 0.95
+          multiplier: 0.1
+      
+      - name: longterm_shift_in_energy_demand
+        method: level_shift
+        window_duration: 1Y
+        threshold:
+          value_mode: quantile
+          quantile: 0.99
+          multiplier: 0.1
 
       - name: repeated_daily_profile
         method: repeated_pattern
         pattern_duration: 24h
         minimum_matches: 2
 
-      - name: flat_half_day
+      - name: flat_day
         method: flatline
-        minimum_duration: 12h
-
+        minimum_duration: 24h
+        tolerance: 
+          value_mode: quantile_range
+          lower_quantile: 0
+          upper_quantile: 0.95
+          multiplier: 0.01
+      
       - name: unusual_level
         method: contextual_level
         reference_orders:
