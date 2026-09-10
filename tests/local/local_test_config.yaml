@@ -200,7 +200,7 @@ integration_test:
         window_duration: 365D
         threshold:
           value_mode: quantile
-          quantile: 0.99
+          quantile: 0.5
           multiplier: 0.1
 
       - name: repeated_daily_profile
@@ -215,18 +215,18 @@ integration_test:
           value_mode: quantile_range
           lower_quantile: 0
           upper_quantile: 0.95
-          multiplier: 0.01
+          multiplier: 0.001
       
-      - name: unusual_level
+      - name: extreme_scale_mismatch
         method: contextual_level
         reference_orders:
           - period: 7D
             radius: 4
           - period: 1Y
             radius: 2
-        robust_deviation_threshold: 10
+        robust_deviation_threshold: 20
 
-      - name: unusual_daily_shape
+      - name: extreme_diurnal_mismatch
         method: contextual_profile
         profile_duration: 24h
         profile_offset: 0h
@@ -234,12 +234,12 @@ integration_test:
           - period: 7D
             radius: 4
           - period: 1Y
-            radius: 10
-        robust_deviation_threshold: 10
+            radius: 20
+        robust_deviation_threshold: 20
 
       - name: source_disagreement
         method: source_disagreement
-        difference_mode: fixed
+        difference_mode: relative
         threshold:
           value_mode: fixed
           value: 0.1
