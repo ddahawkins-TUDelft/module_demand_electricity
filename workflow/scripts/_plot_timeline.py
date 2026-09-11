@@ -28,6 +28,14 @@ COUNTRIES_PER_PAGE = 35
 COUNTRY_ROW_HEIGHT_PX = 20
 MIN_COUNTRY_PANEL_HEIGHT_PX = 60
 
+# Very short provenance intervals can disappear when a multi-year timeline is
+# rasterised into a few hundred horizontal pixels. Retain the coloured
+# background as the authoritative provenance encoding, but mark imputed runs
+# that would otherwise render narrower than this threshold.
+PROVENANCE_MARKER_THRESHOLD_PX = 2.0
+PROVENANCE_MARKER_ROW_OFFSET = 0.42
+PROVENANCE_MARKER_SIZE_PT = 2
+
 PAGE_LEFT_MARGIN_PX = 68
 PAGE_RIGHT_MARGIN_PX = 38
 PAGE_TOP_MARGIN_PX = 80
@@ -124,8 +132,11 @@ def main(
 
     _write_timeline_pdf(
         demand=demand,
+        cleaning_method=cleaning_method,
         background=background,
         background_cmap=background_cmap,
+        metadata=metadata,
+        rank_colours=rank_colours,
         summary=summary,
         legend_rows=legend_rows,
         output_path=output_path,
@@ -350,8 +361,11 @@ def _take_legend_rows(
 def _write_timeline_pdf(
     *,
     demand: pd.DataFrame,
+    cleaning_method: pd.DataFrame,
     background: np.ndarray,
     background_cmap: ListedColormap,
+    metadata: pd.DataFrame,
+    rank_colours: dict[int, tuple[float, float, float, float]],
     summary: pd.DataFrame,
     legend_rows: list[dict[str, Any]],
     output_path: Path,
@@ -373,6 +387,7 @@ def _write_timeline_pdf(
     with PdfPages(output_path) as pdf:
         for page_index, country_slice in enumerate(country_slices):
             page_demand = demand.iloc[:, country_slice]
+            page_cleaning_method = cleaning_method.iloc[:, country_slice]
             page_summary = summary.iloc[country_slice]
             page_background = background[country_slice, :]
 
@@ -426,6 +441,13 @@ def _write_timeline_pdf(
             )
 
             _add_normalised_demand_traces(axis=axis, demand=page_demand)
+
+            _add_subpixel_imputation_markers(
+                axis=axis,
+                cleaning_method=page_cleaning_method,
+                metadata=metadata,
+                rank_colours=rank_colours,
+            )
 
             _add_summary_panel(
                 axis=summary_axis,
@@ -881,6 +903,138 @@ def _add_normalised_demand_traces(
             series.index, plotted_y, color="black", linewidth=0.55, alpha=0.9, zorder=3
         )
 
+
+
+def _add_subpixel_imputation_markers(
+    *,
+    axis: plt.Axes,
+    cleaning_method: pd.DataFrame,
+    metadata: pd.DataFrame,
+    rank_colours: dict[int, tuple[float, float, float, float]],
+) -> None:
+    """Mark imputed provenance runs that are too narrow to see in the timeline."""
+    if cleaning_method.empty or len(cleaning_method.index) < 2:
+        return
+
+    time_step = cleaning_method.index.to_series().diff().dropna().median()
+
+    if pd.isna(time_step) or time_step <= pd.Timedelta(0):
+        return
+
+    imputed = metadata.loc[metadata["category"] == "imputed"]
+
+    if imputed.empty:
+        return
+
+    method_metadata = {
+        str(row.cleaning_method): (
+            int(row.cleaning_method_rank),
+            rank_colours[int(row.cleaning_method_rank)],
+        )
+        for row in imputed.itertuples(index=False)
+    }
+
+    if not method_metadata:
+        return
+
+    # Force Matplotlib to finalise the axes transform before measuring intervals
+    # in rendered pixels. The marker decision should depend on what is actually
+    # visible in the PDF, not on an arbitrary duration threshold.
+    axis.figure.canvas.draw()
+
+    for row_index, country in enumerate(cleaning_method.columns):
+        series = cleaning_method[country]
+
+        for method, run_start, run_end in _iter_cleaning_method_runs(
+            series=series,
+            time_step=time_step,
+        ):
+            metadata_entry = method_metadata.get(method)
+
+            if metadata_entry is None:
+                continue
+
+            _, colour = metadata_entry
+
+            start_x = axis.transData.transform(
+                (mdates.date2num(run_start), row_index)
+            )[0]
+            end_x = axis.transData.transform(
+                (mdates.date2num(run_end), row_index)
+            )[0]
+            width_px = abs(float(end_x - start_x))
+
+            if width_px >= PROVENANCE_MARKER_THRESHOLD_PX:
+                continue
+
+            midpoint = run_start + (run_end - run_start) / 2
+            marker_y = row_index - PROVENANCE_MARKER_ROW_OFFSET
+
+            axis.plot(
+                midpoint,
+                marker_y,
+                marker="v",
+                markersize=PROVENANCE_MARKER_SIZE_PT,
+                markerfacecolor=colour,
+                markeredgecolor=colour,
+                markeredgewidth=0.45,
+                linestyle="none",
+                clip_on=True,
+                zorder=5,
+            )
+
+
+def _iter_cleaning_method_runs(
+    *,
+    series: pd.Series,
+    time_step: pd.Timedelta,
+) -> list[tuple[str, pd.Timestamp, pd.Timestamp]]:
+    """Return contiguous runs of identical non-null cleaning methods."""
+    runs: list[tuple[str, pd.Timestamp, pd.Timestamp]] = []
+
+    current_method: str | None = None
+    current_start: pd.Timestamp | None = None
+    previous_timestamp: pd.Timestamp | None = None
+
+    for timestamp, value in series.items():
+        method = None if pd.isna(value) else str(value)
+        is_contiguous = (
+            previous_timestamp is not None
+            and timestamp - previous_timestamp == time_step
+        )
+
+        if previous_timestamp is None:
+            current_method = method
+            current_start = timestamp
+        elif method != current_method or not is_contiguous:
+            if current_method is not None and current_start is not None:
+                runs.append(
+                    (
+                        current_method,
+                        current_start,
+                        previous_timestamp + time_step,
+                    )
+                )
+
+            current_method = method
+            current_start = timestamp
+
+        previous_timestamp = timestamp
+
+    if (
+        current_method is not None
+        and current_start is not None
+        and previous_timestamp is not None
+    ):
+        runs.append(
+            (
+                current_method,
+                current_start,
+                previous_timestamp + time_step,
+            )
+        )
+
+    return runs
 
 def _build_country_summary(
     *,
