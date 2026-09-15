@@ -34,41 +34,6 @@ The main processing stages are:
 8. Download and prepare gridded population data.
 9. Spatially disaggregate national demand using population weights and aggregate it to the user-provided target shapes.
 
-A simplified representation is:
-
-```text
-Demand providers
-      │
-      ▼
-Prepare and combine
-      │
-      ▼
-Basic cleaning
-      │
-      ├── off/basic ────────────────────────────┐
-      │                                          │
-      └── advanced ─► plan auxiliary data        │
-                       │                         │
-                       ▼                         │
-                 acquire / prepare               │
-                       │                         │
-                       ▼                         │
-                  advanced rules ────────────────┤
-                                                 ▼
-                                      Processed national demand
-                                          + provenance
-                                                 │
-                                                 ▼
-                                       Data-quality evaluation
-                                      (when tests are configured)
-                                                 │
-                                                 ▼
-                                      Population-weighted
-                                     spatial disaggregation
-                                                 │
-                                                 ▼
-                                        Regional demand
-```
 
 ## Configuration
 
