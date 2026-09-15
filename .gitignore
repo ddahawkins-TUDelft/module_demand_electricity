@@ -30,7 +30,7 @@ gurobi.log
 **/tmp/*
 
 #ignore ENTSOE token
-resources/user/token_entsoe.txt
+**/token_entsoe.txt
 
 #dev workspace
 **/dev/
