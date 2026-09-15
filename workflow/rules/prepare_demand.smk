@@ -35,7 +35,6 @@ rule demand_electricity_raster:
         output_data="<resources>/automatic/{shape}/demand_electricity_raster.tif",
         output_profiles="<resources>/automatic/{shape}/demand_electricity_countries_profiles.parquet",
         plot_raster="<results>/{shape}/demand_electricity_raster_map.png",
-        plot_profiles="<results>/{shape}/national_demand_profiles.png",
     log:
         "<logs>/{shape}/demand_electricity_raster.log",
     conda:
