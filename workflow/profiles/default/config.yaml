@@ -12,6 +12,6 @@ resources:
   entsoe_download: 2
   neso_download: 2
 
-# Safety margin below ENTSO-E's 400 requests/minute API limit.
-# Limit applies to all jobs but unlikely to impact workflow.
+# Safety margin below ENTSO-E's 400 requests/minute API limit to avoid silent 
+# bans during CI testing. Unlikely to be reached.
 max-jobs-per-timespan: 300/1m
