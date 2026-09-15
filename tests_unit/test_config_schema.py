@@ -6,7 +6,7 @@ import yaml
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ValidationError
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = REPOSITORY_ROOT / "config" / "config.yaml"
 SCHEMA_PATH = REPOSITORY_ROOT / "workflow" / "internal" / "config.schema.yaml"
 

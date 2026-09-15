@@ -53,7 +53,7 @@ module = { features = ["module"], no-default-feature = true }
 test = { features = ["module", "test-module"], no-default-feature = true }
 
 [feature.test-module.tasks]
-test-unit = "pytest tests/unit"
+test-unit = "pytest tests_unit"
 
 [tasks]
 test-integration = {cmd = "pytest tests/integration_test.py"}
