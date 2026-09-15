@@ -100,7 +100,7 @@ To test a minimal example of a workflow using this module:
 ```shell
 pixi shell    # activate this project's environment
 cd tests/integration/  # navigate to the integration example
-snakemake  # run the workflow!
+snakemake --use-conda --cores 2 # run the workflow!
 ```
 
 The integration workflow's default Snakemake profile enables Conda, uses 2 cores, and limits concurrent ENTSO-E downloads (including Transparency Platform and Power Statistics acquisition) and NESO downloads to 2 each. These execution settings can be overridden with the corresponding Snakemake command-line options:
