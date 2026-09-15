@@ -1,6 +1,7 @@
 """Evaluate data quality of constructed electricity demand."""
 
 import logging
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -19,46 +20,22 @@ if TYPE_CHECKING:
     snakemake: Any
 
 
-class _ExactLevelFilter(logging.Filter):
-    """Allow only one exact logging level through a handler."""
-
-    def __init__(self, level: int) -> None:
-        super().__init__()
-        self.level = level
-
-    def filter(self, record: logging.LogRecord) -> bool:
-        return record.levelno == self.level
-
-
-def configure_tclean_data_quality_logging(log_path: str | Path | None) -> None:
-    """Send INFO to terminal and full tclean data-quality logs to a file."""
+def configure_tclean_data_quality_logging() -> None:
+    """Send detailed T-Clean data-quality logs to redirected stderr."""
     tclean_logger = logging.getLogger("tclean.data_quality")
     tclean_logger.setLevel(logging.DEBUG)
     tclean_logger.handlers.clear()
     tclean_logger.propagate = False
 
-    # INFO only -> terminal
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    console_handler.addFilter(_ExactLevelFilter(logging.INFO))
-    console_handler.setFormatter(
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(
         logging.Formatter(
-            "%(asctime)s | %(levelname)s | %(message)s", datefmt="%H:%M:%S"
+            "%(asctime)s | %(name)s | %(levelname)s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
     )
-    tclean_logger.addHandler(console_handler)
-
-    # DEBUG+ -> file
-    if log_path is not None:
-        file_handler = logging.FileHandler(log_path, mode="a", encoding="utf-8")
-        file_handler.setLevel(logging.DEBUG)
-        file_handler.setFormatter(
-            logging.Formatter(
-                "%(asctime)s | %(name)s | %(levelname)s | %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S",
-            )
-        )
-        tclean_logger.addHandler(file_handler)
+    tclean_logger.addHandler(handler)
 
 
 def main(snakemake: Any) -> None:
@@ -76,8 +53,7 @@ def main(snakemake: Any) -> None:
 
     tests = build_data_quality_tests(snakemake.params.data_quality)
 
-    log_path = str(snakemake.log[0]) if snakemake.log else None
-    configure_tclean_data_quality_logging(log_path)
+    configure_tclean_data_quality_logging()
 
     evaluation = evaluate(
         sources,
@@ -121,4 +97,8 @@ def _build_evaluation_sources(
 
 
 if __name__ == "__main__":
+    sys.stderr = open(snakemake.log[0], "w", buffering=1)
+
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
     main(snakemake)

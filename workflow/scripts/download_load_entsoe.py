@@ -1,7 +1,7 @@
 """Snakemake entry point for downloading one ENTSO-E country-year chunk."""
 
 import logging
-from pathlib import Path
+import sys
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
@@ -30,19 +30,8 @@ def main(snakemake: Any) -> None:
 
 
 if __name__ == "__main__":
-    formatter = logging.Formatter("%(levelname)s: %(message)s")
+    sys.stderr = open(snakemake.log[0], "w", buffering=1)
 
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    console_handler.setFormatter(formatter)
-
-    log_path = Path(snakemake.log[0])
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-
-    file_handler = logging.FileHandler(log_path, mode="w")
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(formatter)
-
-    logging.basicConfig(level=logging.DEBUG, handlers=[console_handler, file_handler])
+    logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
 
     main(snakemake)

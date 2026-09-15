@@ -1,5 +1,8 @@
 """Construct an auxiliary profile from cleaned source data."""
 
+import logging
+import sys
+
 import pandas as pd
 from _advanced_execution import load_execution_plan
 from _tclean_config import (
@@ -8,6 +11,10 @@ from _tclean_config import (
 )
 from tclean import TimeGrid
 from tclean.gap_filling import construct_from_sources
+
+sys.stderr = open(snakemake.log[0], "w", buffering=1)
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 plan = load_execution_plan(snakemake.input.plan)
 

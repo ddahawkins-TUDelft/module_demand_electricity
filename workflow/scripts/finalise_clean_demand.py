@@ -1,10 +1,16 @@
 """Generate the final cleaned demand and provenance outputs."""
 
+import logging
 import shutil
+import sys
 
 import pandas as pd
 from _tclean_config import build_advanced_rules, build_basic_rules
 from tclean.gap_filling import build_cleaning_method_ranks, derive_cleaning_method_rank
+
+sys.stderr = open(snakemake.log[0], "w", buffering=1)
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 shutil.copyfile(snakemake.input.demand, snakemake.output.demand)
 

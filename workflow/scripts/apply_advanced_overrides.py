@@ -1,11 +1,17 @@
 """Apply advanced T-Clean rules to basic-cleaned demand."""
 
+import logging
+import sys
 from pathlib import Path
 
 import pandas as pd
 from _advanced_execution import load_execution_plan
 from tclean import TimeGrid
 from tclean.gap_filling import apply_advanced_rules, read_external_profile
+
+sys.stderr = open(snakemake.log[0], "w", buffering=1)
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 plan = load_execution_plan(snakemake.input.plan)
 
@@ -22,7 +28,7 @@ cleaning_method = pd.read_parquet(snakemake.input.cleaning_method)
 active_rule_names = plan["active_rule_names"]
 
 if not active_rule_names:
-    print(
+    logging.info(
         "No advanced cleaning rules apply to the target contexts and period; "
         "passing basic-cleaned demand through unchanged."
     )

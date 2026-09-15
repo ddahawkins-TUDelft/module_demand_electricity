@@ -2,6 +2,8 @@
 
 import hashlib
 import json
+import logging
+import sys
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -203,6 +205,10 @@ def write_validation_marker(
 
 
 if __name__ == "__main__":
+    sys.stderr = open(snakemake.log[0], "w", buffering=1)
+
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
     validation_kind = snakemake.params.validation_kind
     validation_config = snakemake.params.validation_config
 

@@ -1,5 +1,7 @@
 """Snakemake entry point for preparing ENTSO-E load data."""
 
+import logging
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -40,4 +42,8 @@ def main(snakemake: Any) -> None:
 
 
 if __name__ == "__main__":
+    sys.stderr = open(snakemake.log[0], "w", buffering=1)
+
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
     main(snakemake)

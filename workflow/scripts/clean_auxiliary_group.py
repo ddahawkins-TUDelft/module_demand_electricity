@@ -1,5 +1,7 @@
 """Combine and clean one auxiliary electricity-demand group."""
 
+import logging
+import sys
 from typing import TYPE_CHECKING, Any
 
 import pandas as pd
@@ -97,4 +99,8 @@ def main(snakemake: Any) -> None:
 
 
 if __name__ == "__main__":
+    sys.stderr = open(snakemake.log[0], "w", buffering=1)
+
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+
     main(snakemake)

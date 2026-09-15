@@ -1,5 +1,6 @@
 """Prepare electricity demand timeseries at raster resolution."""
 
+import logging
 import sys
 from typing import TYPE_CHECKING, Any
 from warnings import warn
@@ -90,6 +91,8 @@ def main(
 
 if __name__ == "__main__":
     sys.stderr = open(snakemake.log[0], "w", buffering=1)
+
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     main(
         path_demand=snakemake.input.demand,
         path_population=snakemake.input.population,
