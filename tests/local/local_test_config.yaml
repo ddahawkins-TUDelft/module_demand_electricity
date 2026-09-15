@@ -1,6 +1,4 @@
 integration_test:
-  # The integration test uses a deliberately short hourly period to keep
-  # provider downloads and workflow execution reasonably small.
   temporal_scope:
     start: "2017-01-01"
     end: "2023-01-01"
