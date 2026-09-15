@@ -904,7 +904,6 @@ def _add_normalised_demand_traces(
         )
 
 
-
 def _add_subpixel_imputation_markers(
     *,
     axis: plt.Axes,
@@ -946,8 +945,7 @@ def _add_subpixel_imputation_markers(
         series = cleaning_method[country]
 
         for method, run_start, run_end in _iter_cleaning_method_runs(
-            series=series,
-            time_step=time_step,
+            series=series, time_step=time_step
         ):
             metadata_entry = method_metadata.get(method)
 
@@ -956,12 +954,10 @@ def _add_subpixel_imputation_markers(
 
             _, colour = metadata_entry
 
-            start_x = axis.transData.transform(
-                (mdates.date2num(run_start), row_index)
-            )[0]
-            end_x = axis.transData.transform(
-                (mdates.date2num(run_end), row_index)
-            )[0]
+            start_x = axis.transData.transform((mdates.date2num(run_start), row_index))[
+                0
+            ]
+            end_x = axis.transData.transform((mdates.date2num(run_end), row_index))[0]
             width_px = abs(float(end_x - start_x))
 
             if width_px >= PROVENANCE_MARKER_THRESHOLD_PX:
@@ -985,9 +981,7 @@ def _add_subpixel_imputation_markers(
 
 
 def _iter_cleaning_method_runs(
-    *,
-    series: pd.Series,
-    time_step: pd.Timedelta,
+    *, series: pd.Series, time_step: pd.Timedelta
 ) -> list[tuple[str, pd.Timestamp, pd.Timestamp]]:
     """Return contiguous runs of identical non-null cleaning methods."""
     runs: list[tuple[str, pd.Timestamp, pd.Timestamp]] = []
@@ -1009,11 +1003,7 @@ def _iter_cleaning_method_runs(
         elif method != current_method or not is_contiguous:
             if current_method is not None and current_start is not None:
                 runs.append(
-                    (
-                        current_method,
-                        current_start,
-                        previous_timestamp + time_step,
-                    )
+                    (current_method, current_start, previous_timestamp + time_step)
                 )
 
             current_method = method
@@ -1026,15 +1016,10 @@ def _iter_cleaning_method_runs(
         and current_start is not None
         and previous_timestamp is not None
     ):
-        runs.append(
-            (
-                current_method,
-                current_start,
-                previous_timestamp + time_step,
-            )
-        )
+        runs.append((current_method, current_start, previous_timestamp + time_step))
 
     return runs
+
 
 def _build_country_summary(
     *,

@@ -192,7 +192,7 @@ integration_test:
         threshold:
           value_mode: median_absolute_increment
           multiplier: 12
-      
+
       - name: longterm_shift_in_energy_demand
         method: level_shift
         window_duration: 365D
@@ -209,12 +209,12 @@ integration_test:
       - name: flat_day
         method: flatline
         minimum_duration: 24h
-        tolerance: 
+        tolerance:
           value_mode: quantile_range
           lower_quantile: 0
           upper_quantile: 0.95
           multiplier: 0.001
-      
+
       - name: extreme_scale_mismatch
         method: contextual_level
         reference_orders:

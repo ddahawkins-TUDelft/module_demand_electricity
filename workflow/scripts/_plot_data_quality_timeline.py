@@ -149,10 +149,7 @@ def _build_test_metadata(data_quality_config: Mapping[str, Any]) -> pd.DataFrame
         for order, test in enumerate(tests)
     ]
 
-    metadata = pd.DataFrame(
-        rows,
-        columns=["test_name", "method", "label", "order"],
-    )
+    metadata = pd.DataFrame(rows, columns=["test_name", "method", "label", "order"])
 
     if metadata.empty:
         return metadata.set_index("test_name")
@@ -214,7 +211,9 @@ def _prepare_failures(
     mismatched_tests = sorted(
         test_name
         for test_name in observed_methods.index.unique()
-        if not observed_methods.loc[[test_name]].eq(expected_methods.loc[test_name]).all()
+        if not observed_methods.loc[[test_name]]
+        .eq(expected_methods.loc[test_name])
+        .all()
     )
     if mismatched_tests:
         raise ValueError(
@@ -265,9 +264,7 @@ def _test_order(test_metadata: pd.DataFrame) -> dict[str, int]:
 
 
 def _active_test_names(
-    failures: pd.DataFrame,
-    *,
-    test_order: dict[str, int],
+    failures: pd.DataFrame, *, test_order: dict[str, int]
 ) -> list[str]:
     """Return tests represented in one trace, preserving configured order."""
     if failures.empty:
@@ -343,26 +340,19 @@ def _build_context_summary(
     return pd.DataFrame(rows).set_index("context")
 
 
-def _summarise_series(
-    series: pd.Series, failures: pd.DataFrame
-) -> dict[str, float]:
+def _summarise_series(series: pd.Series, failures: pd.DataFrame) -> dict[str, float]:
     """Return min/max load and the share of non-missing observations unflagged."""
     valid = series.notna()
     valid_count = int(valid.sum())
 
     if valid_count == 0:
-        return {
-            "min_load_gw": np.nan,
-            "max_load_gw": np.nan,
-            "unflagged": np.nan,
-        }
+        return {"min_load_gw": np.nan, "max_load_gw": np.nan, "unflagged": np.nan}
 
     flagged = np.zeros(len(series), dtype=bool)
 
     for failure in failures.itertuples():
         flagged |= np.asarray(
-            (series.index >= failure.start) & (series.index < failure.end),
-            dtype=bool,
+            (series.index >= failure.start) & (series.index < failure.end), dtype=bool
         )
 
     valid_values = series.loc[valid]
@@ -551,9 +541,7 @@ def _new_overview_page(
     axis.tick_params(axis="x", labelsize=7)
 
     _configure_summary_axis(
-        axis=summary_axis,
-        layout=layout,
-        panel_height_px=panel_height_px,
+        axis=summary_axis, layout=layout, panel_height_px=panel_height_px
     )
 
     figure.text(
@@ -596,15 +584,11 @@ def _write_country_detail_pages(
     for context in demand.columns:
         series = demand[context].astype(float)
         periods = _build_detail_periods(
-            index=demand.index,
-            time_step=time_step,
-            years_per_row=detail_years_per_row,
+            index=demand.index, time_step=time_step, years_per_row=detail_years_per_row
         )
 
         detail_failures = _clip_failures_to_periods(
-            failures=failures,
-            context=context,
-            periods=periods,
+            failures=failures, context=context, periods=periods
         )
 
         row_keys = periods["row_id"].astype(int).tolist()
@@ -618,9 +602,7 @@ def _write_country_detail_pages(
         )
 
         summary = _build_period_summary(
-            series=series,
-            periods=periods,
-            failures=detail_failures,
+            series=series, periods=periods, failures=detail_failures
         )
 
         visible_test_names = [
@@ -675,9 +657,7 @@ def _write_country_detail_pages(
                 normalisation=normalisation,
             )
 
-            row_failures = detail_failures.loc[
-                detail_failures["row_id"].eq(row_key)
-            ]
+            row_failures = detail_failures.loc[detail_failures["row_id"].eq(row_key)]
 
             _add_detail_failure_annotations(
                 axis=row_axis,
@@ -716,10 +696,7 @@ def _write_country_detail_pages(
 
 
 def _build_detail_periods(
-    *,
-    index: pd.DatetimeIndex,
-    time_step: pd.Timedelta,
-    years_per_row: int,
+    *, index: pd.DatetimeIndex, time_step: pd.Timedelta, years_per_row: int
 ) -> pd.DataFrame:
     """Split the plotted horizon into calendar-year detail rows."""
     plot_start = index[0]
@@ -730,12 +707,7 @@ def _build_detail_periods(
     row_id = 0
 
     for first_year in range(index[0].year, index[-1].year + 1, years_per_row):
-        nominal_start = pd.Timestamp(
-            year=first_year,
-            month=1,
-            day=1,
-            tz=timezone,
-        )
+        nominal_start = pd.Timestamp(year=first_year, month=1, day=1, tz=timezone)
         nominal_end = nominal_start + pd.DateOffset(years=years_per_row)
 
         start = max(plot_start, nominal_start)
@@ -751,24 +723,14 @@ def _build_detail_periods(
             else f"{start.year}\u2013{final_year}"
         )
 
-        rows.append(
-            {
-                "row_id": row_id,
-                "label": label,
-                "start": start,
-                "end": end,
-            }
-        )
+        rows.append({"row_id": row_id, "label": label, "start": start, "end": end})
         row_id += 1
 
     return pd.DataFrame(rows)
 
 
 def _clip_failures_to_periods(
-    *,
-    failures: pd.DataFrame,
-    context: str,
-    periods: pd.DataFrame,
+    *, failures: pd.DataFrame, context: str, periods: pd.DataFrame
 ) -> pd.DataFrame:
     """Clip a context's failure intervals to the detail-row boundaries."""
     context_failures = failures.loc[failures["context"].eq(context)]
@@ -793,16 +755,12 @@ def _clip_failures_to_periods(
             )
 
     return pd.DataFrame(
-        rows,
-        columns=["row_id", "context", "test_name", "method", "start", "end"],
+        rows, columns=["row_id", "context", "test_name", "method", "start", "end"]
     )
 
 
 def _build_period_summary(
-    *,
-    series: pd.Series,
-    periods: pd.DataFrame,
-    failures: pd.DataFrame,
+    *, series: pd.Series, periods: pd.DataFrame, failures: pd.DataFrame
 ) -> pd.DataFrame:
     """Summarise each detail row using the same table metrics as the overview."""
     rows: list[dict[str, float | int]] = []
@@ -821,8 +779,7 @@ def _build_period_summary(
 def _new_figure(*, height_px: int) -> plt.Figure:
     """Create a figure from pixel dimensions."""
     return plt.figure(
-        figsize=(PAGE_WIDTH_PX / FIGURE_DPI, height_px / FIGURE_DPI),
-        dpi=FIGURE_DPI,
+        figsize=(PAGE_WIDTH_PX / FIGURE_DPI, height_px / FIGURE_DPI), dpi=FIGURE_DPI
     )
 
 
@@ -847,11 +804,7 @@ def _new_detail_summary_axis(
         ]
     )
 
-    _configure_summary_axis(
-        axis=axis,
-        layout=layout,
-        panel_height_px=panel_height_px,
-    )
+    _configure_summary_axis(axis=axis, layout=layout, panel_height_px=panel_height_px)
 
     return axis
 
@@ -918,11 +871,7 @@ def _configure_summary_axis(
         axis.axhline(boundary, linewidth=0.4, alpha=0.3, color="0.5", zorder=0)
 
     axis.axhline(
-        layout["end"].iloc[-1],
-        linewidth=0.4,
-        alpha=0.3,
-        color="0.5",
-        zorder=0,
+        layout["end"].iloc[-1], linewidth=0.4, alpha=0.3, color="0.5", zorder=0
     )
 
 
@@ -932,11 +881,7 @@ def _add_row_boundaries(*, axis: plt.Axes, layout: pd.DataFrame) -> None:
         axis.axhline(boundary, linewidth=0.4, alpha=0.3, color="0.5", zorder=0)
 
     axis.axhline(
-        layout["end"].iloc[-1],
-        linewidth=0.4,
-        alpha=0.3,
-        color="0.5",
-        zorder=0,
+        layout["end"].iloc[-1], linewidth=0.4, alpha=0.3, color="0.5", zorder=0
     )
 
 
@@ -968,15 +913,12 @@ def _add_summary_panel(
 
         for x_position, (_, field, kind) in zip(x_positions, columns, strict=True):
             value = row[field]
-            label = _format_load_gw(value) if kind == "load" else _format_percentage(value)
+            label = (
+                _format_load_gw(value) if kind == "load" else _format_percentage(value)
+            )
 
             axis.text(
-                x_position,
-                y_position,
-                label,
-                ha="center",
-                va="center",
-                fontsize=7,
+                x_position, y_position, label, ha="center", va="center", fontsize=7
             )
 
 
@@ -1064,12 +1006,7 @@ def _add_normalised_trace(
         plotted_y = centre - scaled * half_height
 
     axis.plot(
-        series.index,
-        plotted_y,
-        color="black",
-        linewidth=0.55,
-        alpha=0.9,
-        zorder=3,
+        series.index, plotted_y, color="black", linewidth=0.55, alpha=0.9, zorder=3
     )
 
 
@@ -1141,11 +1078,7 @@ def _add_detail_failure_annotations(
 
 
 def _marker_y(
-    *,
-    centre: float,
-    lane: int,
-    lane_count: int,
-    trace_half_height_px: float,
+    *, centre: float, lane: int, lane_count: int, trace_half_height_px: float
 ) -> float:
     """Return the y position for one configured-priority lane above a trace."""
     # The y-axis is inverted. Lane zero is therefore placed highest, so lanes
@@ -1216,5 +1149,3 @@ def _add_test_legend(
 def _format_test_name(test_name: str) -> str:
     """Format a configured data-quality test name for display."""
     return test_name.replace("_", " ").capitalize()
-
-
