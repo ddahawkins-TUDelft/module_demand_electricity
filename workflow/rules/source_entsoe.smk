@@ -13,7 +13,7 @@ if "module_demand_electricity_entsoe_api" not in workflow.global_resources:
 
 rule download_load_entsoe_country_year:
     input:
-        token_entsoe="<token_entsoe>",
+        token_entsoe=ancient("<token_entsoe>"),
     output:
         annual_file=("<resources>/automatic/entsoe/raw/{country}/{year}.parquet"),
     log:
