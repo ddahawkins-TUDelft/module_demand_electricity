@@ -31,7 +31,7 @@ pathvars:
         Directory of user-provided .csv to feed into advanced tclean gap-filling.
 
   results:
-    demand_electricity_MW:
+    output_data:
       default: "<results>/{shape}/demand_electricity_MW.parquet"
       description: "Hourly electricity demand per custom shape, in MW."
 
