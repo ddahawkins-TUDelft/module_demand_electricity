@@ -958,7 +958,7 @@ def _normalisation_parameters(series: pd.Series) -> tuple[float, float] | None:
         return None
 
     relative = (series / mean_load) - 1
-    scale = relative.abs().quantile(0.99)
+    scale = relative.abs().max()
 
     if pd.isna(scale):
         return None
@@ -1002,7 +1002,7 @@ def _add_normalised_trace(
         plotted_y = pd.Series(np.nan, index=series.index, dtype=float)
         plotted_y.loc[series.notna()] = centre
     else:
-        scaled = relative.clip(lower=-scale, upper=scale) / scale
+        scaled = relative / scale
         plotted_y = centre - scaled * half_height
 
     axis.plot(

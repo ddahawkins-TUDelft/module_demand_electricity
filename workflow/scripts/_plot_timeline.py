@@ -876,7 +876,7 @@ def _add_normalised_demand_traces(
     axis: plt.Axes,
     demand: pd.DataFrame,
     half_height: float = 0.35,
-    quantile: float = 0.99,
+    quantile: float = 1.0,
 ) -> None:
     """Overlay mean-normalised demand traces."""
     for row_index, country in enumerate(demand.columns):
@@ -893,7 +893,7 @@ def _add_normalised_demand_traces(
         if pd.isna(scale) or scale == 0:
             plotted_y = pd.Series(row_index, index=series.index, dtype=float)
         else:
-            scaled = relative.clip(lower=-scale, upper=scale) / scale
+            scaled = relative / scale
 
             # The y-axis is inverted, so subtracting makes
             # above-average demand appear visually upward.
