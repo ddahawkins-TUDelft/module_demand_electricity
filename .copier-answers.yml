@@ -6,13 +6,22 @@ authors:
 -   email: j.a.c.launer@tudelft.nl
     family_name: Launer
     given_name: Jann
+-   email: d.d.a.hawkins@tudelft.nl
+    family_name: Hawkins
+    given_name: Dano
 github_org: modelblocks-org
 license: Apache-2.0
 maintainers:
 -   email: j.a.c.launer@tudelft.nl
     family_name: Launer
     given_name: Jann
+-   email: d.d.a.hawkins@tudelft.nl
+    family_name: Hawkins
+    given_name: Dano
 module_code_name: module_demand_electricity
-module_description: This module prepares electricity demand timeseries for Europe
-    at arbitrary resolution
+module_description: This module prepares regular electricity-demand time series for
+    target regions. National demand observations from multiple providers are combined,
+    cleaned, and evaluated for data-quality issues on a user-defined time grid, then
+    spatially disaggregated using population data and aggregated to user-provided
+    shapes.
 module_human_name: European electricity demand

@@ -1,8 +1,6 @@
 # European electricity demand
 
-This Modelblocks module prepares regular electricity-demand time series for European target regions. National demand observations from multiple providers are combined and cleaned on a user-defined time grid, then spatially disaggregated using population data and aggregated to user-provided shapes.
-
-Demand cleaning and configurable data-quality evaluation are performed with tclean, while this module remains responsible for electricity-demand providers, Modelblocks configuration, auxiliary-data acquisition, workflow orchestration, spatial disaggregation, and diagnostic outputs.
+This module prepares regular electricity-demand time series for target regions. National demand observations from multiple providers are combined, cleaned, and evaluated for data-quality issues on a user-defined time grid, then spatially disaggregated using population data and aggregated to user-provided shapes.
 
 <p align="center">
   <img src="./figures/readme_cleaning_timeline.jpg">

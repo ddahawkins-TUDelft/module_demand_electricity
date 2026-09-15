@@ -1,7 +1,7 @@
 [workspace]
 name = "module_demand_electricity"
 authors = ["See AUTHORS file"]
-description = "This module prepares electricity demand timeseries for Europe at arbitrary resolution"
+description = "This module prepares regular electricity-demand time series for target regions. National demand observations from multiple providers are combined, cleaned, and evaluated for data-quality issues on a user-defined time grid, then spatially disaggregated using population data and aggregated to user-provided shapes."
 license = "Apache-2.0"
 readme = "README.md"
 channels = [
