@@ -18,9 +18,6 @@ TEST_FILES = {
     "EUROPE_L_C34_ADM1": "https://zenodo.org/records/20765043/files/EUROPE_L_C34_ADM1.parquet?download=1",
 }
 
-TOKEN_ENTSOE = os.getenv("TOKEN_ENTSOE")
-TOKEN_FILE = Path("resources/user/token_entsoe.txt")
-
 
 @pytest.fixture(scope="module")
 def module_path():
@@ -79,13 +76,16 @@ def token_entsoe() -> Path:
     and if token_entsoe.txt is not present or empty,
     write the token to the file.
     """
-    if TOKEN_FILE.exists() and TOKEN_FILE.read_text().strip():
-        return TOKEN_FILE
+    token_entsoe = os.getenv("TOKEN_ENTSOE")
+    token_file = Path("resources/user/token_entsoe.txt")
 
-    if TOKEN_ENTSOE:
-        TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
-        TOKEN_FILE.write_text(TOKEN_ENTSOE)
-        return TOKEN_FILE
+    if token_file.exists() and token_file.read_text().strip():
+        return token_file
+
+    if token_entsoe:
+        token_file.parent.mkdir(parents=True, exist_ok=True)
+        token_file.write_text(token_entsoe)
+        return token_file
 
     raise ValueError(
         "`token_entsoe.txt` is missing or empty, and the environment variable "
