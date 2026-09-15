@@ -27,7 +27,6 @@ def main(
     path_output_data,
     path_output_profiles,
     plot_raster,
-    plot_profiles,
 ):
     """Main function."""
     # load data
@@ -86,7 +85,6 @@ def main(
     plt.savefig(plot_raster, bbox_inches="tight")
 
     plot_national_profiles(demand_filtered)
-    plt.savefig(plot_profiles, bbox_inches="tight", dpi=110)
 
 
 if __name__ == "__main__":
@@ -102,5 +100,4 @@ if __name__ == "__main__":
         path_output_data=snakemake.output.output_data,
         path_output_profiles=snakemake.output.output_profiles,
         plot_raster=snakemake.output.plot_raster,
-        plot_profiles=snakemake.output.plot_profiles,
     )
