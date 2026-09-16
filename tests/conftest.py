@@ -8,10 +8,6 @@ from urllib.request import urlretrieve
 import pytest
 
 MODULE_PATH = Path(__file__).resolve().parent.parent
-WORKFLOW_SCRIPTS = MODULE_PATH / "workflow" / "scripts"
-
-sys.path.insert(0, str(WORKFLOW_SCRIPTS))
-
 
 TEST_FILES = {
     "EUROPE_S_C1_ADM1": "https://zenodo.org/records/20765043/files/EUROPE_S_C1_ADM1.parquet?download=1",
