@@ -875,7 +875,7 @@ def _add_normalised_demand_traces(
     *,
     axis: plt.Axes,
     demand: pd.DataFrame,
-    half_height: float = 0.35,
+    half_height: float = 0.4,
     quantile: float = 1.0,
 ) -> None:
     """Overlay mean-normalised demand traces."""
