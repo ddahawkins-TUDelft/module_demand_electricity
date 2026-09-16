@@ -41,86 +41,28 @@ The module is configured through `config/config.yaml`.
 
 The key configuration groups are:
 
-- `temporal_scope`: grid start, grid end, and fixed frequency;
-- `load_sources`: demand-provider priority;
-- `gap_filling`: cleaning mode plus basic and advanced rules;
-- `data_quality`: ordered diagnostic tests applied to the processed demand and, where relevant, provider sources.
+- `temporal_scope`: the target time grid;
+- `load_sources`: demand providers and their priority;
+- `gap_filling`: basic and advanced gap handling;
+- `data_quality`: diagnostic tests applied to demand data.
 
-See the [configuration README](./config/README.md), the [example configuration](./config/config.yaml), and the authoritative [configuration schema](./workflow/internal/config.schema.yaml).
+Detailed configuration syntax, accepted values, provider metadata, validation rules, and examples are documented in the [configuration README](./config/README.md). See also the [example configuration](./config/config.yaml) and the authoritative [configuration schema](./workflow/internal/config.schema.yaml).
 
-## Time grid
+## Demand preparation and gap handling
 
-All national demand cleaning is performed on an explicit regular time grid defined by:
+National electricity-demand observations can be drawn from multiple providers and combined according to a configurable source priority on a regular user-defined time grid.
 
-```yaml
-temporal_scope:
-  start: "2017-01-01"
-  end: "2017-01-03"
-  frequency: "1h"
-```
+The module supports several levels of gap handling. Demand can be left unfilled, processed using deterministic basic cleaning rules, or handled with targeted advanced rules that can reconstruct or replace selected periods using auxiliary demand data or external profiles. Cleaning provenance is retained so that observed and reconstructed values remain distinguishable downstream.
 
-`start` is inclusive and `end` is exclusive. The difference between `start` and `end` must be an integer multiple of `frequency`.
-
-The configured start timestamp also defines the phase of the grid. Provider and auxiliary timestamps used by the workflow must align with that phase.
-
-## Demand sources
-
-`load_sources` defines both the providers to use and their priority order:
-
-```yaml
-load_sources:
-  - entsoe
-  - neso
-  - entsoe_power_statistics
-  - opsd
-```
-
-Where multiple providers supply a value for the same country and timestamp, the earlier provider in this list has priority.
-
-Available provider identifiers are:
-
-- `entsoe`: ENTSO-E Transparency Platform API. A valid ENTSO-E API token is required when this source is configured;
-- `entsoe_power_statistics`: official ENTSO-E Power Statistics historical archive, currently integrated for 2019–2025. No API token is required;
-- `neso`: National Energy System Operator historic demand, restricted to Great Britain (`GBR`);
-- `opsd`: Open Power System Data, with the currently integrated historical coverage ending at 2019-03-01.
-
-Source identifiers, human-readable names, declared temporal bounds, and context restrictions are defined centrally in [`workflow/internal/source_registry.yaml`](./workflow/internal/source_registry.yaml). Missing temporal bounds or context restrictions in the registry mean that the module declares no corresponding restriction.
-
-## Cleaning and gap handling
-
-Three modes are available:
-
-- `"off"`: do not fill gaps. Quotation marks are required because YAML may interpret an unquoted `off` as the boolean value `false`;
-- `basic`: apply configured deterministic rules;
-- `advanced`: run basic cleaning first, then execute active advanced rules.
-
-Basic rules are applied sequentially in configuration order. Supported basic methods include `linear_interpolation`, `average_periods`, and `copy_periods`.
-
-Advanced configuration separates reusable **sources** from target **rules**. A source describes how an advanced profile is obtained, for example by constructing it from one or more country-period source profiles or reading an external CSV. A rule states where that source should be applied.
-
-An advanced rule is active when both its target country and target period are relevant to the current model run. Rules outside the requested countries or `temporal_scope` remain valid configuration but do not trigger unnecessary auxiliary-data acquisition.
-
-Advanced rule scopes are:
-
-- `fill_gaps`: use the advanced profile only where target values are missing;
-- `overwrite`: replace target values throughout the configured rule period.
-
-Configured periods use half-open intervals, `[start, end)`.
-
-See [Configuration: Advanced gap filling](./config/README.md#advanced-gap-filling) for full examples.
-
+See [Configuration: Temporal scope](./config/README.md#temporal-scope), [Demand sources](./config/README.md#demand-sources), and [Gap filling](./config/README.md#gap-filling) for detailed configuration and examples.
 
 ## Data-quality evaluation
 
-The module can run ordered data-quality tests after the configured gap-filling stage and before spatial disaggregation. Evaluation is diagnostic: it records anomalous periods and evaluation limitations but does **not** alter the processed demand series.
+After gap handling and before spatial disaggregation, the module can evaluate demand using configurable data-quality tests. These checks are diagnostic: they identify suspicious observations, profiles, source disagreements, and limitations in what could be evaluated, but they do **not** alter the processed demand series.
 
-Data-quality methods and statistical semantics are provided by `tclean.data_quality`. The module adds the electricity-demand-specific orchestration around those methods, including source naming, configuration validation, persistence of failures/issues, and diagnostic plotting. See [Configuration: Data quality](./config/README.md#data-quality) for the module-facing configuration contract; method-level threshold and reference semantics are documented in tclean's `docs/data_quality.md`.
+Data-quality methods and statistical semantics are provided by `tclean.data_quality`. The module supplies the electricity-demand-specific orchestration around those methods, including the processed demand and available provider data as evaluation sources, configuration validation, persistence of failures and issues, and diagnostic plotting.
 
-The module exposes `processed_demand` as the main focal data-quality source. It represents the combined demand after the configured gap-filling stage (or the combined series when gap filling is off). Prepared provider sources selected through `load_sources` are also supplied to data-quality evaluation where available. This is particularly useful for `source_disagreement`: the processed series can be evaluated as the focal source while the underlying providers act as peer evidence for the same country and timestamp.
-
-Tests are evaluated in configuration order. This matters for reference-based tests because failures from preceding tests can affect the reference observations available to later tests. Optional source and country selectors can narrow individual tests; omitting the source selector uses `processed_demand` as the module's focal source by default.
-
-Some tests are more computationally intensive than simple pointwise checks. In particular, `contextual_level`, `contextual_profile`, and cross-source comparison over long, multi-country histories can take a few minutes to evaluate. This is expected for large diagnostic runs; users should not assume that a several-minute data-quality rule is stalled simply because simpler cleaning rules complete much faster.
+See [Configuration: Data quality](./config/README.md#data-quality) for the module-facing configuration contract. Method-level threshold and reference semantics are documented in tclean's `docs/data_quality.md`.
 
 ## Provenance and diagnostics
 
@@ -128,26 +70,21 @@ The workflow retains cleaning provenance alongside national demand so observed v
 
 Important diagnostic outputs include:
 
-- **Gap report**: in `advanced` mode, provides a complete record of the contiguous gaps that remain after basic cleaning, including the affected country, start and end timestamps, gap duration, and whether the gap reaches a boundary of the requested time series. This report can be used to identify which periods still require attention and to inform the design of targeted advanced rules;
-- **Cleaning method**: the source or rule responsible for each output value;
-- **Cleaning-method rank**: numeric ordering used to represent cleaning provenance consistently;
+- **Gap report**: unresolved contiguous gaps remaining after basic cleaning, which can be used to identify periods that need targeted advanced handling;
+- **Cleaning method and rank**: the source or rule responsible for each output value and its provenance ordering;
 - **Cleaning timeline and summary**: visual and tabular diagnostics showing demand provenance and completeness through the raw, basic, and advanced cleaning stages;
-- **Data-quality failures**: structured periods where a configured test was evaluable and its failure criterion was met;
-- **Data-quality issues**: structured warnings or `not_evaluable` events describing limitations such as insufficient reference or peer data;
-- **Data-quality diagnostic plot**: a PDF diagnostic of configured failures on the processed demand, intended to make flagged periods easier to inspect.
+- **Data-quality failures and issues**: structured records of detected problems and limitations in evaluation;
+- **Data-quality diagnostic plot**: a visual summary of configured failures on the processed demand.
 
-Together, these diagnostics are intended to make gap handling explicit rather than conceal unresolved data behind automatic imputation. A typical advanced workflow is therefore to run the basic cleaning stage, inspect the gap report to identify any remaining missing periods, and then configure advanced rules for gaps that require explicit reconstruction or replacement.
+Together, these diagnostics are intended to make gap handling and data quality explicit rather than conceal unresolved or reconstructed data. A typical advanced workflow is therefore to run the basic cleaning stage, inspect the remaining gaps and diagnostics, and then configure targeted advanced rules where explicit reconstruction or replacement is appropriate.
 
 ## Input / output structure
 
-The module requires user-provided target shapes. A valid ENTSO-E API token is additionally required when `entsoe` is configured.
+The primary user input is the set of target shapes to which national demand is spatially disaggregated. Depending on the selected demand sources and advanced cleaning configuration, the workflow may also require provider credentials or user-supplied external profiles.
 
-Advanced `external_profile` sources may reference user-provided CSV files.
-
-Intermediate provider data, cleaned national demand, provenance, execution plans, auxiliary data, and data-quality tables are stored below the module resources path. Data-quality evaluation writes `load_data_quality_failures.parquet` and `load_data_quality_issues.parquet` alongside the automatic demand resources. Final regional electricity demand is written to the configured module results path.
+Intermediate provider data, cleaned national demand, provenance, execution plans, auxiliary data, and data-quality diagnostics are stored below the module resources path. Final regional electricity demand is written to the configured module results path.
 
 Please consult [`INTERFACE.yaml`](./INTERFACE.yaml) for the module's formal input/output interface.
-
 
 ## Development
 <!-- Please do not modify this templated section -->

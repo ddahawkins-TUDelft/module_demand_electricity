@@ -1,8 +1,8 @@
 # Configuration
 
-This module is configured through `config/config.yaml`. Gap filling and data-quality evaluation both use tclean, while this document describes their Modelblocks-facing configuration.
+This document is the detailed user-facing configuration reference for the module. For a high-level description of the workflow, capabilities, diagnostics, and input/output interface, see the [repository README](../README.md).
 
-The configuration schema is intentionally strict: malformed or unsupported configuration should fail validation rather than silently falling back to defaults.
+The module is configured through `config/config.yaml`. Gap filling and data-quality evaluation both use tclean, while this document describes their Modelblocks-facing configuration, accepted options, and behaviour. The configuration schema is authoritative and intentionally strict: malformed or unsupported configuration should fail validation rather than silently falling back to defaults.
 
 Useful references are:
 
@@ -11,7 +11,7 @@ Useful references are:
 - [`workflow/internal/source_registry.yaml`](../workflow/internal/source_registry.yaml): available demand providers and their metadata;
 - [`INTERFACE.yaml`](../INTERFACE.yaml): module input/output interface;
 - [`tests/integration/test_config.yaml`](../tests/integration/test_config.yaml): a richer integration configuration;
-- [`tests/integration/resources/user/external_profiles`](../tests/integration/user/external_profiles): example of an external profile.
+- [`tests/integration/resources/user/external_profiles`](../tests/integration/user/external_profiles): example of an external profile;
 - [`tests/integration/Snakefile`](../tests/integration/Snakefile): example module import.
 
 ## Temporal scope
