@@ -261,7 +261,7 @@ gap_filling:
 
   advanced:
     auxiliary_data:
-      basic_cleaning:
+      basic_gap_filling:
         enabled: true
 
     sources:
@@ -415,7 +415,7 @@ Auxiliary behavior is configured under:
 ```yaml
 advanced:
   auxiliary_data:
-    basic_cleaning:
+    basic_gap_filling:
       enabled: true
 ```
 

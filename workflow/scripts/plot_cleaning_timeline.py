@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 main(
     demand_path=snakemake.input.demand,
-    basic_cleaning_method_path=snakemake.input.basic_cleaning_method,
+    basic_gap_filling_method_path=snakemake.input.basic_gap_filling_method,
     cleaning_method_path=snakemake.input.cleaning_method,
     cleaning_method_rank_path=snakemake.input.cleaning_method_rank,
     output_path=snakemake.output.plot,

@@ -29,7 +29,7 @@ rule plot_cleaning_timeline:
     input:
         target_plan=target_data_plan,
         demand=("<resources>/automatic/{shape}/load_cleaned.parquet"),
-        basic_cleaning_method=(
+        basic_gap_filling_method=(
             "<resources>/automatic/{shape}/load_cleaning_method.parquet"
         ),
         cleaning_method=(

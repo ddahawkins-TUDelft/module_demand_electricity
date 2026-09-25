@@ -55,7 +55,7 @@ integration_test:
       auxiliary_data:
         # Apply the same basic cleaning rules to acquired auxiliary data before
         # it is used to construct advanced replacement profiles.
-        basic_cleaning:
+        basic_gap_filling:
           enabled: true
 
       sources:

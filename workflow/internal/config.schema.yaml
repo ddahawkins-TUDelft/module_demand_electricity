@@ -320,7 +320,7 @@ $defs:
   # ---------------------------------------------------------------------------
   # Auxiliary-data handling
   # ---------------------------------------------------------------------------
-  auxiliary_basic_cleaning:
+  auxiliary_basic_gap_filling:
     type: object
     properties:
       enabled:
@@ -336,10 +336,10 @@ $defs:
   auxiliary_data:
     type: object
     properties:
-      basic_cleaning:
-        $ref: "#/$defs/auxiliary_basic_cleaning"
+      basic_gap_filling:
+        $ref: "#/$defs/auxiliary_basic_gap_filling"
     required:
-      - basic_cleaning
+      - basic_gap_filling
     additionalProperties: false
 
 # =============================================================================

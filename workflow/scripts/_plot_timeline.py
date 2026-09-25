@@ -61,7 +61,7 @@ LEGEND_PAGE_BOTTOM_MARGIN_PX = 45
 def main(
     *,
     demand_path: str | Path,
-    basic_cleaning_method_path: str | Path,
+    basic_gap_filling_method_path: str | Path,
     cleaning_method_path: str | Path,
     cleaning_method_rank_path: str | Path,
     output_path: str | Path,
@@ -72,13 +72,13 @@ def main(
 ) -> None:
     """Create the electricity-demand cleaning diagnostic and summary."""
     demand = pd.read_parquet(demand_path)
-    basic_cleaning_method = pd.read_parquet(basic_cleaning_method_path)
+    basic_gap_filling_method = pd.read_parquet(basic_gap_filling_method_path)
     cleaning_method = pd.read_parquet(cleaning_method_path)
     cleaning_method_rank = pd.read_parquet(cleaning_method_rank_path)
 
     _validate_alignment(
         demand=demand,
-        basic_cleaning_method=basic_cleaning_method,
+        basic_gap_filling_method=basic_gap_filling_method,
         cleaning_method=cleaning_method,
         cleaning_method_rank=cleaning_method_rank,
     )
@@ -105,14 +105,14 @@ def main(
 
     summary = _build_country_summary(
         demand=demand,
-        basic_cleaning_method=basic_cleaning_method,
+        basic_gap_filling_method=basic_gap_filling_method,
         cleaning_method=cleaning_method,
         gap_filling_config=gap_filling_config,
     )
 
     legend_metadata = _filter_legend_metadata(
         metadata=metadata,
-        basic_cleaning_method=basic_cleaning_method,
+        basic_gap_filling_method=basic_gap_filling_method,
         cleaning_method=cleaning_method,
     )
 
@@ -584,13 +584,13 @@ def _draw_legend_rows(
 def _validate_alignment(
     *,
     demand: pd.DataFrame,
-    basic_cleaning_method: pd.DataFrame,
+    basic_gap_filling_method: pd.DataFrame,
     cleaning_method: pd.DataFrame,
     cleaning_method_rank: pd.DataFrame,
 ) -> None:
     """Require all diagnostic inputs to use the same time-country grid."""
     for name, frame in {
-        "basic_cleaning_method": basic_cleaning_method,
+        "basic_gap_filling_method": basic_gap_filling_method,
         "cleaning_method": cleaning_method,
         "cleaning_method_rank": cleaning_method_rank,
     }.items():
@@ -1024,7 +1024,7 @@ def _iter_cleaning_method_runs(
 def _build_country_summary(
     *,
     demand: pd.DataFrame,
-    basic_cleaning_method: pd.DataFrame,
+    basic_gap_filling_method: pd.DataFrame,
     cleaning_method: pd.DataFrame,
     gap_filling_config: dict[str, Any],
 ) -> pd.DataFrame:
@@ -1035,11 +1035,11 @@ def _build_country_summary(
 
     summary["mean_load_gw"] = demand.mean(axis=0, skipna=True) / 1000
 
-    raw_present = basic_cleaning_method.apply(
+    raw_present = basic_gap_filling_method.apply(
         lambda column: column.str.startswith("observed_", na=False)
     )
 
-    basic_present = basic_cleaning_method.notna() & basic_cleaning_method.ne("missing")
+    basic_present = basic_gap_filling_method.notna() & basic_gap_filling_method.ne("missing")
 
     final_present = cleaning_method.notna() & cleaning_method.ne("missing")
 
@@ -1320,13 +1320,13 @@ def _build_cleaning_method_metadata(
 def _filter_legend_metadata(
     *,
     metadata: pd.DataFrame,
-    basic_cleaning_method: pd.DataFrame,
+    basic_gap_filling_method: pd.DataFrame,
     cleaning_method: pd.DataFrame,
 ) -> pd.DataFrame:
     """Keep only cleaning methods represented in this workflow result."""
     used_methods: set[str] = set()
 
-    for frame in (basic_cleaning_method, cleaning_method):
+    for frame in (basic_gap_filling_method, cleaning_method):
         values = pd.unique(frame.to_numpy().ravel())
 
         used_methods.update(str(value) for value in values if pd.notna(value))

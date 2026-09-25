@@ -83,7 +83,7 @@ def main(snakemake: Any) -> None:
 
     basic_rules = (
         list(snakemake.params.basic_rules)
-        if snakemake.params.basic_cleaning_enabled
+        if snakemake.params.basic_gap_filling_enabled
         else []
     )
 

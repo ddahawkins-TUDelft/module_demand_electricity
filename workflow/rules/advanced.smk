@@ -41,8 +41,8 @@ rule clean_auxiliary_group:
     params:
         frequency=config["temporal_scope"]["frequency"],
         basic_rules=config["gap_filling"]["basic"]["rules"],
-        basic_cleaning_enabled=(
-            config["gap_filling"]["advanced"]["auxiliary_data"]["basic_cleaning"][
+        basic_gap_filling_enabled=(
+            config["gap_filling"]["advanced"]["auxiliary_data"]["basic_gap_filling"][
                 "enabled"
             ]
         ),

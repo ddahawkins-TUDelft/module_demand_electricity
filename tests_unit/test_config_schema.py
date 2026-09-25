@@ -43,7 +43,7 @@ def test_advanced_mode_allows_no_sources_or_rules() -> None:
             "mode": "advanced",
             "basic": {"rules": []},
             "advanced": {
-                "auxiliary_data": {"basic_cleaning": {"enabled": True}},
+                "auxiliary_data": {"basic_gap_filling": {"enabled": True}},
                 "sources": {},
                 "rules": [],
             },
@@ -66,7 +66,7 @@ def _advanced_config_with_scaling(scaling: dict) -> dict:
             "mode": "advanced",
             "basic": {"rules": []},
             "advanced": {
-                "auxiliary_data": {"basic_cleaning": {"enabled": True}},
+                "auxiliary_data": {"basic_gap_filling": {"enabled": True}},
                 "sources": {
                     "constructed": {
                         "method": "construct_from_sources",
@@ -187,7 +187,7 @@ def _config_with_data_quality(data_quality: dict) -> dict:
             "mode": "off",
             "basic": {"rules": []},
             "advanced": {
-                "auxiliary_data": {"basic_cleaning": {"enabled": True}},
+                "auxiliary_data": {"basic_gap_filling": {"enabled": True}},
                 "sources": {},
                 "rules": [],
             },

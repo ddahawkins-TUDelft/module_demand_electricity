@@ -71,8 +71,8 @@ def build_advanced_execution_plan(
         list(constructed_source_periods.values()),
         basic_rules=build_basic_rules(gap_filling_config),
         grid=grid,
-        basic_cleaning_enabled=(
-            gap_filling_config["advanced"]["auxiliary_data"]["basic_cleaning"][
+        basic_gap_filling_enabled=(
+            gap_filling_config["advanced"]["auxiliary_data"]["basic_gap_filling"][
                 "enabled"
             ]
         ),
