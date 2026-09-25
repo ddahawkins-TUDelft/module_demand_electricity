@@ -13,6 +13,7 @@ Useful references are:
 - [`tests/integration/test_config.yaml`](../tests/integration/test_config.yaml): a richer integration configuration;
 - [`tests/integration/resources/user/external_profiles`](../tests/integration/user/external_profiles): example of an external profile;
 - [`tests/integration/Snakefile`](../tests/integration/Snakefile): example module import.
+- Tclean documentation (https://github.com/ddahawkins-TUDelft/tclean)
 
 ## Temporal scope
 

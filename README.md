@@ -46,7 +46,7 @@ The key configuration groups are:
 - `gap_filling`: basic and advanced gap handling;
 - `data_quality`: diagnostic tests applied to demand data.
 
-Detailed configuration syntax, accepted values, provider metadata, validation rules, and examples are documented in the [configuration README](./config/README.md). See also the [example configuration](./config/config.yaml) and the authoritative [configuration schema](./workflow/internal/config.schema.yaml).
+Detailed configuration syntax, accepted values, provider metadata, validation rules, and examples are documented in the [configuration README](./config/README.md). See also the [example configuration](./config/config.yaml) and the authoritative [configuration schema](./workflow/internal/config.schema.yaml). A full description of Tclean and its configuration is available at the repository page (https://github.com/ddahawkins-TUDelft/tclean).
 
 ## Demand preparation and gap handling
 
