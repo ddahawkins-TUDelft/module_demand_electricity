@@ -1039,7 +1039,9 @@ def _build_country_summary(
         lambda column: column.str.startswith("observed_", na=False)
     )
 
-    basic_present = basic_gap_filling_method.notna() & basic_gap_filling_method.ne("missing")
+    basic_present = basic_gap_filling_method.notna() & basic_gap_filling_method.ne(
+        "missing"
+    )
 
     final_present = cleaning_method.notna() & cleaning_method.ne("missing")
 
