@@ -60,8 +60,8 @@ gap_filling:
 
     sources:
 
-      # Train source on average per-hour demand across 2010-2025
-      # Rescale to 2010-2015, to closer match demand of 2006-2010
+      # Build synethic source on average per-hour demand across [2010,2014),[2014,2018),[2018,2022)
+      # Rescale to [2010,2014), to closer match demand of [2006,2010)
       avg_finland_2010_2022_scaled_to_2010_2014:
         method: construct_from_sources
         periods:
